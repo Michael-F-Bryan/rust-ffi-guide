@@ -18,15 +18,16 @@ possible.
 
 Some things I'm hoping to cover:
 
-* Compiling and linking from the command line
+* Compiling and linking from the command line [Done](./introduction/index.html#Hello%20World)
 * Calling Rust from various languages, and vice versa
+* Using arrays [Done](./arrays/index.html)
 * Packaging your crate as a shared library or DLL so it can be used by other 
   programs
 * Passing around structs using opaque pointers
 * How to use strings without leaking memory or segfaults (it's harder than 
   you'd think)
-* Emulating methods and OO
-* Asynchronous operations and threading, and
+* Asynchronous operations, threading and callbacks
+* Emulating methods and OO, and
 * Other miscellaneous bits and pieces and best practices I've picked up along
   the way
 

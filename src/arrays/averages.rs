@@ -1,7 +1,7 @@
 use std::slice;
 
 #[no_mangle]
-pub extern "C" fn average(array: *const i64, length: i64) -> f64 {
+pub extern "C" fn average(array: *const i64, length: i32) -> f64 {
     let numbers = unsafe { slice::from_raw_parts(array, length as usize) };
 
     let sum = numbers.iter()

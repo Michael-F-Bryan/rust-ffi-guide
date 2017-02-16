@@ -20,8 +20,8 @@ which receives an array of integers and gives you back their average as a `f64`.
 use std::slice;
 
 #[no_mangle]
-pub extern "C" fn average(array: *const i64, length: usize) -> f64 {
-    let numbers = unsafe { slice::from_raw_parts(array, length) };
+pub extern "C" fn average(array: *const i64, length: i32) -> f64 {
+    let numbers = unsafe { slice::from_raw_parts(array, length as usize) };
 
     let sum = numbers.iter()
         .fold(0.0, |acc, &elem| acc + elem as f64);
@@ -35,6 +35,11 @@ that `unsafe` line should have caught your attention. We're using
 [slice::from_raw_parts()][from-raw-parts] to tell the compiler "here's a pointer
 to some an `i64` and a number of elements, can you just pretend it's an array 
 for me?". 
+
+> **Note:** Notice that I used `slice::from_raw_parts()` here to get a slice 
+> instead of getting a `Vec` with `Vec::from_raw_parts()`. I'll leave it as an
+> exercise for the reader to figure out why (hint: who owns that chunk of 
+> memory?)
 
 Obviously must be unsafe (hence the `unsafe` block), but what exactly could go
 wrong here? I'll try to list just a few ways you could end up having a bad 
@@ -120,7 +125,7 @@ libaverages.a(std-9a66b6a343d52844.0.o): In function `std::sys::imp::mutex::{{im
 clang: error: linker command failed with exit code 1 (use -v to see invocation)
 ```
 
-Oops. When clang tried to compile our `libaverages.a` library and `main.c` into 
+Oops! When clang tried to compile our `libaverages.a` library and `main.c` into 
 one executable it wasn't able to find a bunch of symbols. 
 
 Remember those notes from earlier? That's what `rustc` was trying to warn us 
