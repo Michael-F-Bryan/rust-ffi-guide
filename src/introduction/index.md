@@ -12,11 +12,36 @@ Welcome to the Rust FFI Guide, aka **Abusing unsafe for fun and profit**.
 > my examples.
 
 
+The main goal of this guide is to show how to interoperate between `Rust` and
+other languages with as few segfaults and uses of undefined behaviour as 
+possible.
+
+Some things I'm hoping to cover:
+
+* Compiling and linking from the command line
+* Calling Rust from various languages, and vice versa
+* Packaging your crate as a shared library or DLL so it can be used by other 
+  programs
+* Passing around structs using opaque pointers
+* How to use strings without leaking memory or segfaults (it's harder than 
+  you'd think)
+* Emulating methods and OO
+* Asynchronous operations and threading, and
+* Other miscellaneous bits and pieces and best practices I've picked up along
+  the way
+
+
 ## Hello World
 
 What would any programming guide be without the obligatory hello world example?
+
+> **Note:** For most of these examples I'll be using `C` to interoperate with 
+> my `Rust` code. It's pretty much the lingua franca of the programming world, 
+> so most people should be able to understand it what's happening and follow 
+> along. 
  
-To start off with, we'll try to call a `C` program from `Rust`. Here's the contents of my `hello.c`:
+To start off with, we'll try to call a `C` program from `Rust`. Here's the 
+contents of my `hello.c`:
 
 ```c
 #include <stdio.h>
@@ -47,6 +72,11 @@ fn main() {
 ```
 Our `say_hello()` function is expecting a pointer to a null-terminated string,
 and the easiest way to create one of those is with a [CString][cstring].
+
+Almost all of what we're doing here sidesteps Rust's memory guarantees, so 
+expect to see a lot more `unsafe` blocks. In this case, the C function could do
+whatever it wants with our string, so you need to wrap the function call in 
+`unsafe`.
 
 Next you'll need to compile the C code into a library which can be called by
 Rust. In this example I'm going to compile it into a `shared library`.
