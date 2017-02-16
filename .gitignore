@@ -1,0 +1,6 @@
+book
+
+*.so
+*.o
+*.a
+main
