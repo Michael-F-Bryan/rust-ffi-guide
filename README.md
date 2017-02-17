@@ -35,9 +35,7 @@ It should now be viewable at [http://localhost:3000/](http://localhost:3000/).
 ## Contributing
 
 If there's anything you want me to add or you notice something which might need
-changing, [make an issue][issues].
-
-Pull requests are welcome too!
+changing, [make an issue][issues]. Pull requests are welcome too!
 
 
 [gh-pages]: https://michael-f-bryan.github.io/rust-ffi-guide/

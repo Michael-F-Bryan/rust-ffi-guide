@@ -7,7 +7,7 @@ extern "C" {
 }
 
 fn main() {
-    let me = CString::new("Michael").unwrap();
+    let me = CString::new("World").unwrap();
 
     unsafe {
         say_hello(me.as_ptr());

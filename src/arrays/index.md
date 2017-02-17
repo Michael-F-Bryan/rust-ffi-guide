@@ -12,7 +12,8 @@ this is something you might end up doing often.
 ## Our Rust Library
 
 This program is going to be fairly stock standard. We'll write a Rust function 
-which receives an array of integers and gives you back their average as a `f64`.
+which receives an array of integers and gives you back their average as a `f64`
+and put it in [averages.rs](./arrays/averages.rs).
 
 ```rust
 // averages.rs
@@ -88,7 +89,7 @@ see what I mean a bit later.
 
 Using our Rust library is actually fairly easy to do in C. You just declare it
 like you would when calling any other C library, then pass in the appropriate
-parameters.
+parameters. Here is the contents of my [main.c](./arrays/main.c):
 
 ```c
 // main.c

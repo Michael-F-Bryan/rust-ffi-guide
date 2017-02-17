@@ -1,0 +1,11 @@
+[package]
+name = "get_usage"
+version = "0.1.0"
+authors = ["Michael Bryan <michaelfbryan@gmail.com>"]
+build = "build.rs"
+
+[dependencies]
+libc = "*"
+
+[build-dependencies]
+gcc = "*"

@@ -18,9 +18,9 @@ possible.
 
 Some things I'm hoping to cover:
 
-* Compiling and linking from the command line [Done](./introduction/index.html#Hello%20World)
+* Compiling and linking from the command line ([Done](./introduction/index.html#Hello%20World))
 * Calling Rust from various languages, and vice versa
-* Using arrays [Done](./arrays/index.html)
+* Using arrays ([Done](./arrays/index.html))
 * Packaging your crate as a shared library or DLL so it can be used by other 
   programs
 * Passing around structs using opaque pointers
@@ -42,7 +42,7 @@ What would any programming guide be without the obligatory hello world example?
 > along. 
  
 To start off with, we'll try to call a `C` program from `Rust`. Here's the 
-contents of my `hello.c`:
+contents of my [hello.c](./introduction/hello.c):
 
 ```c
 #include <stdio.h>
@@ -52,7 +52,7 @@ void say_hello(char *name) {
 }
 ```
 
-And here's the `Rust` code which will be using it (`main.rs`):
+And here's the `Rust` code which will be using it ([main.rs](./introduction/main.rs)):
 
 ```rust
 use std::ffi::CString;
@@ -64,7 +64,7 @@ extern "C" {
 }
 
 fn main() {
-    let me = CString::new("Michael").unwrap();
+    let me = CString::new("World").unwrap();
 
     unsafe {
         say_hello(me.as_ptr());

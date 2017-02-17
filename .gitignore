@@ -4,3 +4,4 @@ book
 *.o
 *.a
 main
+target
