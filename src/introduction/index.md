@@ -37,7 +37,7 @@ Some things I'm hoping to cover:
 What would any programming guide be without the obligatory hello world example?
 
 > **Note:** For most of these examples I'll be using `C` to interoperate with 
-> my `Rust` code. It's pretty much the lingua franca of the programming world, 
+> my `Rust` code. It's pretty much the *lingua franca* of the programming world, 
 > so most people should be able to understand it what's happening and follow 
 > along. 
  
