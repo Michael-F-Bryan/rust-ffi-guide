@@ -22,7 +22,7 @@ Some things I'm hoping to cover:
 * [Using arrays](./arrays/index.html)
 * [Sharing basic structs between languages](./structs/index.html)
 * Proper error handling
-* Calling Rust from other (i.e. not C) languages
+* [Calling Rust from other (i.e. not C) languages](./pythonic/index.html)
 * How to use strings without leaking memory or segfaults (it's harder than 
   you'd think)
 * Asynchronous operations, threading and callbacks

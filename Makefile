@@ -1,6 +1,6 @@
 OPEN := xdg-open
 
-all: intro arrays structs book
+all: book intro arrays structs pythonic
 
 open:book
 	$(OPEN) file:///`pwd`/book/index.html
@@ -17,11 +17,15 @@ arrays:
 structs:
 	cd src/structs/get_usage/ && cargo build
 
+pythonic:
+	cd src/pythonic/primes/ && cargo build
+
 clean:
 	rm -rf ./book/*
 	$(MAKE) -C src/introduction clean
 	$(MAKE) -C src/arrays clean
 	cd src/structs/get_usage/ && cargo clean
+	cd src/pythonic/primes/ && cargo clean
 
 build: open
 	bash build.sh
