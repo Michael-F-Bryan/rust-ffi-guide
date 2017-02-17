@@ -3,10 +3,10 @@
 
 Welcome to the Rust FFI Guide, aka **Abusing unsafe for fun and profit**.
 
-> **Note:** I'm going to assume you're already familiar with the `Rust` language
-> and have a relatively recent version of the compiler installed. If you're a 
-> little rusty, you might want to skim through [the book][book] to refresh your 
-> memory.
+> **Note:** I'm going to assume you're already familiar with the [Rust][rust]
+> language and have a relatively recent version of the compiler installed. If 
+> you're a little rusty, you might want to skim through [The Book][book] to 
+refresh your memory.
 >
 > You'll also need to know some basic C/C++, as I'll be largely using that in 
 > my examples.
@@ -18,18 +18,26 @@ possible.
 
 Some things I'm hoping to cover:
 
-* Compiling and linking from the command line ([Done](./introduction/index.html#Hello%20World))
-* Calling Rust from various languages, and vice versa
-* Using arrays ([Done](./arrays/index.html))
-* Packaging your crate as a shared library or DLL so it can be used by other 
-  programs
-* Passing around structs using opaque pointers
+* [Compiling and linking from the command line](./introduction/index.html#Hello-World)
+* [Using arrays](./arrays/index.html)
+* [Sharing basic structs between languages](./structs/index.html)
+* Proper error handling
+* Calling Rust from other (i.e. not C) languages
 * How to use strings without leaking memory or segfaults (it's harder than 
   you'd think)
 * Asynchronous operations, threading and callbacks
 * Emulating methods and OO, and
 * Other miscellaneous bits and pieces and best practices I've picked up along
   the way
+
+
+## Some Useful Links:
+
+* [This Guide](https://michael-f-bryan.github.io/rust-ffi-guide/)
+* [The GitHub Repo](https://github.com/Michael-F-Bryan/rust-ffi-guide)
+* [FFI Page from *The Book*](https://doc.rust-lang.org/book/ffi.html)
+* [The Rust FFI Omnibus](http://jakegoulding.com/rust-ffi-omnibus/)
+* [Complex Types With Rust's FFI](https://medium.com/jim-fleming/complex-types-with-rust-s-ffi-315d14619479)
 
 
 ## Hello World
@@ -130,6 +138,7 @@ $ ./main
 There are much more elegant solutions than this, but it'll suffice for now.
 
 
+[rust]:  https://www.rust-lang.org/
 [book]: https://doc.rust-lang.org/stable/book/
 [loader]: https://en.wikipedia.org/wiki/Loader_(computing)
 [static-vs-dynamic]: http://stackoverflow.com/questions/2649334/difference-between-static-and-shared-libraries

@@ -2,6 +2,9 @@ OPEN := xdg-open
 
 all: intro arrays structs book
 
+open:book
+	$(OPEN) file:///`pwd`/book/index.html
+
 book:
 	mdbook build
 
@@ -20,9 +23,7 @@ clean:
 	$(MAKE) -C src/arrays clean
 	cd src/structs/get_usage/ && cargo clean
 
-build: 
-	mdbook build
-	$(OPEN) file:///`pwd`/book/index.html
+build: open
 	bash build.sh
 
-.PHONY: clean build
+.PHONY: clean build book

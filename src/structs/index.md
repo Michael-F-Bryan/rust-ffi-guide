@@ -25,6 +25,11 @@ is part of the GNU `libc`.
 > Mac or Windows you might want to look for some other function which returns
 > a struct and play around with that. To be honest, I'm only using `getrusage()`
 > because it was the first thing to pop up when I searched Google.
+>
+> [This function][msdn] looks like the Windows equivalent, and the output struct
+> is even simpler than the Linux one because there's no nesting. Just `#include` 
+> the `Psapi.h` header file and you should be able to follow along fairly 
+> easily.
 
 The first thing you'll want to do when calling one of the standard C functions
 is to consult the man page:
@@ -125,7 +130,7 @@ $ cargo new --bin get_usage
 Make sure the C shim is in your `src/` directory. I put it at 
 [./get_usage/src/usage.c](./structs/get_usage/src/usage.c).
 
-Next you'll want to declare the C shim and custom struct in 
+Next you'll want to declare the C shim and custom structs in 
 [main.rs](./structs/get_usage/src/main.rs).
 
 ```rust
@@ -166,10 +171,34 @@ fn main() {
 ```
 
 You'll see that I'm importing the [libc][libc] crate to help make sure the
-basic integer types (e.g. `c_long` and `time_t`) match up. They also have
-a definition of `timeval` too, but I felt like declaring my own because it's 
-just a struct with a pair of `i64`s (for my platform anyway). As long
-as the integer types and sizes match up C won't care, bytes are bytes.
+basic integer types (e.g. `c_long` and `time_t`) match up. You'll want to use
+this crate a lot to avoid issues like a pointer being either 32 or 64-bits and
+other quirks.
+
+They also have a definition of `timeval` too, but I felt like declaring my own 
+because it's just a struct with a pair of `i64`s (for my platform anyway). As 
+long as the integer types and sizes match up C won't care, bytes are bytes.
+
+> **Note:** The big thing to take away here is that as long as your struct is 
+> the correct size, it doesn't matter how it's laid out internally. This means
+> you can actually emulate the `rusage` struct like this and skip the C shim
+> entirely!
+> 
+> ```rust
+> #[repr(C)]
+> struct rusage {
+>   ru_utime: Timeval,
+>   _padding_1: [u8; 8],
+>   ru_maxrss: libc::c_long,
+>   _padding_2: [u8; 8],
+>   ru_isrsss: libc::c_long,
+>   _padding_3: [u8; 40],
+> }
+> ```
+>
+> I feel like you could use some macro magic to emulate C-style unions using
+> getters/setters and a healthy dose of `transmute()`. But I'll leave that as 
+> an exercise for the reader.
 
 Now to roll this all together there's just one more step. A build script. 
 
@@ -183,8 +212,8 @@ fn main() {
 }
 ```
 
-Make sure you add `gcc` and `libc` to your 
-[Cargo.toml](./structs/get_usage/Cargo.toml)!
+Don't forget to add `gcc` and `libc` to your 
+[Cargo.toml](./structs/get_usage/Cargo.toml).
 
 ```toml
 [package]
@@ -206,7 +235,7 @@ And now we can finally run this thing.
 $ cargo run
    Compiling libc v0.2.20
    Compiling gcc v0.3.43
-   Compiling get_usage v0.1.0 
+   Compiling get_usage v0.1.0 (...)
     Finished dev [unoptimized + debuginfo] target(s) in 3.51 secs
      Running `target/debug/get_usage`
 Usage statistics for this process: Usage { ru_utime: Timeval { tv_sec: 0, tv_usec: 24000 }, ru_maxrss: 18732, ru_isrss: 0 }
@@ -233,3 +262,4 @@ usage.o:
 [gcc-rs]: https://docs.rs/gcc/0.3.43/gcc/index.html
 [getrusage]: https://www.gnu.org/software/libc/manual/html_node/Resource-Usage.html
 [libc]: https://doc.rust-lang.org/libc/x86_64-unknown-linux-gnu/libc/
+[msdn]: https://msdn.microsoft.com/en-us/library/windows/desktop/ms683210(v=vs.85).aspx
