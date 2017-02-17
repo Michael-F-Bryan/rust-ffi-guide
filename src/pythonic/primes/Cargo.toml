@@ -1,0 +1,11 @@
+[package]
+name = "primes"
+version = "0.1.0"
+authors = ["Michael Bryan <michaelfbryan@gmail.com>"]
+
+[dependencies]
+primal = "*"
+libc = "*"
+
+[lib]
+crate-type = ["cdylib", "rlib"]

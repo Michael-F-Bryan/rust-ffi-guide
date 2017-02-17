@@ -37,6 +37,12 @@ that `unsafe` line should have caught your attention. We're using
 to some an `i64` and a number of elements, can you just pretend it's an array 
 for me?". 
 
+We needed to add the `extern "C"` bit to the function signature to indicate 
+that the function will be exported and should use the "C" calling convention. 
+The `#[no_mangle]` attribute tells the compiler to leave the function symbol as 
+it is instead of mangling it (check out [name mangling][mangling] for more 
+details).
+
 > **Note:** Notice that I used `slice::from_raw_parts()` here to get a slice 
 > instead of getting a `Vec` with `Vec::from_raw_parts()`. I'll leave it as an
 > exercise for the reader to figure out why (hint: who owns that chunk of 
@@ -160,5 +166,5 @@ like `make` to help them build everything.
 Luckily in Rust, we can do one better...
 
 
-
 [from-raw-parts]: https://doc.rust-lang.org/nightly/std/slice/fn.from_raw_parts.html
+[mangling]: https://en.wikipedia.org/wiki/Name_mangling

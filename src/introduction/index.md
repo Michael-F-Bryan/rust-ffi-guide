@@ -80,7 +80,13 @@ fn main() {
 }
 ```
 Our `say_hello()` function is expecting a pointer to a null-terminated string,
-and the easiest way to create one of those is with a [CString][cstring].
+and the easiest way to create one of those is with a [CString][cstring]. Notice
+that we told the compiler that we'll be using an external function called 
+`say_hello()`. The "C" bit indicates that it should use the "C" calling 
+convention, a calling convention specifies low level details like how 
+parameters are passed to a function, which registers the callee must preserve 
+for the caller, and other nitty gritty details you only really need to know if 
+you're a compiler writer or assembly programmer.
 
 Almost all of what we're doing here sidesteps Rust's memory guarantees, so 
 expect to see a lot more `unsafe` blocks. In this case, the C function could do
