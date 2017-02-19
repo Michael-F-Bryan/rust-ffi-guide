@@ -2,6 +2,9 @@ OPEN := xdg-open
 
 all: book intro arrays structs pythonic
 
+todo:
+	grep -r --colour=auto 'TODO\|FIXME' src/ 
+
 open:book
 	$(OPEN) file:///`pwd`/book/index.html
 
@@ -30,4 +33,4 @@ clean:
 build: open
 	bash build.sh
 
-.PHONY: clean build book
+.PHONY: clean build book todo
