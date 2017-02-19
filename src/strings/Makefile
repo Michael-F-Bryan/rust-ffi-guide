@@ -17,7 +17,8 @@ lib%.so: %.rs
 	rustc --crate-type cdylib -o $@ $<
 
 clean:
-	$(RM) libversions.so
+	$(RM) *.so
 	$(RM) main_versions
+	$(RM) main_chars
 
 .PHONY: clean run

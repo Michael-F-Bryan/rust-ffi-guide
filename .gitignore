@@ -4,4 +4,6 @@ book
 *.o
 *.a
 main
+main_versions
+main_chars
 target

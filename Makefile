@@ -1,6 +1,6 @@
 OPEN := xdg-open
 
-all: book intro arrays structs pythonic
+all: book intro arrays structs pythonic strings
 
 todo:
 	grep -r --colour=auto 'TODO\|FIXME' src/ 
@@ -16,6 +16,9 @@ intro:
 
 arrays:
 	$(MAKE) -C src/arrays
+
+strings:
+	$(MAKE) -C src/strings
 
 structs:
 	cd src/structs/get_usage/ && cargo build
