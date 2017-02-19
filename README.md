@@ -1,4 +1,4 @@
-# Abusing `unsafe` for Fun and Profit
+# Using `unsafe` for Fun and Profit
 
 
 [![Build Status](https://travis-ci.org/Michael-F-Bryan/rust-ffi-guide.svg?branch=master)](https://travis-ci.org/Michael-F-Bryan/rust-ffi-guide)

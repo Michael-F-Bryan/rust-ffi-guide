@@ -1,7 +1,7 @@
 # The Rust FFI Guide
 
 
-Welcome to the Rust FFI Guide, aka **Abusing unsafe for fun and profit**.
+Welcome to the Rust FFI Guide, i.e. **using unsafe for fun and profit**.
 
 > **Note:** I'm going to assume you're already familiar with the [Rust][rust]
 > language and have a relatively recent version of the compiler installed. If 
@@ -23,9 +23,10 @@ Some things I'm hoping to cover:
 * [Sharing basic structs between languages](./structs/index.html)
 * Proper error handling
 * Calling Rust from other (i.e. not C) languages
-* How to use strings without leaking memory or segfaults (it's harder than 
-  you'd think)
+* [How to use strings without leaking memory or segfaults](./strings/index.html) 
+  (it's harder than you'd think)
 * Asynchronous operations, threading and callbacks
+* Bindgen
 * [Emulating methods and OO](./pythonic/index.html), and
 * [Other miscellaneous bits and pieces or best practices I've picked up along
   the way](./best_practices.html)
