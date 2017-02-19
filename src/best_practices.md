@@ -139,19 +139,32 @@ an idiomatic wrapper around the raw FFI calls to add a layer of safety and
 ergonomics.
 
 In one of the projects I did at work I'd hack on my Rust library, using the 
-built in `cargo test` to ensure functionality worked. I also distributed 
-bindings for that library in another language, and alongside those bindings was
-a test suite which exercised them to ensure correctness and to find any bugs 
-which might result in a segfault.
+built in `cargo test` to ensure functionality worked. Then I also distributed 
+bindings for that library in the main language and alongside those bindings was
+a test suite which exercised them. This helped to ensure correctness and to 
+find any bugs which might result in memory issues.
 
 
 ## When Not To Use FFI
 
-<!--
-TODO: Rewrite this into something more legit
-You need to implement your own low-level or highly-optimized code. Ideally, the functions in the C library you are wrapping will do most of the heavy lifting, but if you need to write some custom code to directly process huge arrays of numerical or binary data, you might need to write code in C or another lower-level language to get the performance you want.
-You need to perform some delicate callbacks from the guest language into the host language. Although it’s sometimes possible (depending on the host language’s FFI support) to perform callbacks, some kinds of complex callback function signatures can be quite tricky to satisfy through FFI.
-The library makes heavy use of compile-time or preprocessor features, such as C macros. In the case of simple macros, you may be able to reimplement its behavior as a function in your language of choice. But if the library does some serious macro-fu, you might be better off just writing a C extension. -->
+TODO: Rewrite this into something more applicable to Rust
+(currently just copied from https://spin.atomicobject.com/2013/02/15/ffi-foreign-function-interfaces/)
+
+You need to implement your own low-level or highly-optimized code. Ideally, 
+the functions in the C library you are wrapping will do most of the heavy 
+lifting, but if you need to write some custom code to directly process huge 
+arrays of numerical or binary data, you might need to write code in C or 
+another lower-level language to get the performance you want.  
+
+You need to perform some delicate callbacks from the guest language into the 
+host language. Although it’s sometimes possible (depending on the host 
+language’s FFI support) to perform callbacks, some kinds of complex callback 
+function signatures can be quite tricky to satisfy through FFI.  
+
+The library makes heavy use of compile-time or preprocessor features, such as 
+C macros. In the case of simple macros, you may be able to reimplement its 
+behavior as a function in your language of choice. But if the library does 
+some serious macro-fu, you might be better off just writing a C extension. 
 
 
 ## Callbacks

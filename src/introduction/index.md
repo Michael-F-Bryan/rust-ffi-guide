@@ -8,8 +8,8 @@ Welcome to the Rust FFI Guide, aka **Abusing unsafe for fun and profit**.
 > you're a little rusty, you might want to skim through [The Book][book] to 
 refresh your memory.
 >
-> You'll also need to know some basic C/C++, as I'll be largely using that in 
-> my examples.
+> You'll also need to know some basic C/C++ or Python, as I'll be largely using 
+> that in my examples.
 
 
 The main goal of this guide is to show how to interoperate between `Rust` and
@@ -22,13 +22,13 @@ Some things I'm hoping to cover:
 * [Using arrays](./arrays/index.html)
 * [Sharing basic structs between languages](./structs/index.html)
 * Proper error handling
-* [Calling Rust from other (i.e. not C) languages](./pythonic/index.html)
+* Calling Rust from other (i.e. not C) languages
 * How to use strings without leaking memory or segfaults (it's harder than 
   you'd think)
 * Asynchronous operations, threading and callbacks
-* Emulating methods and OO, and
-* Other miscellaneous bits and pieces and best practices I've picked up along
-  the way
+* [Emulating methods and OO](./pythonic/index.html), and
+* [Other miscellaneous bits and pieces or best practices I've picked up along
+  the way](./best_practices.html)
 
 
 ## Some Useful Links:
@@ -38,6 +38,7 @@ Some things I'm hoping to cover:
 * [FFI Page from *The Book*](https://doc.rust-lang.org/book/ffi.html)
 * [The Rust FFI Omnibus](http://jakegoulding.com/rust-ffi-omnibus/)
 * [Complex Types With Rust's FFI](https://medium.com/jim-fleming/complex-types-with-rust-s-ffi-315d14619479)
+* [FFI: Foreign Function Interfaces for Fun & Industry](https://spin.atomicobject.com/2013/02/15/ffi-foreign-function-interfaces/)
 
 
 ## Hello World
