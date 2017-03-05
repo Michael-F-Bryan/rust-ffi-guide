@@ -1,6 +1,6 @@
 OPEN := xdg-open
 
-all: book intro arrays structs pythonic strings
+all: book intro arrays structs pythonic strings bindgen
 
 todo:
 	grep -r --colour=auto 'TODO\|FIXME' src/ 
@@ -26,12 +26,16 @@ structs:
 pythonic:
 	cd src/pythonic/primes/ && cargo build
 
+bindgen:
+	cd src/bindgen/bzip2/ && cargo build
+
 clean:
 	rm -rf ./book/*
 	$(MAKE) -C src/introduction clean
 	$(MAKE) -C src/arrays clean
 	cd src/structs/get_usage/ && cargo clean
 	cd src/pythonic/primes/ && cargo clean
+	cd src/bindgen/bzip2/ && cargo clean
 
 build: open
 	bash build.sh

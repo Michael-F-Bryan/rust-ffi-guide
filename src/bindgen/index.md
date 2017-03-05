@@ -193,20 +193,145 @@ data:
 
 From this, my thinking is that you'll want some `Compressor` object which
 contains the `bz_stream`. We'll run `BZ2_bzCompressInit()` in the constructor
-and write a `Drop` impl which calls `BZ2_bzCompressEnd()`. The `Compressor` 
-will also need a mutable reference to a `Read`er to read data from and a 
-`Write`r to write the compressed data to. There should also be a `compress()`
-method which internally just keeps calling the `BZ2_bzCompress()` function
-until everything is finished.
+and write a `Drop` impl which calls `BZ2_bzCompressEnd()`. To make things
+simple this won't be a streaming compressor so we'll just compress everything
+from an input `Read`-er and write it to a `Write`-r. I wouldn't recommend
+trying to compress gigabyte-sized files, but it should work well enough.
 
 Error handling should be fairly easy, all `libbzip2` functions return an
-integer which corresponds to a error code, this should be fairly easy to map to
-a Rust enum and we'll add a `std::convert::From<i32>` impl for convenience (so
-you can call `error_code.into()` to automatically get the error enum).
+integer which corresponds to a error code, this should be fairly trivial to map 
+to a Rust enum and we'll add a `std::convert::From<i32>` impl for convenience 
+(so you can call `error_code.into()` to automatically get the error enum).
+
 Technically the `BZ2_bzCompressEnd()` destructor could fail if we pass in an
 invalid stream, but if that's the case then the worst that happens is we leak
-memory... So I'll just ignore errors in the `Drop` impl for now.
+memory. I'll just ignore errors in the `Drop` impl for now.
 
+First for the `Compressor` definition:
+
+```Rust
+pub struct Compressor {
+    stream: Box<ffi::bz_stream>,
+}
+```
+
+Next we'll write a `new()` method which creates a zeroed `bz_stream` and then
+initializes it with the `BZ2_bzCompressInit()` function. You'll notice that
+any return code other than `ffi::BZ_OK` is cast to i32 and converted to a 
+`Bzip2Error`.
+
+```Rust
+impl Compressor {
+    pub fn new() -> Result<Compressor, Bzip2Error> {
+        unsafe {
+            let mut comp = Compressor { stream: Box::new(mem::zeroed()) };
+            let result = ffi::BZ2_bzCompressInit(&mut *comp.stream,
+                                                 1, // 1 x 100000 block size
+                                                 0, // verbosity (4 = most verbose)
+                                                 0); // default work factor
+            match result as u32 {
+                ffi::BZ_OK => Ok(comp),
+                other => Err((other as i32).into()),
+            }
+        }
+    }
+```
+
+The `compress()` method is a bit more complicated, in it we have to:
+
+* Read all the input into a buffer
+* Create an output buffer of similar length
+* Set the corresponding properties on the `self.stream` struct so that
+    `libbzip2` knows where the buffers are and their sizes
+* Call the `ffi::BZ2_bzCompress()` function
+* Deal with the result by either:
+    * Writing the compressed output to the destination, or
+    * Returning the correct error
+
+```Rust
+    pub fn compress<R: Read, W: Write>(&mut self,
+                                       mut src: R,
+                                       mut dest: W)
+                                       -> Result<(), Bzip2Error> {
+        let mut input = vec![];
+        src.read_to_end(&mut input)?;
+        let mut compressed_output = vec![0; input.len()];
+
+        self.stream.next_in = input.as_ptr() as *mut _;
+        self.stream.avail_in = input.len() as _;
+        self.stream.next_out = compressed_output.as_mut_ptr() as *mut _;
+        self.stream.avail_out = compressed_output.len() as _;
+
+        unsafe {
+            let result = ffi::BZ2_bzCompress(&mut *self.stream, ffi::BZ_FINISH as _);
+            match result as u32 {
+                ffi::BZ_FINISH_OK |
+                ffi::BZ_RUN_OK |
+                ffi::BZ_FLUSH_OK |
+                ffi::BZ_STREAM_END => {
+                    dest.write_all(&mut compressed_output)
+                        .map(|_| ())
+                        .map_err(|e| e.into())
+                }
+                other => Err((other as i32).into()),
+            }
+        }
+    }
+}
+```
+
+> **Note:** This function definitely violates the *Single Responsibility
+> Principle* and should be refactored out into several functions, but for the
+> sake of this example I won't worry about it.
+
+Finally we need to write a `Drop` implementation to make sure everything is
+cleaned up correctly afterwards. This one is really simple.
+
+```Rust
+impl Drop for Compressor {
+    fn drop(&mut self) {
+        unsafe {
+            ffi::BZ2_bzCompressEnd(&mut *self.stream);
+        }
+    }
+}
+```
+
+> **Exercise for the reader:** Try to figure out a way to handle errors in the
+> destructor. What would happen when there's a panic further down the stack and 
+> this `drop()` fails when it's unrolling?
+
+To handle errors, I just made a simple enum which corresponds to either a
+`libbzip2` error constant or an `io::Error`. 
+
+```Rust
+#[derive(Debug)]
+pub enum Bzip2Error {
+    Config,
+    Params,
+    Memory,
+    InvalidSequence,
+    Io(Box<io::Error>),
+}
+
+impl From<i32> for Bzip2Error {
+    fn from(val: i32) -> Bzip2Error {
+        match val {
+            ffi::BZ_CONFIG_ERROR => Bzip2Error::Config,
+            ffi::BZ_PARAM_ERROR => Bzip2Error::Params,
+            ffi::BZ_MEM_ERROR => Bzip2Error::Memory,
+            ffi::BZ_SEQUENCE_ERROR => Bzip2Error::InvalidSequence,
+            unknown => panic!("Invalid error code: {}", unknown),
+        }
+    }
+}
+
+impl From<io::Error> for Bzip2Error {
+    fn from(val: io::Error) -> Bzip2Error {
+        Bzip2Error::Io(Box::new(val))
+    }
+}
+```
 
 
 [openssl]: https://github.com/sfackler/rust-openssl
