@@ -2,6 +2,7 @@ OPEN := xdg-open
 
 all: book intro arrays structs pythonic strings bindgen
 
+
 todo:
 	grep -r --colour=auto 'TODO\|FIXME' src/ 
 

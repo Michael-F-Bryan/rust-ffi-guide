@@ -1,6 +1,6 @@
 language: rust
 before_install:
-- cargo install mdbook || true
+- cargo install --force mdbook || true
 - sudo pip install --upgrade pip
 - sudo pip install ghp-import
 - export PATH="$PATH:~/.cargo/bin"
