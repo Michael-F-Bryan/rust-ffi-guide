@@ -28,7 +28,10 @@ pythonic:
 	cd src/pythonic/primes/ && cargo build
 
 bindgen:
-	cd src/bindgen/bzip2/ && cargo build
+	if [ -z "$(TRAVIS_BRANCH)" ]; then \
+		cd src/bindgen/bzip2/ && cargo build; \
+	fi
+
 
 clean:
 	rm -rf ./book/*
