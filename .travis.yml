@@ -4,6 +4,8 @@ before_script:
 - cargo install mdbook || true
 - sudo pip install --upgrade pip
 - sudo pip install ghp-import
+- sudo apt-get install -y clang-3.9
+- sudo apt-get install -y bzip2
 cache:
 - cargo
 - pip
