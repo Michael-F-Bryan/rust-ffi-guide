@@ -1,0 +1,10 @@
+[package]
+name = "bzip2"
+version = "0.1.0"
+authors = ["Michael-F-Bryan <michaelfbryan@gmail.com>"]
+build = "build.rs"
+
+[dependencies]
+
+[build-dependencies]
+bindgen = "0.20.0"

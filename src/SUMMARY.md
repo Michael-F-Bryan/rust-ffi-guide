@@ -5,5 +5,5 @@
 - [Sharing Structs](./structs/index.md)
 - [Strings](./strings/index.md)
 - [Making Rust Pythonic (OO)](./pythonic/index.md)
-- [Binding Generators](./bindgen/index.md)
+- [Generating Bindings and Writing Wrappers](./bindgen/index.md)
 - [Best Practices](./best_practices.md)

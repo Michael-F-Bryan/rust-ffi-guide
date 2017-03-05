@@ -1,3 +1,0 @@
-[submodule "src/bindgen/libtcod"]
-	path = src/bindgen/libtcod
-	url = ./src/bindgen/libtcod
