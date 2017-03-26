@@ -333,6 +333,8 @@ impl From<io::Error> for Bzip2Error {
 }
 ```
 
+(The full [lib.rs](./bindgen/bzip2/src/lib.rs))
+
 
 [openssl]: https://github.com/sfackler/rust-openssl
 [git]: https://github.com/alexcrichton/git2-rs

@@ -26,7 +26,7 @@ Some things I'm hoping to cover:
 * [How to use strings without leaking memory or segfaults](./strings/index.html) 
   (it's harder than you'd think)
 * Asynchronous operations, threading and callbacks
-* Bindgen
+* [Bindgen](./bindgen/index.html)
 * [Emulating methods and OO](./pythonic/index.html), and
 * [Other miscellaneous bits and pieces or best practices I've picked up along
   the way](./best_practices.html)
