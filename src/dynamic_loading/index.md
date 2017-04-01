@@ -99,16 +99,99 @@ Then you can finally call the imported function.
 Now compiling and running with cargo gives exactly what we'd expect:
 
 ```bash
-cargo run -- ../libadder.so
+$ cargo run -- ../libadder.so
     Finished dev [unoptimized + debuginfo] target(s) in 0.0 secs
      Running `target/debug/loading ../libadder.so`
 Loading add() from ../libadder.so
 1 + 2 = 3
 ```
 
-I've also uploaded the [main.rs] for those who want to see the full example.
+The entire [main.rs] looks like this:
+
+```rust
+extern crate libloading;
+
+use std::env;
+use libloading::{Library, Symbol};
+
+type AddFunc = fn(isize, isize) -> isize;
+
+fn main() {
+    let library_path = env::args().nth(1).expect("USAGE: loading <LIB>");
+    println!("Loading add() from {}", library_path);
+
+    let lib = Library::new(library_path).unwrap();
+
+    unsafe {
+        let func: Symbol<AddFunc> = lib.get(b"add").unwrap();
+
+        let answer = func(1, 2);
+        println!("1 + 2 = {}", answer);
+    }
+}
+```
+
+
+## Useful Applications
+
+Linking to a library dynamically at runtime (compared to compiling it in as a
+static lib or linking when an executable gets loaded into memory) gives the
+programmer a lot of flexibility because now users can provide their own library
+and as long as all the right symbols are present everything *just works*. This
+is great for something like a plugin system where users can compile their own
+plugins in whatever language they want, then have their plugins run alongside
+the rest of an application.
+
+If that doesn't really make much sense think of it like this; pretend you are
+making your own text editor and instead of inventing your own scripting
+language you want to allow people to write plugins in Rust. The plugin code may
+look something like this:
+
+```rust
+pub struct PluginRegistry {
+    ...
+}
+
+impl PluginRegistry {
+    pub fn load_plugin(&mut self, plugin_path: &Path) -> Result<(), Error> {
+        // load the library dynamically
+        // Find the `get_plugin()` function
+        // Call it
+        // Then save the plugin 
+    }
+}
+
+pub trait Plugin {
+    fn on_save(...);
+    fn on_select(...);
+    fn on_keypress(...);
+    ...
+}
+```
+
+Then you can say that any plugin library must export a function which will
+return a boxed object which implements the `Plugin` trait. For example:
+
+```rust
+#[no_mangle]
+pub extern fn get_plugin() -> Box<Plugin> {
+    ...
+}
+```
+
+> **Interesting Fact:** This is actually the exact same mechanism the Linux 
+> kernel uses so it can load and unload kernel modules without needing to
+> reboot.
+>
+> According to [The Linux Documentation Project][tldp]:
+>
+> > Kernel modules must have at least two functions: a "start" (initialization)
+> > function called `init_module()` which is called when the module is 
+> > insmoded into the kernel, and an "end" (cleanup) function called 
+> > `cleanup_module()` which is called just before it is rmmoded.
 
 
 [libloading]: https://crates.io/crates/libloading
 [adder]: https://crates.io/crates/libloading
 [main.rs]: ./dynamic_loading/loading/src/main.rs
+[tldp]: http://www.tldp.org/LDP/lkmpg/2.6/html/x121.html
