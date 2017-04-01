@@ -27,6 +27,7 @@ Some things I'm hoping to cover:
   (it's harder than you'd think)
 * Asynchronous operations, threading and callbacks
 * [Bindgen](./bindgen/index.html)
+* [Dynamic Loading](./dynamic_loading/index.html)
 * [Emulating methods and OO](./pythonic/index.html), and
 * [Other miscellaneous bits and pieces or best practices I've picked up along
   the way](./best_practices.html)

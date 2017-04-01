@@ -1,0 +1,7 @@
+[package]
+name = "loading"
+version = "0.1.0"
+authors = ["Michael-F-Bryan <michaelfbryan@gmail.com>"]
+
+[dependencies]
+libloading = "*"

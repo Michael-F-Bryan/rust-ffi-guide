@@ -1,6 +1,6 @@
 OPEN := xdg-open
 
-all: book intro arrays structs pythonic strings bindgen
+all: book intro arrays structs pythonic strings bindgen dynamic_loading
 
 
 todo:
@@ -21,12 +21,17 @@ arrays:
 strings:
 	$(MAKE) -C src/strings
 
+dynamic_loading:
+	$(MAKE) -C src/dynamic_loading
+
 structs:
 	cd src/structs/get_usage/ && cargo build
 
 pythonic:
 	cd src/pythonic/primes/ && cargo build
 
+# This requires a hack so that we don't try to build bindgen 
+# when being run by Travis
 bindgen:
 	if [ -z "$(TRAVIS_BRANCH)" ]; then \
 		cd src/bindgen/bzip2/ && cargo build; \
