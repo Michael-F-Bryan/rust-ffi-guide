@@ -10,6 +10,8 @@ before_script:
 cache:
 - cargo
 - pip
+before_cache:
+  - chmod -R a+r $HOME/.cargo
 script: make all
 after_success: |
   [ $TRAVIS_BRANCH = master ] &&

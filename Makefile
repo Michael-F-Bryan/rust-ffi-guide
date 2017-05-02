@@ -6,7 +6,7 @@ all: book intro arrays structs pythonic strings bindgen dynamic_loading
 todo:
 	grep -r --colour=auto 'TODO\|FIXME' src/ 
 
-open:book
+open: book
 	$(OPEN) file:///`pwd`/book/index.html
 
 book:
@@ -30,12 +30,8 @@ structs:
 pythonic:
 	cd src/pythonic/primes/ && cargo build
 
-# This requires a hack so that we don't try to build bindgen 
-# when being run by Travis
 bindgen:
-	if [ -z "$(TRAVIS_BRANCH)" ]; then \
-		cd src/bindgen/bzip2/ && cargo build; \
-	fi
+	cd src/bindgen/bzip2/ && cargo build
 
 
 clean:

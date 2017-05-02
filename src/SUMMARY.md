@@ -7,5 +7,6 @@
 - [Making Rust Pythonic (OO)](./pythonic/index.md)
 - [Generating Bindings and Writing Wrappers](./bindgen/index.md)
 - [Dynamic Loading](./dynamic_loading/index.md)
+- [Callbacks and Function Pointers](./callbacks/index.md)
 - [Best Practices](./best_practices.md)
     `
