@@ -30,8 +30,12 @@ structs:
 pythonic:
 	cd src/pythonic/primes/ && cargo build
 
+# This requires a hack so that we don't try to build bindgen 
+# when being run by Travis (it errors)
 bindgen:
-	cd src/bindgen/bzip2/ && cargo build
+	if [ -z "$(TRAVIS_BRANCH)" ]; then \
+		cd src/bindgen/bzip2/ && cargo build; \
+	fi
 
 
 clean:
