@@ -4,16 +4,16 @@
 Welcome to the Rust FFI Guide, i.e. **using unsafe for fun and profit**.
 
 > **Note:** I'm going to assume you're already familiar with the [Rust][rust]
-> language and have a relatively recent version of the compiler installed. If 
-> you're a little rusty, you might want to skim through [The Book][book] to 
+> language and have a relatively recent version of the compiler installed. If
+> you're a little rusty, you might want to skim through [The Book][book] to
 refresh your memory.
 >
-> You'll also need to know some basic C/C++ or Python, as I'll be largely using 
+> You'll also need to know some basic C/C++ or Python, as I'll be largely using
 > that in my examples.
 
 
 The main goal of this guide is to show how to interoperate between `Rust` and
-other languages with as few segfaults and uses of undefined behaviour as 
+other languages with as few segfaults and uses of undefined behaviour as
 possible.
 
 Some things I'm hoping to cover:
@@ -23,7 +23,7 @@ Some things I'm hoping to cover:
 * [Sharing basic structs between languages](./structs/index.html)
 * Proper error handling
 * Calling Rust from other (i.e. not C) languages
-* [How to use strings without leaking memory or segfaults](./strings/index.html) 
+* [How to use strings without leaking memory or segfaults](./strings/index.html)
   (it's harder than you'd think)
 * Asynchronous operations, threading and callbacks
 * [Bindgen](./bindgen/index.html)
@@ -41,18 +41,19 @@ Some things I'm hoping to cover:
 * [The Rust FFI Omnibus](http://jakegoulding.com/rust-ffi-omnibus/)
 * [Complex Types With Rust's FFI](https://medium.com/jim-fleming/complex-types-with-rust-s-ffi-315d14619479)
 * [FFI: Foreign Function Interfaces for Fun & Industry](https://spin.atomicobject.com/2013/02/15/ffi-foreign-function-interfaces/)
+* [Beginner-s Guide to Linkers](http://www.lurklurk.org/linkers/linkers.html)
 
 
 ## Hello World
 
 What would any programming guide be without the obligatory hello world example?
 
-> **Note:** For most of these examples I'll be using `C` to interoperate with 
-> my `Rust` code. It's pretty much the *lingua franca* of the programming world, 
-> so most people should be able to understand it what's happening and follow 
-> along. 
- 
-To start off with, we'll try to call a `C` program from `Rust`. Here's the 
+> **Note:** For most of these examples I'll be using `C` to interoperate with
+> my `Rust` code. It's pretty much the *lingua franca* of the programming world,
+> so most people should be able to understand it what's happening and follow
+> along.
+
+To start off with, we'll try to call a `C` program from `Rust`. Here's the
 contents of my [hello.c](./introduction/hello.c):
 
 ```c
@@ -84,34 +85,34 @@ fn main() {
 ```
 Our `say_hello()` function is expecting a pointer to a null-terminated string,
 and the easiest way to create one of those is with a [CString][cstring]. Notice
-that we told the compiler that we'll be using an external function called 
-`say_hello()`. The "C" bit indicates that it should use the "C" calling 
-convention, a calling convention specifies low level details like how 
-parameters are passed to a function, which registers the callee must preserve 
-for the caller, and other nitty gritty details you only really need to know if 
+that we told the compiler that we'll be using an external function called
+`say_hello()`. The "C" bit indicates that it should use the "C" calling
+convention, a calling convention specifies low level details like how
+parameters are passed to a function, which registers the callee must preserve
+for the caller, and other nitty gritty details you only really need to know if
 you're a compiler writer or assembly programmer.
 
-Almost all of what we're doing here sidesteps Rust's memory guarantees, so 
+Almost all of what we're doing here sidesteps Rust's memory guarantees, so
 expect to see a lot more `unsafe` blocks. In this case, the C function could do
-whatever it wants with our string, so you need to wrap the function call in 
+whatever it wants with our string, so you need to wrap the function call in
 `unsafe`.
 
 Next you'll need to compile the C code into a library which can be called by
 Rust. In this example I'm going to compile it into a `shared library`.
 
-> **Note:** If you aren't familiar with the difference between a `static` and 
-> `dynamic` library, or how you use them you might want to read 
+> **Note:** If you aren't familiar with the difference between a `static` and
+> `dynamic` library, or how you use them you might want to read
 > [this Stack Overflow question][static-vs-dynamic].
 
 ```bash
 $ clang -shared -fPIC -o libhello.so hello.c
 ```
 
-The `-shared` flag tells clang to compile as a dynamically linked library 
+The `-shared` flag tells clang to compile as a dynamically linked library
 (typically "\*.so" on Linux or "\*.dll" on Windows). You'll also need the `-fPIC`
-flag to tell the compiler to generate Position Independent Code so that the 
-generated machine code is not dependent on being located at a specific address 
-in order to work. This basically means when invoking a function it'll use 
+flag to tell the compiler to generate Position Independent Code so that the
+generated machine code is not dependent on being located at a specific address
+in order to work. This basically means when invoking a function it'll use
 relative jumps rather than absolute.
 
 Next up is compiling `main.rs`:
@@ -121,7 +122,7 @@ $ rustc -l hello -L . main.rs
 ```
 
 The `-l` flag tells `rustc` which library it'll need to link against so it can
-resolve symbols, and the `-L` flag adds the current directory to the list of 
+resolve symbols, and the `-L` flag adds the current directory to the list of
 places to search when finding the `hello` library.
 
 Finally we can actually run the program
@@ -130,16 +131,16 @@ Finally we can actually run the program
 $ LD_LIBRARY_PATH=. ./main
 ```
 
-> **Note:** When you try to run a program, what actually happens is the 
+> **Note:** When you try to run a program, what actually happens is the
 > [loader][loader] loads the binary into memory, then tries to find any symbols
-> belonging to shared libraries. Because `libhello.so` isn't in any of the 
+> belonging to shared libraries. Because `libhello.so` isn't in any of the
 > standard directories the loader usually searches, we have to explicitly tell
 > the loader where it is by overriding `LD_LIBRARY_PATH`.
 
 If we didn't override the `LD_LIBRARY_PATH` then you'd see an error something
 like this:
 
-```bash 
+```bash
 $ ./main
 ./main: error while loading shared libraries: libhello.so: cannot open shared object file: No such file or directory
 ```
