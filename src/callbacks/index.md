@@ -255,7 +255,9 @@ Intermediate Results: [1, 2, 6, 24, 120]
 Calculation was aborted early
 ```
 
+> **Note:** The full source code for this example is on [github][gh].
 
 [768]: http://c0x.coding-guidelines.com/6.3.2.3.html
 [main.rs]: ./callbacks/app/src/main.rs
 [gcc]: https://docs.rs/gcc/0.3.45/gcc/
+[gh]: https://github.com/Michael-F-Bryan/rust-ffi-guide/tree/master/src/callbacks/app

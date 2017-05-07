@@ -1,7 +1,7 @@
 OPEN := xdg-open
 
-all: book intro arrays structs pythonic strings bindgen dynamic_loading
 
+all: book intro arrays structs pythonic strings bindgen dynamic_loading callbacks
 
 todo:
 	grep -r --colour=auto 'TODO\|FIXME' src/ 
@@ -30,6 +30,9 @@ structs:
 pythonic:
 	cd src/pythonic/primes/ && cargo build
 
+callbacks:
+	cd src/callbacks/app/ && cargo run
+
 # This requires a hack so that we don't try to build bindgen 
 # when being run by Travis (it errors)
 bindgen:
@@ -45,8 +48,6 @@ clean:
 	cd src/structs/get_usage/ && cargo clean
 	cd src/pythonic/primes/ && cargo clean
 	cd src/bindgen/bzip2/ && cargo clean
-
-build: open
-	bash build.sh
+	cd src/callbacks/app/ && cargo clean
 
 .PHONY: clean build book todo
