@@ -3,6 +3,9 @@ OPEN := xdg-open
 
 all: book intro arrays structs pythonic strings bindgen dynamic_loading callbacks
 
+word_count:
+	@find -name '*.md' -print0 | wc --files0-from=-
+
 todo:
 	grep -r --colour=auto 'TODO\|FIXME' src/ 
 

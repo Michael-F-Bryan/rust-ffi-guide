@@ -25,7 +25,7 @@ Some things I'm hoping to cover:
 * Calling Rust from other (i.e. not C) languages
 * [How to use strings without leaking memory or segfaults](./strings/)
   (it's harder than you'd think)
-* Asynchronous operations, threading and callbacks
+* Asynchronous operations and threading
 * [Bindgen](./bindgen/)
 * [Dynamic Loading](./dynamic_loading/)
 * [Callbacks and Function Pointers](./callbacks/)
