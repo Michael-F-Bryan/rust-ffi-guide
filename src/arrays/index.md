@@ -1,23 +1,21 @@
-# Arrays 
+# Arrays
 
-Now that you've got the basics, lets try to do something a little more 
-interesting. We'll pass around some arrays.
+Now that you've got the basics, lets try to do something a little more
+interesting. Using arrays as function parameters.
 
-For a change, we'll be using Rust as a library (i.e. the "guest" language) and 
-C as the "host" language. If you're trying to augment a legacy code base with 
-safer code which is less prone to memory issues and security vulnerabilities, 
+For a change, we'll be using Rust as a library (i.e. the "guest" language) and
+C as the "host" language. If you're trying to augment a legacy code base with
+safer code which is less prone to memory issues and security vulnerabilities,
 this is something you might end up doing often.
 
 
-## Our Rust Library
+## The Rust Library
 
-This program is going to be fairly stock standard. We'll write a Rust function 
-which receives an array of integers and gives you back their average as a `f64`
-and put it in [averages.rs](./arrays/averages.rs).
+This program is going to be fairly stock standard. There will be a Rust function
+which receives an array of integers and returns their average as a `f64`
+([averages.rs](./arrays/averages.rs)).
 
 ```rust
-// averages.rs
-
 use std::slice;
 
 #[no_mangle]
@@ -31,41 +29,43 @@ pub extern "C" fn average(array: *const i64, length: i32) -> f64 {
 }
 ```
 
-The code itself is quite tame, and should be familiar to most rustaceans, but
-that `unsafe` line should have caught your attention. We're using 
-[slice::from_raw_parts()][from-raw-parts] to tell the compiler "here's a pointer
-to some an `i64` and a number of elements, can you just pretend it's an array 
-for me?". 
+Most of the code will be quite familiar, except for the
+[slice::from_raw_parts()][from-raw-parts]. This is a function which takes a
+C-style array (pointer to the first element and a length) and turns it into a
+Rust-style slice. Notably, the slice doesn't own the data it points to, so when
+`numbers` goes out of scope and gets dropped, the original array won't be
+affected.
 
-We needed to add the `extern "C"` bit to the function signature to indicate 
-that the function will be exported and should use the "C" calling convention. 
-The `#[no_mangle]` attribute tells the compiler to leave the function symbol as 
-it is instead of mangling it (check out [name mangling][mangling] for more 
+The `extern "C"` bit in the function signature is important because it tells
+`rustc` to generate a function which uses the `"C"` calling convention. `pub`
+is necessary to make sure the function is exported `pub`, and the
+`#[no_mangle]` attribute prevents the usual name mangling so the linker can
+find the symbol `average` (check out [name mangling][mangling] for more
 details).
 
-> **Note:** Notice that I used `slice::from_raw_parts()` here to get a slice 
-> instead of getting a `Vec` with `Vec::from_raw_parts()`. I'll leave it as an
-> exercise for the reader to figure out why (hint: who owns that chunk of 
-> memory?)
+There are several ways this innocent four-line `averages()` function could fail
+or violate memory safety, here are just a few:
 
-Obviously must be unsafe (hence the `unsafe` block), but what exactly could go
-wrong here? I'll try to list just a few ways you could end up having a bad 
-time.
-
-* The caller passes in a null pointer instead of a pointer to some valid array.  
+* The caller passes in a null pointer instead of a pointer to a valid array.
   this leads to a segfault the moment you try to iterate over it because you
   don't own the memory at address 0.
-* The caller passes in a length which is longer than the actual array that was 
-  allocated. When you do your iteration you then start reading into array you
+* The caller passes in a length which is longer than the actual array that was
+  allocated. When you do your iteration you then start reading into memory you
   don't own and either the OS will make you segfault (if you're lucky), or you
   read bytes from the next thing in memory.
-* The caller gives you a pointer to an array of floats (or bools, or structs, 
-  or whatever). `slice::from_raw_parts()` doesn't do any type checking, so it'll
-  happily let you read in garbage (assuming you don't segfault).
+* The caller gives you a pointer to an array of floats (or bools, or structs,
+  or some other type which **isn't** an `i64`). Because the linker's job is to
+  hook up symbols with their call sites it doesn't (and can't) verify the
+  function signatures are correct. If a user accidentally declares `averages`
+  to take an array of `char`s, `slice::from_raw_parts()` will calculate
+  incorrect offsets and memory bounds and you'll probably end up trying to read
+  memory you don't own.
 
+Issues like these are important to keep in mind when writing `unsafe` rust,
+although they are probably quite familiar for people who've written C/C++ code
+before.
 
-Now that we have a better idea of what *could* go wrong, lets compile this baby.
-Just for fun, lets make this example statically compiled.
+Without further ado, lets compile the library.
 
 ```bash
 $ rustc --crate-type staticlib -o libaverages.a averages.rs
@@ -83,19 +83,16 @@ note: library: rt
 note: library: util
 ```
 
-Woah, what happened there?! What are all these extra notes about?
-
-It turns out that because we're wanting to compile everything into one 
-executable, dependencies and all, we'll also need to link in a bunch of other 
-stuff. If you don't really understand what I'm talking about, its okay, you'll
-see what I mean a bit later.
+As well as compiling `averages.rs` into a static library, `rustc` has also
+emitted some helpful notes which we'll need when linking the library into one
+executable.
 
 
 ## The C Program
 
 Using our Rust library is actually fairly easy to do in C. You just declare it
 like you would when calling any other C library, then pass in the appropriate
-parameters. Here is the contents of my [main.c](./arrays/main.c):
+parameters. Here is the contents of [main.c](./arrays/main.c):
 
 ```c
 // main.c
@@ -120,7 +117,7 @@ int main() {
 And now let's compile everything.
 
 ```bash
-$ clang main.c libaverages.a
+$ gcc main.c libaverages.a
 libaverages.a(std-9a66b6a343d52844.0.o): In function `std::sys::imp::mutex::{{impl}}::init':
 /checkout/src/libstd/sys/unix/mutex.rs:56: undefined reference to `pthread_mutexattr_init'
 /checkout/src/libstd/sys/unix/mutex.rs:58: undefined reference to `pthread_mutexattr_settype'
@@ -132,12 +129,12 @@ libaverages.a(std-9a66b6a343d52844.0.o): In function `std::sys::imp::mutex::{{im
 clang: error: linker command failed with exit code 1 (use -v to see invocation)
 ```
 
-Oops! When clang tried to compile our `libaverages.a` library and `main.c` into 
-one executable it wasn't able to find a bunch of symbols. 
+Oops! When clang tried to compile our `libaverages.a` library and `main.c` into
+one executable it wasn't able to find a bunch of symbols.
 
-Remember those notes from earlier? That's what `rustc` was trying to warn us 
-about. When you compile everything statically you need to include **all** your 
-dependencies. You didn't have this issue when dynamically linking because the 
+Remember those notes from earlier? That's what `rustc` was trying to warn us
+about. When you compile everything statically you need to include **all** your
+dependencies. You didn't have this issue when dynamically linking because the
 loader finds everything for you.
 
 Okay, lets try again...
@@ -153,15 +150,15 @@ $ clang -l dl \
     -o main \
     main.c \
     libaverages.a
-$ ls 
-main  averages.rs  libaverages.a  main.c  
+$ ls
+main  averages.rs  libaverages.a  main.c
 $ ./main
 The average is 123.500000
 ```
 
-Looks like it's finally working, but passing in all those `-l` arguments to 
+Looks like it's finally working, but passing in all those `-l` arguments to
 keep the linker happy was hard work! You can see why people came up with tools
-like `make` to help them build everything. 
+like `make` to help them build everything.
 
 Luckily in Rust, we can do one better...
 
