@@ -6,5 +6,5 @@ else
   cargo install mdbook
 fi
 
-pip install ghp-import
+pip install --user ghp-import
 sudo apt-get install -y clang bzip2
