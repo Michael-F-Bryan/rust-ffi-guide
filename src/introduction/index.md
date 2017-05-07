@@ -18,26 +18,29 @@ possible.
 
 Some things I'm hoping to cover:
 
-* [Compiling and linking from the command line](./introduction/index.html#Hello-World)
-* [Using arrays](./arrays/index.html)
-* [Sharing basic structs between languages](./structs/index.html)
+* [Compiling and linking from the command line](#Hello-World)
+* [Using arrays](./arrays/)
+* [Sharing basic structs between languages](./structs/)
 * Proper error handling
 * Calling Rust from other (i.e. not C) languages
-* [How to use strings without leaking memory or segfaults](./strings/index.html)
+* [How to use strings without leaking memory or segfaults](./strings/)
   (it's harder than you'd think)
 * Asynchronous operations, threading and callbacks
-* [Bindgen](./bindgen/index.html)
-* [Dynamic Loading](./dynamic_loading/index.html)
-* [Emulating methods and OO](./pythonic/index.html), and
+* [Bindgen](./bindgen/)
+* [Dynamic Loading](./dynamic_loading/)
+* [Callbacks and Function Pointers](./callbacks/)
+* [Emulating methods and OO](./pythonic/), and
 * [Other miscellaneous bits and pieces or best practices I've picked up along
   the way](./best_practices.html)
 
 
 ## Some Useful Links:
 
-* [This Guide](https://michael-f-bryan.github.io/rust-ffi-guide/)
+* [This Guide (rendered)](https://michael-f-bryan.github.io/rust-ffi-guide/)
 * [The GitHub Repo](https://github.com/Michael-F-Bryan/rust-ffi-guide)
-* [FFI Page from *The Book*](https://doc.rust-lang.org/book/ffi.html)
+* Pages from *The Book*
+    - [FFI Page](https://doc.rust-lang.org/book/ffi.html)
+    - [Raw Pointers page](https://doc.rust-lang.org/book/raw-pointers.html)
 * [The Rust FFI Omnibus](http://jakegoulding.com/rust-ffi-omnibus/)
 * [Complex Types With Rust's FFI](https://medium.com/jim-fleming/complex-types-with-rust-s-ffi-315d14619479)
 * [FFI: Foreign Function Interfaces for Fun & Industry](https://spin.atomicobject.com/2013/02/15/ffi-foreign-function-interfaces/)
