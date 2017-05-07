@@ -52,12 +52,11 @@ Some things I'm hoping to cover:
 What would any programming guide be without the obligatory hello world example?
 
 > **Note:** For most of these examples I'll be using `C` to interoperate with
-> my `Rust` code. It's pretty much the *lingua franca* of the programming world,
-> so most people should be able to understand it what's happening and follow
-> along.
+> my `Rust` code because it's often the lowest common denominator and *lingua
+> franca* of the programming world.
 
 To start off with, we'll try to call a `C` program from `Rust`. Here's the
-contents of my [hello.c](./introduction/hello.c):
+contents of [hello.c](./introduction/hello.c):
 
 ```c
 #include <stdio.h>
@@ -67,7 +66,7 @@ void say_hello(char *name) {
 }
 ```
 
-And here's the `Rust` code which will be using it ([main.rs](./introduction/main.rs)):
+And some `Rust` code which calls it ([main.rs](./introduction/main.rs)):
 
 ```rust
 use std::ffi::CString;
@@ -86,37 +85,40 @@ fn main() {
     }
 }
 ```
-Our `say_hello()` function is expecting a pointer to a null-terminated string,
+The `say_hello()` function is expecting a pointer to a null-terminated string,
 and the easiest way to create one of those is with a [CString][cstring]. Notice
 that we told the compiler that we'll be using an external function called
 `say_hello()`. The "C" bit indicates that it should use the "C" calling
-convention, a calling convention specifies low level details like how
-parameters are passed to a function, which registers the callee must preserve
-for the caller, and other nitty gritty details you only really need to know if
-you're a compiler writer or assembly programmer.
+convention,
 
-Almost all of what we're doing here sidesteps Rust's memory guarantees, so
-expect to see a lot more `unsafe` blocks. In this case, the C function could do
-whatever it wants with our string, so you need to wrap the function call in
-`unsafe`.
+> **Note:** a *calling convention* specifies low level details like how
+> arguments are passed around, which registers the callee must preserve
+> for the caller, and the other nitty gritty details needed to call the
+> function.
+
+Calling foreign functions sidesteps all Rust's memory guarantees, so expect to
+see a lot more `unsafe` blocks. This isn't necessarily a bad thing in itself,
+it just means you need to pay a little extra attention to how memory is
+handled.
 
 Next you'll need to compile the C code into a library which can be called by
-Rust. In this example I'm going to compile it into a `shared library`.
+Rust. In this example I'm going to compile it into a `shared library` where the
+external `say_hello` symbol will be resolved at *load time*.
 
 > **Note:** If you aren't familiar with the difference between a `static` and
 > `dynamic` library, or how you use them you might want to read
 > [this Stack Overflow question][static-vs-dynamic].
 
 ```bash
-$ clang -shared -fPIC -o libhello.so hello.c
+$ gcc -shared -fPIC -o libhello.so hello.c
 ```
 
 The `-shared` flag tells clang to compile as a dynamically linked library
-(typically "\*.so" on Linux or "\*.dll" on Windows). You'll also need the `-fPIC`
-flag to tell the compiler to generate Position Independent Code so that the
-generated machine code is not dependent on being located at a specific address
-in order to work. This basically means when invoking a function it'll use
-relative jumps rather than absolute.
+(typically "\*.so" on Linux or "\*.dll" on Windows). You'll also need the
+`-fPIC` flag to tell the compiler to generate [*Position Independent
+Code*][pic]. This is fairly common when creating shared libraries because it
+means the same library code can be loaded in a location in each program
+address space where it will not overlap any other uses of memory.
 
 Next up is compiling `main.rs`:
 
@@ -128,7 +130,7 @@ The `-l` flag tells `rustc` which library it'll need to link against so it can
 resolve symbols, and the `-L` flag adds the current directory to the list of
 places to search when finding the `hello` library.
 
-Finally we can actually run the program
+Finally we can actually run the program:
 
 ```bash
 $ LD_LIBRARY_PATH=. ./main
@@ -156,3 +158,4 @@ There are much more elegant solutions than this, but it'll suffice for now.
 [loader]: https://en.wikipedia.org/wiki/Loader_(computing)
 [static-vs-dynamic]: http://stackoverflow.com/questions/2649334/difference-between-static-and-shared-libraries
 [cstring]: https://doc.rust-lang.org/nightly/std/ffi/struct.CString.html
+[pic]: https://en.wikipedia.org/wiki/Position-independent_code
