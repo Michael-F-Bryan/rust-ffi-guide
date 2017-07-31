@@ -258,7 +258,133 @@ Calculation was aborted early
 
 > **Note:** The full source code for this example is on [github][gh].
 
+
+## A Note On Exception Safety
+
+The [Nomicon] mentions that unwinding across a FFI boundary is undefined 
+behaviour, so the possibility of a panic **must** be dealt with.
+
+> Rust's unwinding strategy is not specified to be fundamentally compatible
+> with any other language's unwinding. As such, unwinding into Rust from
+> another language, or unwinding into another language from Rust is Undefined
+> Behavior. You must absolutely catch any panics at the FFI boundary! What you
+> do at that point is up to you, but something must be done. If you fail to do
+> this, at best, your application will crash and burn. At worst, your
+> application won't crash and burn, and will proceed with completely clobbered
+> state.
+
+The way you deal with this is by making sure to wrap anything which *may* panic 
+in [`std::panic::catch_unwind()`].
+
+For example, here is a function which will try to get the 10,000'th element 
+from a byte buffer. To see why it's important to never unwind across the FFI 
+boundary let's deliberately do something that will panic (in this case, we'll
+try to access an index out of bounds).
+
+
+```rust
+use std::slice;
+
+#[no_mangle]
+pub unsafe extern "C" fn get_item_10000(buffer: *const u8, len: usize) -> u8 {
+    let data = slice::from_raw_parts(buffer, len);
+    data[10000]
+}
+```
+
+Now lets call it from the following `main.c`:
+
+
+```c
+#include <stddef.h>
+
+char get_item_10000(char *buffer, size_t len);
+
+int main() {
+  char buffer[50] = {};
+  char got = get_item_10000(buffer, 50);
+}
+```
+
+The compile and run:
+
+```bash
+$ rustc --crate-type cdylib foo.rs -g
+$ clang main.c -L. -lfoo -g
+$ LD_LIBRARY_PATH=. ./a.out
+thread '<unnamed>' panicked at 'index out of bounds: the len is 50 but the index is 10000', foo.rs:6:5
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+fatal runtime error: failed to initiate panic, error 5
+[1]    10624 abort (core dumped)  LD_LIBRARY_PATH=. ./a.out
+$ echo $?
+134
+```
+
+You can see that the program aborted and gave us a coredump. In this case it
+looks like the unwinder started unwinding and then encountered `main`'s stack
+frame, realised it's not Rust, then aborted the process because the program's
+state is obviously FUBAR. That said, none of this behaviour is actually 
+specified, and for more complex cases attempting to unwind across a FFI 
+boundary will almost certainly corrupt your program state.
+
+> **Note:** preventing unwinding from crossing the FFI boundary isn't a 
+> Rust-specific problem. It's relevant to pretty much any language where you
+> unwind the stack or run destructors in the case of errors (e.g. C++, Go, D,
+> Julia, Java).
+
+Almost all Rust code can panic at some point, whether it's due to index errors,
+calling `unwrap()` or integer overflowing (which panics on debug builds and 
+wraps on release). Therefore it is important to make sure these panics can 
+never leak into any calling C code.
+
+The proper way to do this is by wrapping the call in 
+[`std::panic::catch_unwind()`]. This executes a closure and either returns its
+result or a `Box<Any + Send + 'static>` (which represents the contents of a
+`panic!()` call).
+
+```rust
+use std::panic;
+
+#[no_mangle]
+pub unsafe extern "C" fn safe_get_item_10000(buffer: *const u8, len: usize) -> u8 {
+    panic::catch_unwind(|| get_item_10000(buffer, len)).unwrap_or(0)
+}
+```
+
+Now we adjust [`main.c`] to use the `safe_get_item_10000()`:
+
+```c
+#include <stddef.h>
+
+char get_item_10000(char *buffer, size_t len);
+char safe_get_item_10000(char *buffer, size_t len);
+
+int main() {
+  char buffer[50] = {};
+  char got = safe_get_item_10000(buffer, 50);
+}
+```
+
+Then compile and run:
+
+```bash
+$ clang main.c -L. -lfoo 
+$ LD_LIBRARY_PATH=. ./main
+thread '<unnamed>' panicked at 'index out of bounds: the len is 50 but the index is 10000', foo.rs:7:5
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+$ echo $?
+0
+```
+
+You'll notice that this time the program exited correctly and had a return 
+code of `0`. This means our Rust program caught the unwinding and returned 
+a "safe" default to the caller.
+
+
 [768]: http://c0x.coding-guidelines.com/6.3.2.3.html
 [main.rs]: ./callbacks/app/src/main.rs
 [gcc]: https://docs.rs/gcc/0.3.45/gcc/
 [gh]: https://github.com/Michael-F-Bryan/rust-ffi-guide/tree/master/src/callbacks/app
+[Nomicon]: https://doc.rust-lang.org/nomicon/unwinding.html
+[`std::panic::catch_unwind()`]: https://doc.rust-lang.org/stable/std/panic/fn.catch_unwind.html
+[`main.c`]: ./callbacks/main.c
