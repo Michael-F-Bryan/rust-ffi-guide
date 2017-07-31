@@ -7,4 +7,3 @@ else
 fi
 
 pip install --user ghp-import
-sudo apt-get install -y clang bzip2

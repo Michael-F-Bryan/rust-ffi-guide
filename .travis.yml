@@ -1,7 +1,11 @@
 language: rust
-sudo: required
 install:
   - ci/install.sh
+addons:
+    apt: 
+      packages: 
+      - clang
+      - bzip2
 cache:
 - cargo
 - pip

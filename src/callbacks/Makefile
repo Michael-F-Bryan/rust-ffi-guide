@@ -1,3 +1,5 @@
+CC := clang
+
 
 all: app main
 
