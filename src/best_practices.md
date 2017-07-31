@@ -178,9 +178,15 @@ progress every now and then so you know it's still alive.
 That said, unless you have very good reasons not to, your callback signatures 
 should be simple, shallow, and well-documented. Anything more complex than 
 something which takes an event type (enum) and a numerical argument, *possibly*
-also returning a bool to indicate whether to continue is a code smell.
+also returning a bool to indicate whether to continue is probably a code smell.
 
 i.e. `type progress_callback = fn(e: EventType, arg: f64) -> bool`
+
+The callback should also allow the callback to be stateful by accepting a 
+`void *` pointer when being set, then calling the callback with the `void *` 
+as the first argument. This allows people to use methods (where the `void *` 
+pointer corresponds to `this` or `self`) and closures without requiring globals
+to communicate with the outside world.
 
 
 

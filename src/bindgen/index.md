@@ -4,27 +4,26 @@ A lot of the time you'll have a large amount of existing C (or C++, but more of
 that later) code which you need to integrate your Rust tools into, a great 
 example of this is [OpenSSl][openssl] or [git][git]. Unless the C code is 
 fairly small or trivial it's not going to be feasible to port to Rust, plus
-why re-invent the wheel when you could be doing more interesting stuff?
+why re-invent the wheel?
 
 Luckily with Rust you can have your cake and eat it too. As you'll already know
 Rust can transparently call C functions as long as you have declarations for
-them so the compiler knows what symbols to use. Enter [bindgen][bindgen].
+them (so the compiler knows what symbols to use). Enter [bindgen][bindgen].
 
 Bindgen does all the hard work of parsing C-style header files and generating 
 the equivalent Rust function definitions. They've also got a 
-[great tutorial][tut] for getting started so I'm not going to bother 
-reiterating the basics. Instead, we'll try to focus on the more high level 
-stuff which comes with using a C library from Rust, seeing as the zero cost
-abstractions and high level way of approaching things is probably why you're 
-trying to do this FFI stuff in the first place!
+[great tutorial][tut] for getting started. We'll try to focus on the more high 
+level stuff which comes with using a C library from Rust, seeing as the zero 
+cost abstractions and high level way of thingking is probably why you're trying 
+use Rust in a C/C++ codebase in the first place!
 
 
 ## Getting Set Up
 
-We'll be building on top of the [great tutorial][tut] I linked earlier to write
-an idiomatic Rust wrapper around `bzip2`. I'll assume you've already read
-through that tutorial and focus more on the next step, writing the actual
-wrapper code and using common Rust patterns.
+We'll be building on top of the [great tutorial][tut] linked earlier to write
+an idiomatic Rust wrapper around `bzip2`. This assumes you've already read
+through that tutorial and will focus more on the next step, writing the actual
+wrapper code using common Rust patterns.
 
 First we'll create a new crate:
 
@@ -103,7 +102,7 @@ $ find -name "bindings.rs"
 ./target/debug/build/bzip2-cd18fea72e03763e/out/bindings.rs
 ```
 
-And here are a couple excerpts from that file:
+And a couple excerpts from that file:
 
 ```Rust
 // selected output from ./target/debug/build/bzip2-cd18fea72e03763e/out/bindings.rs
@@ -147,35 +146,35 @@ pub struct _bindgen_ty_1 {
 pub type bz_stream = _bindgen_ty_1;
 ```
 
-I usually like to put my FFI bindings in their own sub-module, we can now
+A common pattern is to put all FFI bindings in their own sub-module, we can now
 replace the contents of `lib.rs` and recompile.
 
 ```Rust
+// lib.rs
+#[allow(non_upper_case_globals)]
+#[allow(non_camel_case_types)]
+#[allow(non_snake_case)]
 pub mod ffi {
-    #![allow(non_upper_case_globals)]
-    #![allow(non_camel_case_types)]
-    #![allow(non_snake_case)]
-
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
 ```
 
-> **Note:** You'll notice I made the `ffi` module public. I've done this during
-> the development stage so we can easily view the FFI bindings using 
-> `cargo doc --open`. We'll make it private later on so users are forced to go
-> through our Rust-ic API.
+> **Note:** You'll notice the `ffi` module is public. This can be done just during
+> the development stage to take advantage of docs `rustdoc` generates via
+> `cargo doc --open`. It can be made private later on so users are forced to go
+> through the proper Rust API.
 
 
 ## Creating The Rust Wrapper
 
 Now that we've got a basic crate and know our build system works (i.e.
-`bindgen` is creating our bindings, and we can get started on wrapping the
+`bindgen` is creating our bindings), we can get started on wrapping the
 `bzip2` library and giving it a safe API.
 
 The best way to figure out how our wrapper API should look is to find existing
 code and (roughly) copy that. Luckily `libbzip2` documents its low level
 interface [on their website][libbzip2] and they explain how each of the
-functions work. According to the docs, this is roughly how you'd compress some
+functions work. Here's a snippet from their docs explaining how to compress some
 data:
 
 > That still looks complicated? Well, fair enough. The usual sequence of 
@@ -191,21 +190,21 @@ data:
 >
 > Close up and go home. Call `BZ2_bzCompressEnd()`.
 
-From this, my thinking is that you'll want some `Compressor` object which
-contains the `bz_stream`. We'll run `BZ2_bzCompressInit()` in the constructor
-and write a `Drop` impl which calls `BZ2_bzCompressEnd()`. To make things
+From this, one way of doing things is to have some `Compressor` object which
+contains the `bz_stream`. It'll run `BZ2_bzCompressInit()` in the constructor
+and have a `Drop` impl which calls `BZ2_bzCompressEnd()`. To make things
 simple this won't be a streaming compressor so we'll just compress everything
-from an input `Read`-er and write it to a `Write`-r. I wouldn't recommend
-trying to compress gigabyte-sized files, but it should work well enough.
+from an input `Read`-er and write it to a `Write`-r. This isn't recommended
+for compressing gigabyte-sized files, but it should work well enough.
 
 Error handling should be fairly easy, all `libbzip2` functions return an
-integer which corresponds to a error code, this should be fairly trivial to map 
-to a Rust enum and we'll add a `std::convert::From<i32>` impl for convenience 
-(so you can call `error_code.into()` to automatically get the error enum).
+integer which corresponds to a error code, this can be mapped to a Rust enum 
+with a `std::convert::From<i32>` impl for convenience (so you can call 
+`error_code.into()` to automatically get the error enum).
 
-Technically the `BZ2_bzCompressEnd()` destructor could fail if we pass in an
-invalid stream, but if that's the case then the worst that happens is we leak
-memory. I'll just ignore errors in the `Drop` impl for now.
+Technically the `BZ2_bzCompressEnd()` destructor could fail if it is passed an
+invalid stream, but there isn't much you can do in that situation, so any 
+errors in destroying the stream will be ignored.
 
 First for the `Compressor` definition:
 
@@ -301,8 +300,8 @@ impl Drop for Compressor {
 > destructor. What would happen when there's a panic further down the stack and 
 > this `drop()` fails when it's unrolling?
 
-To handle errors, I just made a simple enum which corresponds to either a
-`libbzip2` error constant or an `io::Error`. 
+To handle errors, made an enum which corresponds to either a `libbzip2` error 
+constant or an `io::Error`. 
 
 ```Rust
 #[derive(Debug)]

@@ -35,6 +35,7 @@ pythonic:
 
 callbacks:
 	cd src/callbacks/app/ && cargo run
+	$(MAKE) -C src/callbacks
 
 # This requires a hack so that we don't try to build bindgen 
 # when being run by Travis (it errors)
@@ -51,6 +52,7 @@ clean:
 	cd src/structs/get_usage/ && cargo clean
 	cd src/pythonic/primes/ && cargo clean
 	cd src/bindgen/bzip2/ && cargo clean
-	cd src/callbacks/app/ && cargo clean
+	cd src/callbacks/app/ && cargo clean 
+	$(MAKE) -C src/callbacks clean
 
 .PHONY: clean build book todo
