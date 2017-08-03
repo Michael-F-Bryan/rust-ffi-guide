@@ -50,7 +50,7 @@ First, lets make a `typedef` for the callback function.
 type Callback = unsafe extern "C" fn(c_int) -> c_int;
 ```
 
-Next, we'll need to tell the compiler that there's some external function,
+Next, the compiler needs to be told that there's some external function,
 `expensive_calculation()`, which will be linked in later on.
 
 ```rust
@@ -59,7 +59,7 @@ extern "C" {
 }
 ```
 
-Now that all the boilerplate is out of the way, we can actually define our
+Now that all the boilerplate is out of the way, onto actually defining our
 progress checking callback. This is just a function which prints the
 intermediate result to the screen and will tell the calculation to halt if it
 is too big.
@@ -89,7 +89,7 @@ pub fn main() {
 }
 ```
 
-To help make sure the C function is compiled in with the rest of our Rust app,
+To help make sure the C function is compiled in with the rest of this Rust app,
 you'll probably want to use the amazing [`gcc-rs`][gcc] crate and a build
 script.
 
