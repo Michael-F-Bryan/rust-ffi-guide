@@ -127,8 +127,9 @@ A very common example of this is event handlers in GUI applications. These are
 usually methods on an object, allowing the object to "remember" every time the
 callback is called.
 
-Because there are no such thing as object methods in C, we'll need to emulate
-them with a function that takes a pointer to its state as its first argument.
+Because there are no such things as object methods in C, emulating them
+is required. This'll be a function that takes a pointer to its state as its
+first argument.
 
 ```C
 typedef int (*stateful_callback)(void *state, int intermediate_result);
