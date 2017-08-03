@@ -115,7 +115,7 @@ for conveying what you're doing.
 
 ## Wrapping It With Python
 
-I'll be using the [cffi][cffi] library for the calling our exported functions 
+The [cffi][cffi] library will be used for calling our exported functions 
 from Python, it's a lot less verbose than [ctypes][ctypes] (from the standard
 library), and if you have a header file handy then you essentially get FFI 
 bindings for free. It also manages a lot of the low level coersion between 
