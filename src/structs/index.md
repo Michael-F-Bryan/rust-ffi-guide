@@ -5,26 +5,26 @@ languages. As long as you tell the Rust compiler to lay out structs "how C does
 it" (with `#[repr(C)]`) and have the right type declarations, everything *Just 
 Works™*. It's all bytes at the end of the day, anyway.
 
-Remember how I mentioned earlier that there's an easier way to compile and link
-everything? Well there is, it's called [gcc-rs][gcc-rs]. All you need to do is 
+What if there was an easy way to compile and link everything?
+Well, there is! It's called [gcc-rs][gcc-rs]. All you need to do is 
 point it at your C source code and it'll do all the hard parts like compiling
 to a static library and then providing the correct linker args to rustc.
 
 
 ## Getting Resource Usage
 
-For this example we'll be asking the kernel how many resources the current 
-process is using, and to make this a lot easier to do in a platform dependent 
-(-ish) manner, we'll write a small C shim that passes just the information we
+This example will be asking the kernel how many resources the current proccess
+is using, and to make this a lot easier to do in a platform dependent 
+(-ish) manner, a small C shim will be used that passes just the information we
 care about back to Rust.
 
-The function in particular I'd like to use is [getrusage()][getrusage], which 
+The function in particular is called [getrusage()][getrusage], which 
 is part of the GNU `libc`.
 
 > **Note:** this example will be, quite obviously, Linux-specific. If you're on
 > Mac or Windows you might want to look for some other function which returns
-> a struct and play around with that. To be honest, I'm only using `getrusage()`
-> because it was the first thing to pop up when I searched Google.
+> a struct and play around with that. To be honest, `getrusage()` is only used
+> because it was the first thing to pop up on Google at the time.
 >
 > [This function][msdn] looks like the Windows equivalent, and the output struct
 > is even simpler than the Linux one because there's no nesting. Just `#include` 
@@ -85,12 +85,12 @@ DESCRIPTION
 ```
 
 Obviously the `rusage` struct contains loads of juicy information about a 
-process, but we only need a small subset of this so to make things easier we'll 
-write a C library which calls `getrusage()` for us and only gives us the info we
-want. In this case, all I care about is the resident memory, unshared stack size
-and amount of time spent in user mode.
+process, but only a small subset is needed, so to make things easier, a C
+library which calls `getrusage()` can be written that only gives us the
+info desired. In this case, only the resident memory, unshared stack size,
+and amount of time spent in user mode is needed.
 
-Here's the C shim I came up with:
+Here's the C shim example:
 
 ```c
 #include <sys/time.h>
@@ -119,7 +119,7 @@ int get_usage_stats(stats *output) {
 
 ## The Main Rust Program
 
-Now we get to do the fun stuff, actually using this C shim of ours.
+Now onto the fun stuff, actually using this C shim.
 
 First you'll want to create a new crate:
 
@@ -127,7 +127,7 @@ First you'll want to create a new crate:
 $ cargo new --bin get_usage
 ```
 
-Make sure the C shim is in your `src/` directory. I put it at 
+Make sure the C shim is in your `src/` directory. For example
 [./get_usage/src/usage.c](./structs/get_usage/src/usage.c).
 
 Next you'll want to declare the C shim and custom structs in 
@@ -170,13 +170,13 @@ fn main() {
 }
 ```
 
-You'll see that I'm importing the [libc][libc] crate to help make sure the
+You'll see that the [libc][libc] crate is used to help make sure the
 basic integer types (e.g. `c_long` and `time_t`) match up. You'll want to use
 this crate a lot to avoid issues like a pointer being either 32 or 64-bits and
 other quirks.
 
-They also have a definition of `timeval` too, but I felt like declaring my own 
-because it's just a struct with a pair of `i64`s (for my platform anyway). As 
+They also have a definition of `timeval` too, but feel free to declare your own 
+because it's just a struct with a pair of `i64`s (at least on linux). As 
 long as the integer types and sizes match up C won't care, bytes are bytes.
 
 > **Note:** The big thing to take away here is that as long as your struct is 
@@ -196,9 +196,9 @@ long as the integer types and sizes match up C won't care, bytes are bytes.
 > }
 > ```
 >
-> I feel like you could use some macro magic to emulate C-style unions using
-> getters/setters and a healthy dose of `transmute()`. But I'll leave that as 
-> an exercise for the reader.
+> you may be able to use some macro magic to emulate C-style unions using
+> getters/setters and a healthy dose of `transmute()`. But that can be an
+> exercise for you.
 
 Now to roll this all together there's just one more step. A build script. 
 
@@ -229,7 +229,7 @@ libc = "*"
 gcc = "*"
 ```
 
-And now we can finally run this thing.
+And now with the ability to finally run this thing.
 
 ```bash
 $ cargo run

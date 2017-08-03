@@ -59,8 +59,8 @@ pub unsafe extern "C" foo_create() -> *mut Foo {
 
 Likewise, you must document all assumptions. If a function consumes the 
 resource being pointed to by a pointer then you should state that. For 
-example you might try to add some `Point` object to the `Foo` object we created
-earlier.
+example you might try to add some `Point` object to the `Foo` object just
+created.
 
 
 ```rust
@@ -78,15 +78,13 @@ pub unsafe extern "C" foo_add_point(foo: *mut Foo, point: *mut Point) {
 }
 ```
 
-Notice how I added an explicit `Safety` section to the doc comment? You can use
+Did you notice the explicit `Safety` section in the doc comment? You can use
 these to explicitly bring ownership and memory safety assumptions to the user's
 attention. other common section names you might want to use liberally are 
 `Errors` and `Examples`.
 
-I don't know about you, but I wouldn't be too happy with the library
-author if I had to manually discover this after spending a couple hours with in 
-debugger trying to figure out why a particular part of my program segfaults, 
-when all that could have been avoided with an extra line of documentation.
+Instead of users spending hours debugging a segfault in their program, 
+the documentation aids in finding the source of the problem.
 
 You should also make sure your documentation is easily accessible. If your crate
 is published on `crates.io` then it's automatically documented on `docs.rs`, 
@@ -138,9 +136,9 @@ This is usually the callee's responsibility because they will often be writing
 an idiomatic wrapper around the raw FFI calls to add a layer of safety and 
 ergonomics.
 
-In one of the projects I did at work I'd hack on my Rust library, using the 
-built in `cargo test` to ensure functionality worked. Then I also distributed 
-bindings for that library in the main language and alongside those bindings was
+In one of the projects done at work, a Rust library was hacked together. The 
+built in `cargo test` was used to ensure functionality worked. Then bindings for 
+the library were distributed in the main language and alongside those bindings was
 a test suite which exercised them. This helped to ensure correctness and to 
 find any bugs which might result in memory issues.
 

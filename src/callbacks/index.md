@@ -50,7 +50,7 @@ First, lets make a `typedef` for the callback function.
 type Callback = unsafe extern "C" fn(c_int) -> c_int;
 ```
 
-Next, we'll need to tell the compiler that there's some external function,
+Next, the compiler needs to be told that there's some external function,
 `expensive_calculation()`, which will be linked in later on.
 
 ```rust
@@ -59,7 +59,7 @@ extern "C" {
 }
 ```
 
-Now that all the boilerplate is out of the way, we can actually define our
+Now that all the boilerplate is out of the way, onto actually defining our
 progress checking callback. This is just a function which prints the
 intermediate result to the screen and will tell the calculation to halt if it
 is too big.
@@ -89,7 +89,7 @@ pub fn main() {
 }
 ```
 
-To help make sure the C function is compiled in with the rest of our Rust app,
+To help make sure the C function is compiled in with the rest of this Rust app,
 you'll probably want to use the amazing [`gcc-rs`][gcc] crate and a build
 script.
 
@@ -127,8 +127,9 @@ A very common example of this is event handlers in GUI applications. These are
 usually methods on an object, allowing the object to "remember" every time the
 callback is called.
 
-Because there are no such thing as object methods in C, we'll need to emulate
-them with a function that takes a pointer to its state as its first argument.
+Because there are no such things as object methods in C, emulating them
+is required. This'll be a function that takes a pointer to its state as its
+first argument.
 
 ```C
 typedef int (*stateful_callback)(void *state, int intermediate_result);
@@ -155,7 +156,7 @@ void stateful_expensive_calculation(int start, stateful_callback cb, void *state
 ```
 
 
-We also need to update the type alias and `extern` declarations appropriately.
+Also, the type alias and `extern` declarations need to be updated appropriately.
 
 ```rust
 type StatefulCallback = unsafe extern "C" fn(*mut c_void, c_int) -> c_int;
@@ -165,7 +166,7 @@ extern "C" {
 }
 ```
 
-Lets create a `struct` which we can use in our stateful callback. This is just
+Lets create a `struct` to use in the stateful callback function. This is just
 something which will keep track of all the intermediate results passed to it,
 as well as whether it aborted early.
 
@@ -198,15 +199,15 @@ impl Accumulator {
 > `*mut Accumulator`, and then turn the mutable raw pointer into a mutable
 > reference.
 
-Now our `Accumulator` struct is defined and we have a `callback()` method which
-satisfies the `StatefulCallback` function signature, we can finally get on to
-using it.
+Now that our Accumulator struct is defined and has a callback() method
+satisfying the StatefulCallback function signature, it is ready to be called
+by C.
 
 `Accumulator`'s `callback()` method can be passed in like you normally would in
 Rust, but to pass in a pointer to the `Accumulator` object is a bit more
 involved.
 
-First we get a mutable borrow to the object and cast it to a raw pointer (this
+First, get a mutable borrow to the object and cast it to a raw pointer (this
 just points to some place on the stack), and from there it can be cast to a
 `void*`. This indirection is necessary because you can only cast a borrow of
 some `T` to a mutable pointer of the same type, but any raw pointer can be cast
@@ -351,7 +352,7 @@ pub unsafe extern "C" fn safe_get_item_10000(buffer: *const u8, len: usize) -> u
 }
 ```
 
-Now we adjust [`main.c`] to use the `safe_get_item_10000()`:
+Now to adjust [`main.c`] to use the `safe_get_item_10000()`:
 
 ```c
 #include <stddef.h>
