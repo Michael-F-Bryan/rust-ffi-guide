@@ -199,9 +199,9 @@ impl Accumulator {
 > `*mut Accumulator`, and then turn the mutable raw pointer into a mutable
 > reference.
 
-Now our `Accumulator` struct is defined and has a `callback()` method which
-satisfies the `StatefulCallback` function signature, now, it can finally
-be used.
+Now that our Accumulator struct is defined and has a callback() method
+satisfying the StatefulCallback function signature, it is ready to be called
+by C.
 
 `Accumulator`'s `callback()` method can be passed in like you normally would in
 Rust, but to pass in a pointer to the `Accumulator` object is a bit more
