@@ -109,9 +109,8 @@ for conveying what you're doing.
 > conditions the user will violate memory safety. The `# Safety` and `# Remarks` headers
 > in these doc-comments are used for each function which could provoke unsafe behaviour.
 >
-> Also, make sure you document your exported functions. I've been forced to use
-> more than enough proprietary libraries with non-existent documentation, please
-> don't add to the problem!
+> Also, make sure you document your exported functions. From experience, working with 
+> libraries with non-existent documentation is not fun. Please don't add to the problem!
 
 
 ## Wrapping It With Python
