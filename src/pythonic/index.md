@@ -99,8 +99,8 @@ know that one way of returning (or receiving) a pointer which may be `null` is
 to represent it as an `Option<Box<T>>`. A good example of when you could use 
 this is to skip the `some_ptr.is_null()` check used in the destructors and 
 only recreate the `Box` if `Some` was passed in. This is more a matter of style
-than anything else, I just prefer using the `is_null()` check because it's 
-more explicit what you're doing.
+than anything else, the use of the `is_null()` check feels more explicit
+for conveying what you're doing.
 
 > **Hint:** when crossing the FFI boundary you tend to play fast and loose with
 > your pointers and data types. You'll notice that I've marked any function 
