@@ -83,10 +83,8 @@ these to explicitly bring ownership and memory safety assumptions to the user's
 attention. other common section names you might want to use liberally are 
 `Errors` and `Examples`.
 
-I don't know about you, but I wouldn't be too happy with the library
-author if I had to manually discover this after spending a couple hours with in 
-debugger trying to figure out why a particular part of my program segfaults, 
-when all that could have been avoided with an extra line of documentation.
+Instead of users spending hours debugging a segfault in their program, 
+the documentation aids in finding the source of the problem.
 
 You should also make sure your documentation is easily accessible. If your crate
 is published on `crates.io` then it's automatically documented on `docs.rs`, 
