@@ -90,7 +90,7 @@ There are a couple strange points though, you may have noticed the use of
 `&*sieve` once or twice. This just lets you convert from a `*mut T` (or 
 `*const T`) to a `&T` so you can use the object's normal methods. You need to 
 explicitly convert to a borrow like this because raw pointers don't let you
-use a struct's methods. likewise the `&mut *primes` lets me convert to a mutable
+use a struct's methods. likewise the `&mut *primes` converts to a mutable
 borrow, the parentheses are mainly there to make it clearer to the parser what
 we are doing.
 
