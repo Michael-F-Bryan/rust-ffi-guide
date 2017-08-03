@@ -157,8 +157,8 @@ put in a C header file.
 
 Next we make a nice wrapper around the `Sieve`. A [context manager][cm] is used 
 to make sure that resources get initialized at the start of the `with` block, 
-then they're freed again upon leaving it. This means that even if an is thrown, 
-the `Sieve` destructor will still get called.
+then they're freed again upon leaving it. This means that even if an exception
+is thrown, the `Sieve` destructor will still get called.
 
 ```python
 class Sieve:
