@@ -156,7 +156,7 @@ void stateful_expensive_calculation(int start, stateful_callback cb, void *state
 ```
 
 
-We also need to update the type alias and `extern` declarations appropriately.
+Also, the type alias and `extern` declarations need to be updated appropriately.
 
 ```rust
 type StatefulCallback = unsafe extern "C" fn(*mut c_void, c_int) -> c_int;
@@ -166,7 +166,7 @@ extern "C" {
 }
 ```
 
-Lets create a `struct` which we can use in our stateful callback. This is just
+Lets create a `struct` to use in the stateful callback function. This is just
 something which will keep track of all the intermediate results passed to it,
 as well as whether it aborted early.
 
@@ -199,15 +199,15 @@ impl Accumulator {
 > `*mut Accumulator`, and then turn the mutable raw pointer into a mutable
 > reference.
 
-Now our `Accumulator` struct is defined and we have a `callback()` method which
-satisfies the `StatefulCallback` function signature, we can finally get on to
-using it.
+Now our `Accumulator` struct is defined and has a `callback()` method which
+satisfies the `StatefulCallback` function signature, now, it can finally
+be used.
 
 `Accumulator`'s `callback()` method can be passed in like you normally would in
 Rust, but to pass in a pointer to the `Accumulator` object is a bit more
 involved.
 
-First we get a mutable borrow to the object and cast it to a raw pointer (this
+First, get a mutable borrow to the object and cast it to a raw pointer (this
 just points to some place on the stack), and from there it can be cast to a
 `void*`. This indirection is necessary because you can only cast a borrow of
 some `T` to a mutable pointer of the same type, but any raw pointer can be cast
@@ -352,7 +352,7 @@ pub unsafe extern "C" fn safe_get_item_10000(buffer: *const u8, len: usize) -> u
 }
 ```
 
-Now we adjust [`main.c`] to use the `safe_get_item_10000()`:
+Now to adjust [`main.c`] to use the `safe_get_item_10000()`:
 
 ```c
 #include <stddef.h>
