@@ -78,7 +78,7 @@ pub unsafe extern "C" foo_add_point(foo: *mut Foo, point: *mut Point) {
 }
 ```
 
-Notice how I added an explicit `Safety` section to the doc comment? You can use
+Did you notice the explicit `Safety` section in the doc comment? You can use
 these to explicitly bring ownership and memory safety assumptions to the user's
 attention. other common section names you might want to use liberally are 
 `Errors` and `Examples`.
