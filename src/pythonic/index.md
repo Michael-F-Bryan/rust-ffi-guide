@@ -127,8 +127,8 @@ First you'll need to make sure `cffi` is installed:
 $ pip3 install cffi
 ```
 
-I'll try to break the python bit into chunks to make it easier to digest. This
-is the contents of my [main.py](./pythonic/main.py).
+The next python bit will be broken down into chunks to make it easier to digest. 
+This is the contents of [main.py](./pythonic/main.py).
 
 
 ```python
