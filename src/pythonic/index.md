@@ -97,7 +97,7 @@ we are doing.
 If any of you have heard of the [nullable pointer optimisation][npo] you'll 
 know that one way of returning (or receiving) a pointer which may be `null` is 
 to represent it as an `Option<Box<T>>`. A good example of when you could use 
-this is to skip the `some_ptr.is_null()` check I used in the destructors and 
+this is to skip the `some_ptr.is_null()` check used in the destructors and 
 only recreate the `Box` if `Some` was passed in. This is more a matter of style
 than anything else, I just prefer using the `is_null()` check because it's 
 more explicit what you're doing.
