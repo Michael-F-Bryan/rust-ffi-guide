@@ -86,7 +86,7 @@ then passing back a pointer to it. `Box::into_raw()` and `Box::from_raw()` are
 in charge of converting from a raw pointer to a `Box` and back again, allowing
 us to take advantage of Rust's [Drop][drop] trait to clean up for us.
 
-There are a couple strange points though, you may have noticed me using 
+There are a couple strange points though, you may have noticed the use of 
 `&*sieve` once or twice. This just lets you convert from a `*mut T` (or 
 `*const T`)to a `&T` so you can use the object's normal methods. You need to 
 explicitly convert to a borrow like this because raw pointers don't let you
