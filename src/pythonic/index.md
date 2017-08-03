@@ -103,12 +103,11 @@ than anything else, the use of the `is_null()` check feels more explicit
 for conveying what you're doing.
 
 > **Hint:** when crossing the FFI boundary you tend to play fast and loose with
-> your pointers and data types. You'll notice that I've marked any function 
-> which is recieving raw pointers from an untrusted source (i.e. Python/C) as 
-> `unsafe`. Typically you'd go to great lengths to document under what 
-> conditions the user will violate memory safety. I often use the  `# Safety` 
-> and `# Remarks` headers in my doc-comments for each function which could 
-> provoke unsafe behaviour.
+> your pointers and data types. You'll notice that any function 
+> which is recieving raw pointers from an untrusted source (i.e. Python/C) 
+> has been marked as `unsafe`. Typically you'd go to great lengths to document under what 
+> conditions the user will violate memory safety. The `# Safety` and `# Remarks` headers
+> in these doc-comments are used for each function which could provoke unsafe behaviour.
 >
 > Also, make sure you document your exported functions. I've been forced to use
 > more than enough proprietary libraries with non-existent documentation, please
