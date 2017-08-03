@@ -157,8 +157,8 @@ put in a C header file.
 
 Next we make a nice wrapper around the `Sieve`. A [context manager][cm] is used 
 to make sure that resources get initialized at the start of the `with` block, 
-then they're freed again upon leaving it. This means that even if my code throws an 
-exception the `Sieve` destructor will still get called.
+then they're freed again upon leaving it. This means that even if an is thrown, 
+the `Sieve` destructor will still get called.
 
 ```python
 class Sieve:
@@ -180,7 +180,7 @@ class Sieve:
         return primal.sieve_upper_bound(self.sieve)
 ```
 
-We then do a similar thing for our prime number iterator, converting the 
+A similar thing is done for the prime number iterator, converting the 
 repetitive `primes_next()` call into a more pythonic iterator with 
 `__iter__()`.
 
@@ -204,7 +204,7 @@ class Primes:
             running = prime != 0
 ```
 
-And finally we can run it:
+And finally the code to run it:
 
 ```python
 if __name__ == "__main__":
