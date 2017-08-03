@@ -13,18 +13,18 @@ to a static library and then providing the correct linker args to rustc.
 
 ## Getting Resource Usage
 
-For this example we'll be asking the kernel how many resources the current 
-process is using, and to make this a lot easier to do in a platform dependent 
-(-ish) manner, we'll write a small C shim that passes just the information we
+This example will be asking the kernel how many resources the current proccess
+is using, and to make this a lot easier to do in a platform dependent 
+(-ish) manner, a small C shim will be used that passes just the information we
 care about back to Rust.
 
-The function in particular I'd like to use is [getrusage()][getrusage], which 
+The function in particular is called [getrusage()][getrusage], which 
 is part of the GNU `libc`.
 
 > **Note:** this example will be, quite obviously, Linux-specific. If you're on
 > Mac or Windows you might want to look for some other function which returns
-> a struct and play around with that. To be honest, I'm only using `getrusage()`
-> because it was the first thing to pop up when I searched Google.
+> a struct and play around with that. To be honest, `getrusage()` is only used
+> because it was the first thing to pop up on Google at the time.
 >
 > [This function][msdn] looks like the Windows equivalent, and the output struct
 > is even simpler than the Linux one because there's no nesting. Just `#include` 
