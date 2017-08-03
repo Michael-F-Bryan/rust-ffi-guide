@@ -5,8 +5,8 @@ languages. As long as you tell the Rust compiler to lay out structs "how C does
 it" (with `#[repr(C)]`) and have the right type declarations, everything *Just 
 Works™*. It's all bytes at the end of the day, anyway.
 
-Remember how I mentioned earlier that there's an easier way to compile and link
-everything? Well there is, it's called [gcc-rs][gcc-rs]. All you need to do is 
+Remember that there's an easier way to compile and link everything?
+Well there is, it's called [gcc-rs][gcc-rs]. All you need to do is 
 point it at your C source code and it'll do all the hard parts like compiling
 to a static library and then providing the correct linker args to rustc.
 
