@@ -119,7 +119,7 @@ int get_usage_stats(stats *output) {
 
 ## The Main Rust Program
 
-Now we get to do the fun stuff, actually using this C shim of ours.
+Now onto the fun stuff, actually using this C shim.
 
 First you'll want to create a new crate:
 
@@ -127,7 +127,7 @@ First you'll want to create a new crate:
 $ cargo new --bin get_usage
 ```
 
-Make sure the C shim is in your `src/` directory. I put it at 
+Make sure the C shim is in your `src/` directory. For example
 [./get_usage/src/usage.c](./structs/get_usage/src/usage.c).
 
 Next you'll want to declare the C shim and custom structs in 
@@ -170,13 +170,13 @@ fn main() {
 }
 ```
 
-You'll see that I'm importing the [libc][libc] crate to help make sure the
+You'll see that the [libc][libc] crate is used to help make sure the
 basic integer types (e.g. `c_long` and `time_t`) match up. You'll want to use
 this crate a lot to avoid issues like a pointer being either 32 or 64-bits and
 other quirks.
 
-They also have a definition of `timeval` too, but I felt like declaring my own 
-because it's just a struct with a pair of `i64`s (for my platform anyway). As 
+They also have a definition of `timeval` too, but feel free to declare your own 
+because it's just a struct with a pair of `i64`s (at least on linux). As 
 long as the integer types and sizes match up C won't care, bytes are bytes.
 
 > **Note:** The big thing to take away here is that as long as your struct is 
@@ -196,9 +196,9 @@ long as the integer types and sizes match up C won't care, bytes are bytes.
 > }
 > ```
 >
-> I feel like you could use some macro magic to emulate C-style unions using
-> getters/setters and a healthy dose of `transmute()`. But I'll leave that as 
-> an exercise for the reader.
+> you may be able to use some macro magic to emulate C-style unions using
+> getters/setters and a healthy dose of `transmute()`. But that can be an
+> exercise for you.
 
 Now to roll this all together there's just one more step. A build script. 
 
@@ -229,7 +229,7 @@ libc = "*"
 gcc = "*"
 ```
 
-And now we can finally run this thing.
+And now with the ability to finally run this thing.
 
 ```bash
 $ cargo run
