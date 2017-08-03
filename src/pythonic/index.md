@@ -155,11 +155,10 @@ Here we're importing `cffi` and declaring the functions we want to use. If you
 look carefully you'll notice that this is the exact same thing you'd usually 
 put in a C header file.
 
-Next we make a nice wrapper around the `Sieve`. I'm using a 
-[context manager][cm] to make sure that resources get initialized at the start
-of the `with` block, then they're freed again upon leaving it. This means that
-even if my code throws an exception the `Sieve` destructor will still get 
-called.
+Next we make a nice wrapper around the `Sieve`. A [context manager][cm] is used 
+to make sure that resources get initialized at the start of the `with` block, 
+then they're freed again upon leaving it. This means that even if my code throws an 
+exception the `Sieve` destructor will still get called.
 
 ```python
 class Sieve:
