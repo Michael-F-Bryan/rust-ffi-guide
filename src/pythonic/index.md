@@ -217,8 +217,8 @@ if __name__ == "__main__":
         print('The first {} prime numbers are {}'.format(n, ', '.join(primes)))
 ```
 
-If you were paying close attention when I first defined our Rust functions you
-may have noticed that I use a `void *` instead of `*mut Sieve` and 
+If you were paying close attention when the Rust functions were first defined
+you may have noticed the use of `void *` instead of `*mut Sieve` and
 `*mut Primes`. This is sometimes known as an [opaque pointer][op] and allows 
 you to pass some pointer to someone without letting them know the type or how
 the thing being pointed to is laid out in memory. You can think of this as a 
