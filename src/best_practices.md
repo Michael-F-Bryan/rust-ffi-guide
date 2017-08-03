@@ -60,7 +60,7 @@ pub unsafe extern "C" foo_create() -> *mut Foo {
 Likewise, you must document all assumptions. If a function consumes the 
 resource being pointed to by a pointer then you should state that. For 
 example you might try to add some `Point` object to the `Foo` object just
-created earlier.
+created.
 
 
 ```rust
