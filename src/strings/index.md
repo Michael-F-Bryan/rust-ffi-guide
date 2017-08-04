@@ -15,10 +15,10 @@ fn count_chars(s: &str) -> usize {
 }
 ```
 
-Next we want to write a wrapper around `count_chars()` which exposes it to be
-called from other languages, but we don't want to take ownership of the string
-passed in. Luckily there's a `&str` equivalent for working with 
-null-terminated strings called [CStr][cstr].
+Next, a wrapper is written around `count_chars()` to make it callable from
+other languages, but without taking ownership of the string passed in. 
+Luckily, there's a `&str` equivalent for working with null-terminated 
+strings called [CStr][cstr].
 
 ```rust
 use std::ffi::CStr;
