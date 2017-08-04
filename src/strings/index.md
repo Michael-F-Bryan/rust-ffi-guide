@@ -55,9 +55,9 @@ int main() {
 
 ## Returning Strings
 
-One issue I found early on is that returning strings isn't a trivial thing
-to do. You need to make sure that strings are correctly deallocated after 
-you're done with them. Lets consider a naive implementation:
+Returning strings is not a trival thing to do. You need to make sure that
+strings are correctly deallocated after you're done with them. Lets consider
+a naive implementation:
 
 ```rust
 use std::ffi::CString;
