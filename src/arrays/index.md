@@ -90,9 +90,9 @@ executable.
 
 ## The C Program
 
-Using our Rust library is actually fairly easy to do in C. You just declare it
-like you would when calling any other C library, then pass in the appropriate
-parameters. Here is the contents of [main.c](./arrays/main.c):
+To use the new Rust library in C, just declare and call it like any other
+C library, then pass in the appropriate parameters.
+Here are the contents of [main.c](./arrays/main.c):
 
 ```c
 // main.c
