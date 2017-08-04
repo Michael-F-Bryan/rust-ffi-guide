@@ -129,8 +129,8 @@ libaverages.a(std-9a66b6a343d52844.0.o): In function `std::sys::imp::mutex::{{im
 clang: error: linker command failed with exit code 1 (use -v to see invocation)
 ```
 
-Oops! When clang tried to compile our `libaverages.a` library and `main.c` into
-one executable it wasn't able to find a bunch of symbols.
+Oops! When clang tried to compile the libraries `libaverages.a` and `main.c`
+into one executable it wasn't able to find a bunch of symbols.
 
 Remember those notes from earlier? That's what `rustc` was trying to warn
 about. When everything is statically compiled, **all** your dependencies must
