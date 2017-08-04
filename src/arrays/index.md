@@ -84,8 +84,7 @@ note: library: util
 ```
 
 As well as compiling `averages.rs` into a static library, `rustc` has also
-emitted some helpful notes which we'll need when linking the library into one
-executable.
+emitted some helpful notes needed for linking the library into one executable.
 
 
 ## The C Program
