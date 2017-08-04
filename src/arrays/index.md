@@ -160,7 +160,7 @@ Looks like it's finally working, but passing in all those `-l` arguments to
 keep the linker happy was hard work! You can see why people came up with tools
 like `make` to help them build everything.
 
-Luckily in Rust, we can do one better...
+Luckily in Rust, there's a better way...
 
 
 [from-raw-parts]: https://doc.rust-lang.org/nightly/std/slice/fn.from_raw_parts.html
