@@ -66,7 +66,7 @@ although they are probably quite familiar for people who've written C/C++ code
 before.
 
 Without further ado, lets compile the library.
-
+<span id="rustc-static-notes"></span>
 ```bash
 $ rustc --crate-type staticlib -o libaverages.a averages.rs
 note: link against the following native artifacts when linking against this static library
@@ -131,7 +131,7 @@ clang: error: linker command failed with exit code 1 (use -v to see invocation)
 Oops! When clang tried to compile the libraries `libaverages.a` and `main.c`
 into one executable it wasn't able to find a bunch of symbols.
 
-Remember those notes from earlier? That's what `rustc` was trying to warn
+Remember those [notes] from earlier? That's what `rustc` was trying to warn
 about. When everything is statically compiled, **all** your dependencies must
 be included. This wasn't an issue when dynamically linking because the loader
 found everything for you.
@@ -161,6 +161,6 @@ like `make` to help them build everything.
 
 Luckily in Rust, there's a better way...
 
-
+[notes]: arrays/#rustc-static-notes
 [from-raw-parts]: https://doc.rust-lang.org/nightly/std/slice/fn.from_raw_parts.html
 [mangling]: https://en.wikipedia.org/wiki/Name_mangling
