@@ -31,12 +31,12 @@ pub unsafe extern "C" fn count_characters(s: *const c_char) -> c_int {
 }
 ```
 
-You can see that instead of exposing the `count_chars()` function directly,
-I created a thin wrapper around it which does all the relevant casting between
-a `CStr` and a `&str`, and then from `usize` to `c_int`.
+Instead of exposing the `count_chars()` function directly, a thin wrapper
+handles all the relevant casting between a `CStr` and a `&str`, and then
+from `usize` to `c_int`.
 
 
-Calling our [shim](./strings/chars.rs) from C is then almost trivial 
+Calling [shim](./strings/chars.rs) from C is then almost trivial
 ([main_chars.c](./strings/main_chars.c)):
 
 ```c
