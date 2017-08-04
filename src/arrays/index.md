@@ -132,10 +132,10 @@ clang: error: linker command failed with exit code 1 (use -v to see invocation)
 Oops! When clang tried to compile our `libaverages.a` library and `main.c` into
 one executable it wasn't able to find a bunch of symbols.
 
-Remember those notes from earlier? That's what `rustc` was trying to warn us
-about. When you compile everything statically you need to include **all** your
-dependencies. You didn't have this issue when dynamically linking because the
-loader finds everything for you.
+Remember those notes from earlier? That's what `rustc` was trying to warn
+about. When everything is statically compiled, **all** your dependencies must
+be included. This wasn't an issue when dynamically linking because the loader
+found everything for you.
 
 Okay, lets try again...
 
