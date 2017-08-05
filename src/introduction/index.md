@@ -3,20 +3,19 @@
 
 Welcome to the Rust FFI Guide, i.e. **using unsafe for fun and profit**.
 
-> **Note:** I'm going to assume you're already familiar with the [Rust][rust]
-> language and have a relatively recent version of the compiler installed. If
-> you're a little rusty, you might want to skim through [The Book][book] to
-refresh your memory.
+> **Note:** This guide assumes familiarity with the [Rust][rust] language and
+> that a recent version of the compiler is installed. If you're a little rusty,
+you might want to skim through [The Book][book] to refresh your memory.
 >
-> You'll also need to know some basic C/C++ or Python, as I'll be largely using
-> that in my examples.
+> Most of the examples use either C/C++ or Python, so basic knowledge of either
+> is recommended.
 
 
 The main goal of this guide is to show how to interoperate between `Rust` and
 other languages with as few segfaults and uses of undefined behaviour as
 possible.
 
-Some things I'm hoping to cover:
+This guide will cover:
 
 * [Compiling and linking from the command line](#Hello-World)
 * [Using arrays](./arrays/)
@@ -51,11 +50,11 @@ Some things I'm hoping to cover:
 
 What would any programming guide be without the obligatory hello world example?
 
-> **Note:** For most of these examples I'll be using `C` to interoperate with
-> my `Rust` code because it's often the lowest common denominator and *lingua
-> franca* of the programming world.
+> **Note:** Most of these examples use `C` to interoperate with `Rust` code
+> because it's often the lowest common denominator and *lingua franca* of
+> the programming world.
 
-To start off with, we'll try to call a `C` program from `Rust`. Here's the
+To start, here's how to call a `C` program from `Rust`. Below are the
 contents of [hello.c](./introduction/hello.c):
 
 ```c
@@ -86,8 +85,8 @@ fn main() {
 }
 ```
 The `say_hello()` function is expecting a pointer to a null-terminated string,
-and the easiest way to create one of those is with a [CString][cstring]. Notice
-that we told the compiler that we'll be using an external function called
+and the easiest way to create one of those is with a [CString][cstring].
+In this example, the compiler is told to use an external function called
 `say_hello()`. The "C" bit indicates that it should use the "C" calling
 convention,
 
@@ -101,8 +100,8 @@ see a lot more `unsafe` blocks. This isn't necessarily a bad thing in itself,
 it just means you need to pay a little extra attention to how memory is
 handled.
 
-Next you'll need to compile the C code into a library which can be called by
-Rust. In this example I'm going to compile it into a `shared library` where the
+Next, you'll need to compile the C code into a library which can be called by
+Rust. In this example, it's compiled into a `shared library` where the
 external `say_hello` symbol will be resolved at *load time*.
 
 > **Note:** If you aren't familiar with the difference between a `static` and
@@ -130,7 +129,7 @@ The `-l` flag tells `rustc` which library it'll need to link against so it can
 resolve symbols, and the `-L` flag adds the current directory to the list of
 places to search when finding the `hello` library.
 
-Finally we can actually run the program:
+Finally, actually running the program:
 
 ```bash
 $ LD_LIBRARY_PATH=. ./main
@@ -139,11 +138,11 @@ $ LD_LIBRARY_PATH=. ./main
 > **Note:** When you try to run a program, what actually happens is the
 > [loader][loader] loads the binary into memory, then tries to find any symbols
 > belonging to shared libraries. Because `libhello.so` isn't in any of the
-> standard directories the loader usually searches, we have to explicitly tell
-> the loader where it is by overriding `LD_LIBRARY_PATH`.
+> standard directories the loader usually searches, it must be explicitly told
+> where the library is by overriding `LD_LIBRARY_PATH`.
 
-If we didn't override the `LD_LIBRARY_PATH` then you'd see an error something
-like this:
+If `LD_LIBRARY_PATH` wasn't overwritten, then you'd see an error similar
+to this:
 
 ```bash
 $ ./main
