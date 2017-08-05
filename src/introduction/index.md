@@ -85,8 +85,8 @@ fn main() {
 }
 ```
 The `say_hello()` function is expecting a pointer to a null-terminated string,
-and the easiest way to create one of those is with a [CString][cstring]. Notice
-that we told the compiler that we'll be using an external function called
+and the easiest way to create one of those is with a [CString][cstring].
+In this example, the compiler is told to use an external function called
 `say_hello()`. The "C" bit indicates that it should use the "C" calling
 convention,
 
