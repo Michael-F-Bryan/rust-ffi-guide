@@ -138,8 +138,8 @@ $ LD_LIBRARY_PATH=. ./main
 > **Note:** When you try to run a program, what actually happens is the
 > [loader][loader] loads the binary into memory, then tries to find any symbols
 > belonging to shared libraries. Because `libhello.so` isn't in any of the
-> standard directories the loader usually searches, we have to explicitly tell
-> the loader where it is by overriding `LD_LIBRARY_PATH`.
+> standard directories the loader usually searches, it must be explicitly told
+> where the library is by overriding `LD_LIBRARY_PATH`.
 
 If `LD_LIBRARY_PATH` wasn't overwritten, then you'd see an error similar
 to this:
