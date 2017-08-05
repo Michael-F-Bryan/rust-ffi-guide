@@ -3,20 +3,19 @@
 
 Welcome to the Rust FFI Guide, i.e. **using unsafe for fun and profit**.
 
-> **Note:** I'm going to assume you're already familiar with the [Rust][rust]
-> language and have a relatively recent version of the compiler installed. If
-> you're a little rusty, you might want to skim through [The Book][book] to
-refresh your memory.
+> **Note:** This guide assumes familiarity with the [Rust][rust] language and
+> that a recent version of the compiler is installed. If you're a little rusty,
+you might want to skim through [The Book][book] to refresh your memory.
 >
-> You'll also need to know some basic C/C++ or Python, as I'll be largely using
-> that in my examples.
+> Most of the examples use either C/C++ or Python, so basic knowledge of either
+> is recommended.
 
 
 The main goal of this guide is to show how to interoperate between `Rust` and
 other languages with as few segfaults and uses of undefined behaviour as
 possible.
 
-Some things I'm hoping to cover:
+This guide will cover:
 
 * [Compiling and linking from the command line](#Hello-World)
 * [Using arrays](./arrays/)
