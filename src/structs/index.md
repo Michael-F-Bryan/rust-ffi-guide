@@ -86,8 +86,8 @@ DESCRIPTION
 
 Obviously the `rusage` struct contains loads of juicy information about a 
 process, but only a small subset is needed, so to make things easier, a C
-library which calls `getrusage()` can be written that only gives us the
-info desired. In this case, only the resident memory, unshared stack size,
+library which calls `getrusage()` can be written so that it only gives us
+the info desired. In this case, only the resident memory, unshared stack size,
 and amount of time spent in user mode is needed.
 
 Here's the C shim example:
