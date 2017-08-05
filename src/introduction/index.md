@@ -100,8 +100,8 @@ see a lot more `unsafe` blocks. This isn't necessarily a bad thing in itself,
 it just means you need to pay a little extra attention to how memory is
 handled.
 
-Next you'll need to compile the C code into a library which can be called by
-Rust. In this example I'm going to compile it into a `shared library` where the
+Next, you'll need to compile the C code into a library which can be called by
+Rust. In this example, it's compiled into a `shared library` where the
 external `say_hello` symbol will be resolved at *load time*.
 
 > **Note:** If you aren't familiar with the difference between a `static` and
