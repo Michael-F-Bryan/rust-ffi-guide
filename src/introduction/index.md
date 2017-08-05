@@ -50,11 +50,11 @@ This guide will cover:
 
 What would any programming guide be without the obligatory hello world example?
 
-> **Note:** For most of these examples I'll be using `C` to interoperate with
-> my `Rust` code because it's often the lowest common denominator and *lingua
-> franca* of the programming world.
+> **Note:** Most of these examples use `C` to interoperate with `Rust` code
+> because it's often the lowest common denominator and *lingua franca* of
+> the programming world.
 
-To start off with, we'll try to call a `C` program from `Rust`. Here's the
+To start, here's how to call a `C` program from `Rust`. Below are the
 contents of [hello.c](./introduction/hello.c):
 
 ```c
