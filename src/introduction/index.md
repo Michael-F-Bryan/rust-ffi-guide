@@ -129,7 +129,7 @@ The `-l` flag tells `rustc` which library it'll need to link against so it can
 resolve symbols, and the `-L` flag adds the current directory to the list of
 places to search when finding the `hello` library.
 
-Finally we can actually run the program:
+Finally, actually running the program:
 
 ```bash
 $ LD_LIBRARY_PATH=. ./main
@@ -141,8 +141,8 @@ $ LD_LIBRARY_PATH=. ./main
 > standard directories the loader usually searches, we have to explicitly tell
 > the loader where it is by overriding `LD_LIBRARY_PATH`.
 
-If we didn't override the `LD_LIBRARY_PATH` then you'd see an error something
-like this:
+If `LD_LIBRARY_PATH` wasn't overwritten, then you'd see an error similar
+to this:
 
 ```bash
 $ ./main
