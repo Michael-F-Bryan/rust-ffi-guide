@@ -15,10 +15,10 @@ fn count_chars(s: &str) -> usize {
 }
 ```
 
-Next we want to write a wrapper around `count_chars()` which exposes it to be
-called from other languages, but we don't want to take ownership of the string
-passed in. Luckily there's a `&str` equivalent for working with 
-null-terminated strings called [CStr][cstr].
+Next, a wrapper is written around `count_chars()` to make it callable from
+other languages, but without taking ownership of the string passed in. 
+Luckily, there's a `&str` equivalent for working with null-terminated 
+strings called [CStr][cstr].
 
 ```rust
 use std::ffi::CStr;
@@ -31,12 +31,12 @@ pub unsafe extern "C" fn count_characters(s: *const c_char) -> c_int {
 }
 ```
 
-You can see that instead of exposing the `count_chars()` function directly,
-I created a thin wrapper around it which does all the relevant casting between
-a `CStr` and a `&str`, and then from `usize` to `c_int`.
+Instead of exposing the `count_chars()` function directly, a thin wrapper
+handles all the relevant casting between a `CStr` and a `&str`, and then
+from `usize` to `c_int`.
 
 
-Calling our [shim](./strings/chars.rs) from C is then almost trivial 
+Calling [shim](./strings/chars.rs) from C is then almost trivial
 ([main_chars.c](./strings/main_chars.c)):
 
 ```c
@@ -55,9 +55,9 @@ int main() {
 
 ## Returning Strings
 
-One issue I found early on is that returning strings isn't a trivial thing
-to do. You need to make sure that strings are correctly deallocated after 
-you're done with them. Lets consider a naive implementation:
+Returning strings is not a trival thing to do. You need to make sure that
+strings are correctly deallocated after you're done with them. Lets consider
+a naive implementation:
 
 ```rust
 use std::ffi::CString;
@@ -70,9 +70,8 @@ pub extern "C" fn version() -> *mut c_char {
 }
 ```
 
-We don't want to end up leaking memory so the next question you need to ask 
-yourself is, "how do I deallocate this once I'm done?". For this, we consult 
-the docs: 
+Memory leakage is undesired, so the next question you need to ask yourself is,
+"how do I deallocate this once I'm done?". For this, the docs provide:
 
 > fn into_raw(self) -> *mut c_char
 > 
@@ -84,9 +83,8 @@ the docs:
 > 
 > Failure to call from_raw will lead to a memory leak.
 
-Okay, that's easy enough. All we need to do is provide a generic string 
-destructor for our crate which will let us clean up strings when we're done
-with them.
+Okay, that's easy enough. All this crate must provide is a generic string
+destructor that's called when the string is no longer needed.
 
 ```rust
 #[no_mangle]
@@ -100,16 +98,16 @@ pub extern "C" fn string_destroy(s: *mut c_char) {
 ```
 
 This definitely works, but what happens if the caller forgets to deallocate the
-string afterwards? Or an exception is thrown? The string will never get 
-destroyed and we'll just leak memory. Likewise, the caller (in this case, C) 
-can't deallocate the string itself with `free()` because that's likely to leak
-memory or invoke undefined behaviour.
+string afterwards? Or an exception is thrown? Well, since the string is never
+destroyed, its memory cannot be freed, thus a memory leak has occurred.
+Likewise, the caller (in this case, C) can't deallocate the string itself with
+`free()` because that's likely to leak memory or invoke undefined behaviour.
 
 There's also a second approach which, while possibly more difficult for a Rust
-library designer, is considerably nicer to work with when you're calling it 
-from other languages. Instead of the `version()` function returning a string 
-which needs to be deallocated afterwards, the caller will pass our function a
-buffer which the callee writes into, returning the number of bytes written.
+library designer, is considerably nicer to call and work with from other 
+languages. Instead of the `version()` function returning a string which needs
+to be deallocated afterwards, the caller will pass it a buffer which the callee
+writes into, returning the number of bytes written.
 
 ```rust
 #[no_mangle]
@@ -126,7 +124,7 @@ pub unsafe extern "C" fn version_with_buffer(buf: *mut u8, len: c_int) -> c_int 
 }
 ```
 
-Now anyone wanting to get the version number for my Rust library just needs to
+Now anyone wanting to get the version number for your library just needs to
 allocate their own buffer, pass it in, then read the (UTF-8) bytes afterwards.
 
 Here's roughly how you'd call the Rust functions from C 
