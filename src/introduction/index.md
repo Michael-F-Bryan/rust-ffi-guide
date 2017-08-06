@@ -112,6 +112,8 @@ external `say_hello` symbol will be resolved at *load time*.
 $ gcc -shared -fPIC -o libhello.so hello.c
 ```
 
+> **Note:** clang and gcc are interchangeable when compiling.
+
 The `-shared` flag tells clang to compile as a dynamically linked library
 (typically "\*.so" on Linux or "\*.dll" on Windows). You'll also need the
 `-fPIC` flag to tell the compiler to generate [*Position Independent
