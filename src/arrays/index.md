@@ -117,7 +117,7 @@ int main() {
 And now let's compile everything.
 
 ```bash
-$ gcc main.c libaverages.a
+$ clang main.c libaverages.a
 libaverages.a(std-9a66b6a343d52844.0.o): In function `std::sys::imp::mutex::{{impl}}::init':
 /checkout/src/libstd/sys/unix/mutex.rs:56: undefined reference to `pthread_mutexattr_init'
 /checkout/src/libstd/sys/unix/mutex.rs:58: undefined reference to `pthread_mutexattr_settype'
