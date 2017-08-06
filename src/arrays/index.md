@@ -3,7 +3,7 @@
 Now that you've got the basics, lets try to do something a little more
 interesting. Using arrays as function parameters.
 
-For a change, we'll be using Rust as a library (i.e. the "guest" language) and
+For a change, Rust will be used as a library (i.e. the "guest" language) and
 C as the "host" language. If you're trying to augment a legacy code base with
 safer code which is less prone to memory issues and security vulnerabilities,
 this is something you might end up doing often.
@@ -84,15 +84,14 @@ note: library: util
 ```
 
 As well as compiling `averages.rs` into a static library, `rustc` has also
-emitted some helpful notes which we'll need when linking the library into one
-executable.
+emitted some helpful notes needed for linking the library into an executable.
 
 
 ## The C Program
 
-Using our Rust library is actually fairly easy to do in C. You just declare it
-like you would when calling any other C library, then pass in the appropriate
-parameters. Here is the contents of [main.c](./arrays/main.c):
+To use the new Rust library in C, just declare and call it like any other
+C library, then pass in the appropriate parameters.
+Here are the contents of [main.c](./arrays/main.c):
 
 ```c
 // main.c
@@ -129,13 +128,13 @@ libaverages.a(std-9a66b6a343d52844.0.o): In function `std::sys::imp::mutex::{{im
 clang: error: linker command failed with exit code 1 (use -v to see invocation)
 ```
 
-Oops! When clang tried to compile our `libaverages.a` library and `main.c` into
-one executable it wasn't able to find a bunch of symbols.
+Oops! When clang tried to compile `libaverages.a` and `main.c` into one
+executable it wasn't able to find a bunch of symbols.
 
-Remember those [notes] from earlier? That's what `rustc` was trying to warn us
-about. When you compile everything statically you need to include **all** your
-dependencies. You didn't have this issue when dynamically linking because the
-loader finds everything for you.
+Remember those [notes] from earlier? That's what `rustc` was trying to warn
+about. When everything is statically compiled, **all** your dependencies must
+be included. This wasn't an issue when dynamically linking because the loader
+found everything for you.
 
 Okay, lets try again...
 
@@ -160,7 +159,7 @@ Looks like it's finally working, but passing in all those `-l` arguments to
 keep the linker happy was hard work! You can see why people came up with tools
 like `make` to help them build everything.
 
-Luckily in Rust, we can do one better...
+Luckily in Rust, there's a better way...
 
 [notes]: arrays/#rustc-static-notes
 [from-raw-parts]: https://doc.rust-lang.org/nightly/std/slice/fn.from_raw_parts.html
