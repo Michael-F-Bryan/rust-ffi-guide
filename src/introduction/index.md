@@ -109,8 +109,10 @@ external `say_hello` symbol will be resolved at *load time*.
 > [this Stack Overflow question][static-vs-dynamic].
 
 ```bash
-$ gcc -shared -fPIC -o libhello.so hello.c
+$ clang -shared -fPIC -o libhello.so hello.c
 ```
+
+> **Note:** clang and gcc are interchangeable when compiling.
 
 The `-shared` flag tells clang to compile as a dynamically linked library
 (typically "\*.so" on Linux or "\*.dll" on Windows). You'll also need the

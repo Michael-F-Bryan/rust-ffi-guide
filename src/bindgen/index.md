@@ -20,6 +20,8 @@ use Rust in a C/C++ codebase in the first place!
 
 ## Getting Set Up
 
+> **Note:** Bindgen **requires** clang. Installation instructions can be found [here](https://github.com/rust-lang-nursery/rust-bindgen/blob/master/book/src/requirements.md#installing-clang-39)
+
 We'll be building on top of the [great tutorial][tut] linked earlier to write
 an idiomatic Rust wrapper around `bzip2`. This assumes you've already read
 through that tutorial and will focus more on the next step, writing the actual

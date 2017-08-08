@@ -4,7 +4,7 @@ all: libhello.so main
 
 
 libhello.so: hello.c
-	gcc -shared -fPIC -o libhello.so hello.c
+	clang -shared -fPIC -o libhello.so hello.c
 
 main: libhello.so main.rs
 	rustc -l hello -L . main.rs
