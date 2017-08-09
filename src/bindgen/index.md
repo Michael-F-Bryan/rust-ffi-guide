@@ -12,22 +12,26 @@ them (so the compiler knows what symbols to use). Enter [bindgen][bindgen].
 
 Bindgen does all the hard work of parsing C-style header files and generating 
 the equivalent Rust function definitions. They've also got a 
-[great tutorial][tut] for getting started. We'll try to focus on the more high 
-level stuff which comes with using a C library from Rust, seeing as the zero 
-cost abstractions and high level way of thingking is probably why you're trying 
-use Rust in a C/C++ codebase in the first place!
+[great tutorial][tut] for getting started. This section focuses mostly on the
+high level stuff required when using a C library from Rust, seeing as the zero
+cost abstractions and high level way of thinking is probably why you're trying
+to use Rust in a C/C++ codebase in the first place!
 
 
 ## Getting Set Up
 
 > **Note:** Bindgen **requires** clang. Installation instructions can be found [here](https://github.com/rust-lang-nursery/rust-bindgen/blob/master/book/src/requirements.md#installing-clang-39)
 
-We'll be building on top of the [great tutorial][tut] linked earlier to write
-an idiomatic Rust wrapper around `bzip2`. This assumes you've already read
+> **Note:** `bzip2` **and** its headers must be installed on your system.
+> This has been tested on Linux, the process for getting `bzip2` working
+> on Windows will differ. (If you can help, please file an [issue]).
+
+Continuing on from where the [great bindgen tutorial][tut] left off, we'll
+write an idiomatic Rust wrapper around `bzip2`. This assumes you've already read
 through that tutorial and will focus more on the next step, writing the actual
 wrapper code using common Rust patterns.
 
-First we'll create a new crate:
+First, we'll create a new crate:
 
 ```bash
 $ cargo new bzip2
@@ -50,16 +54,17 @@ Then add `bindgen` as a dependency and tell `Cargo` about our build script
 
 `Bindgen` works by reading a `C`-style header file using `libclang`, then
 it runs the preprocessor and creates bindings based on the output. Therefore, 
-before we can start our build script we'll need a dummy header which pulls in
-the `bzip2` library installed on your system.
+the build script needs a dummy header which pulls in the `bzip2` library
+installed on your system.
 
 ```c
 // wrapper.h
 #include <bzlib.h>
 ```
 
-Now we can create our `build.rs` script. This gets run before the crate is
-compiled, and allows us to generate code at compile time.
+Creating the `build.rs` script allows for bindings to be generated for the
+crate before it's compiled. The contents of
+[build.rs](./bindgen/bzip2/build.rs) are below.
 
 ```Rust
 extern crate bindgen;
@@ -83,7 +88,7 @@ fn main() {
 }
 ```
 
-Let's compile everything created so far to make sure it actually works.
+Let's test that everything created so far actually compiles.
 
 ```bash
 $ cargo build 
@@ -94,7 +99,7 @@ Downloading syntex_syntax v0.54.0
 Finished debug [unoptimized + debuginfo] target(s) in 12.41 secs
 ```
 
-So far, we haven't actually written any code so our `lib.rs` file should still 
+No code has been written yet, so the `lib.rs` file should still
 just have the auto-generated `it_works()` test. If you want to view the
 generated bindings, you'll see that it's not exactly the nicest Rust code to
 look at...
@@ -148,8 +153,8 @@ pub struct _bindgen_ty_1 {
 pub type bz_stream = _bindgen_ty_1;
 ```
 
-A common pattern is to put all FFI bindings in their own sub-module, we can now
-replace the contents of `lib.rs` and recompile.
+A common pattern is to put all FFI bindings in their own sub-module, therefore
+we'll replace the contents of `lib.rs` and recompile.
 
 ```Rust
 // lib.rs
@@ -169,9 +174,9 @@ pub mod ffi {
 
 ## Creating The Rust Wrapper
 
-Now that we've got a basic crate and know our build system works (i.e.
-`bindgen` is creating our bindings), we can get started on wrapping the
-`bzip2` library and giving it a safe API.
+Now, with a basic crate and build system working (i.e. `bindgen` creating the
+crate's bindings), work can start on wrapping the `bzip2` library and giving it
+a safe API.
 
 The best way to figure out how our wrapper API should look is to find existing
 code and (roughly) copy that. Luckily `libbzip2` documents its low level
@@ -195,7 +200,7 @@ data:
 From this, one way of doing things is to have some `Compressor` object which
 contains the `bz_stream`. It'll run `BZ2_bzCompressInit()` in the constructor
 and have a `Drop` impl which calls `BZ2_bzCompressEnd()`. To make things
-simple this won't be a streaming compressor so we'll just compress everything
+simple this won't be a streaming compressor so it'll just compress everything
 from an input `Read`-er and write it to a `Write`-r. This isn't recommended
 for compressing gigabyte-sized files, but it should work well enough.
 
@@ -216,7 +221,7 @@ pub struct Compressor {
 }
 ```
 
-Next we'll write a `new()` method which creates a zeroed `bz_stream` and then
+Next, we'll write a `new()` method which creates a zeroed `bz_stream` and then
 initializes it with the `BZ2_bzCompressInit()` function. You'll notice that
 any return code other than `ffi::BZ_OK` is cast to i32 and converted to a 
 `Bzip2Error`.
@@ -238,7 +243,7 @@ impl Compressor {
     }
 ```
 
-The `compress()` method is a bit more complicated, in it we have to:
+The `compress()` method is a bit more complicated, it must:
 
 * Read all the input into a buffer
 * Create an output buffer of similar length
@@ -283,10 +288,10 @@ The `compress()` method is a bit more complicated, in it we have to:
 
 > **Note:** This function definitely violates the *Single Responsibility
 > Principle* and should be refactored out into several functions, but for the
-> sake of this example I won't worry about it.
+> sake of this example it's not a concern.
 
-Finally we need to write a `Drop` implementation to make sure everything is
-cleaned up correctly afterwards. This one is really simple.
+Finally, to make sure everything is cleaned up correctly afterwards, a `Drop`
+implementation is needed. This one is really simple.
 
 ```Rust
 impl Drop for Compressor {
@@ -302,8 +307,8 @@ impl Drop for Compressor {
 > destructor. What would happen when there's a panic further down the stack and 
 > this `drop()` fails when it's unrolling?
 
-To handle errors, made an enum which corresponds to either a `libbzip2` error 
-constant or an `io::Error`. 
+To handle errors, we'll make an enum which corresponds to either a `libbzip2`
+error constant or an `io::Error`. 
 
 ```Rust
 #[derive(Debug)]
