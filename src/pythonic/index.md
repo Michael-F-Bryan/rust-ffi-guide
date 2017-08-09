@@ -1,7 +1,7 @@
 # Making Rust Pythonic
 
 Lets give C a rest for a while and try to speed up our Python programs. For 
-this example I'm going to try and build a *pythonic* interface to the amazing
+this example we will build a *pythonic* interface to the amazing
 [primal][primal] crate.
 
 
