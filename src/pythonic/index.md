@@ -239,5 +239,6 @@ your API exposes.
 [drop]: https://doc.rust-lang.org/std/ops/trait.Drop.html
 [npo]: https://doc.rust-lang.org/book/ffi.html#the-nullable-pointer-optimization
 [cffi]: http://cffi.readthedocs.io/en/latest/overview.html
+[ctypes]: https://docs.python.org/3/library/ctypes.html
 [cm]: http://eigenhombre.com/introduction-to-context-managers-in-python.html
 [op]: https://en.wikipedia.org/wiki/Opaque_pointer
