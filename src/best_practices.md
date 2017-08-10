@@ -189,4 +189,5 @@ to communicate with the outside world.
 
 
 [issue]: https://github.com/Michael-F-Bryan/rust-ffi-guide/issues/new
+[cffi]: https://cffi.readthedocs.io
 [catch_unwind]: https://doc.rust-lang.org/std/panic/fn.catch_unwind.html

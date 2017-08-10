@@ -350,3 +350,4 @@ impl From<io::Error> for Bzip2Error {
 [git-hg]: https://github.com/cosmin/git-hg
 [ubuntu-instructions]: https://bitbucket.org/libtcod/libtcod/src/f3486b0851a2acf11efbd2df18fc06501012afef/README-linux-SDL2.md?fileviewer=file-view-default
 [libbzip2]: http://www.bzip.org/1.0.5/bzip2-manual-1.0.5.html#libprog
+[issue]: https://github.com/Michael-F-Bryan/rust-ffi-guide/issues/new
