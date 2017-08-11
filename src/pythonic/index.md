@@ -174,6 +174,9 @@ class Sieve:
         primal.sieve_destroy(self.sieve)
 
     def is_prime(self, n):
+        if n > self.upper_bound():
+            raise IndexError("{} not in upper bound {}"
+                             .format(n, self.upper_bound()))
         return primal.sieve_is_prime(self.sieve, n) != 0
 
     def upper_bound(self):
