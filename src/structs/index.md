@@ -139,17 +139,17 @@ use std::process;
 
 #[derive(Debug, Default)]
 #[repr(C)]
-struct Usage {
-    ru_utime: Timeval,
-    ru_maxrss: libc::c_long,
-    ru_isrss: libc::c_long,
+struct Timeval {
+    sec: libc::time_t,
+    usec: libc::suseconds_t,
 }
 
 #[derive(Debug, Default)]
 #[repr(C)]
-struct Timeval {
-    tv_sec: libc::time_t,
-    tv_usec: libc::suseconds_t,
+struct Usage {
+    utime: Timeval,
+    maxrss: libc::c_long,
+    isrss: libc::c_long,
 }
 
 extern "C" {
@@ -182,7 +182,7 @@ long as the integer types and sizes match up C won't care, bytes are bytes.
 > **Note:** The big thing to take away here is that as long as your struct is 
 > the correct size, it doesn't matter how it's laid out internally. This means
 > you can actually emulate the `rusage` struct like this and skip the C shim
-> entirely!
+> entirely! 
 > 
 > ```rust
 > #[repr(C)]
@@ -196,9 +196,9 @@ long as the integer types and sizes match up C won't care, bytes are bytes.
 > }
 > ```
 >
-> you may be able to use some macro magic to emulate C-style unions using
-> getters/setters and a healthy dose of `transmute()`. But that can be an
-> exercise for you.
+> You might also have noticed that even though Rust and C use different names
+> for the attributes in the `Usage`/`stats` struct, as long as they are laid
+> out identically in memory everything will *Just Work*. 
 
 Now to roll this all together there's just one more step. A build script. 
 

@@ -3,17 +3,17 @@ use std::process;
 
 #[derive(Debug, Default)]
 #[repr(C)]
-struct Usage {
-    ru_utime: Timeval,
-    ru_maxrss: libc::c_long,
-    ru_isrss: libc::c_long,
+struct Timeval {
+    sec: libc::time_t,
+    usec: libc::suseconds_t,
 }
 
 #[derive(Debug, Default)]
 #[repr(C)]
-struct Timeval {
-    tv_sec: libc::time_t,
-    tv_usec: libc::suseconds_t,
+struct Usage {
+    utime: Timeval,
+    maxrss: libc::c_long,
+    isrss: libc::c_long,
 }
 
 extern "C" {

@@ -118,9 +118,11 @@ pub unsafe extern "C" fn version_with_buffer(buf: *mut u8, len: c_int) -> c_int 
 
     let mut buffer = slice::from_raw_parts_mut(buf, len as usize);
     let version_number = CString::new("0.1.0").unwrap();
-    buffer.write(version_number.as_bytes_with_nul())
-        .map(|n| n as c_int)
-        .unwrap_or(-1)
+
+    match buffer.write(version_number.as_bytes_with_nul()) {
+        Ok(n) => n as c_int,
+        Err(_) => -1,
+    }
 }
 ```
 
