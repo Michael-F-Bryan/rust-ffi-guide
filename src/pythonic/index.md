@@ -197,11 +197,10 @@ class Primes:
         return primal.primes_next(self.iterator)
 
     def __iter__(self):
-        running = True
-        while running:
-            prime = self.next()
+        prime = self.next()
+        while prime != 0:
             yield prime
-            running = prime != 0
+            prime = self.next()
 ```
 
 And finally the code to run it:
@@ -214,7 +213,8 @@ if __name__ == "__main__":
     with Primes() as p:
         n = 20
         primes = list(itertools.islice(p, n))
-        print('The first {} prime numbers are {}'.format(n, ', '.join(primes)))
+        print('The first {} prime numbers are {}'
+              .format(n, ', '.join([str(p) for p in primes])))
 ```
 
 If you were paying close attention when the Rust functions were first defined

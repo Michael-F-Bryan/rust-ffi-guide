@@ -59,5 +59,7 @@ if __name__ == "__main__":
         print(s.is_prime(5))
 
     with Primes() as p:
-        first_20 = list(itertools.islice(p, 20))
-        print(first_20)
+        n = 20
+        primes = list(itertools.islice(p, n))
+        print('The first {} prime numbers are {}'
+              .format(n, ', '.join([str(p) for p in primes])))
