@@ -48,11 +48,10 @@ class Primes:
         return primal.primes_next(self.iterator)
 
     def __iter__(self):
-        running = True
-        while running:
-            prime = self.next()
+        prime = self.next()
+        while prime != 0:
             yield prime
-            running = prime != 0
+            prime = self.next()
 
 
 if __name__ == "__main__":
