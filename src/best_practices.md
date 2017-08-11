@@ -3,7 +3,7 @@
 These are some best practices I've picked up while using Rust code from other
 languages at work. They most definitely should **not** be taken as gospel, and 
 if you believe a point could do with improving or is just downright wrong then
-please, please, please [create an issue][issue] and let me know!
+please, please, please [create an issue][issue].
 
 
 ## Memory Management
