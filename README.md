@@ -3,9 +3,8 @@
 
 [![Build Status](https://travis-ci.org/Michael-F-Bryan/rust-ffi-guide.svg?branch=master)](https://travis-ci.org/Michael-F-Bryan/rust-ffi-guide)
 
-A guide to traversing the FFI boundary between Rust and other languages. A 
-rendered version is automatically rendered every time I push a commit and is
-viewable at [https://michael-f-bryan.github.io/rust-ffi-guide/][gh-pages].
+A guide to traversing the FFI boundary between Rust and other languages. A
+rendered version is available [here][gh-pages].
 
 
 ## Building
@@ -34,8 +33,8 @@ It should now be viewable at [http://localhost:3000/](http://localhost:3000/).
 
 ## Contributing
 
-If there's anything you want me to add or you notice something which might need
-changing, [make an issue][issues]. Pull requests are welcome too!
+If there's anything you feel is missing or could be
+improved, please [create an issue][issues]. Pull requests are welcome too!
 
 
 [gh-pages]: https://michael-f-bryan.github.io/rust-ffi-guide/
