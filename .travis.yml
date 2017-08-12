@@ -11,7 +11,9 @@ cache:
 - pip
 before_cache:
   - chmod -R a+r $HOME/.cargo
-script: make all
+script: 
+  - make build
+  - make test
 after_success: ./ci/deploy.sh
 env:
   global:

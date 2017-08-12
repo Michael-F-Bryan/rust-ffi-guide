@@ -36,6 +36,13 @@ It should now be viewable at [http://localhost:3000/](http://localhost:3000/).
 If there's anything you feel is missing or could be
 improved, please [create an issue][issues]. Pull requests are welcome too!
 
+The repository has been designed so that each chapter has its own `Makefile`
+which defines three rules, `build`, `test`, and `clean`. This allows you to run 
+`make test` in the the top level directory and `make` will iterate through each
+chapter, building and testing the examples. As such, changes which add new
+files may need to update the chapter's `Makefile` so that it is tested
+automatically.
+
 
 [gh-pages]: https://michael-f-bryan.github.io/rust-ffi-guide/
 [issues]: https://github.com/Michael-F-Bryan/rust-ffi-guide/issues/new

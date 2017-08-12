@@ -11,13 +11,14 @@ endef
 
 
 build:
-	$(call run-in-sub-dirs build)
+	$(call run-in-sub-dirs,build)
 
 test:
-	$(call run-in-sub-dirs test)
+	$(call run-in-sub-dirs,test)
 
 clean:
-	$(call run-in-sub-dirs clean)
+	$(call run-in-sub-dirs,clean)
+	cargo clean
 
 word_count:
 	@find -name '*.md' -print0 | wc --files0-from=-
