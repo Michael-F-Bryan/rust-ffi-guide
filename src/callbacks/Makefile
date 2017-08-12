@@ -9,7 +9,7 @@ app:
 	cd app && cargo build
 
 main: main.c libfoo.so
-	$(CC) -L. -lfoo main.c -o main
+	$(CC) $(CFLAGS) -L. -lfoo main.c -o main
 
 lib%.so: %.rs
 	rustc --crate-type cdylib -o $@ $<

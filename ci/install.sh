@@ -6,4 +6,5 @@ else
   cargo install mdbook
 fi
 
-pip install --user ghp-import
+pip install --user ghp-import pytest cffi
+

@@ -7,10 +7,10 @@ test: build
 
 
 main_chars: main_chars.c libchars.so
-	$(CC) -l chars -L . -o $@ $<
+	$(CC) $(CFLAGS) -l chars -L . -o $@ $<
 
 main_versions: main_versions.c libversions.so
-	$(CC) -l versions -L . -o $@ $<
+	$(CC) $(CFLAGS) -l versions -L . -o $@ $<
 
 
 lib%.so: %.rs

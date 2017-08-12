@@ -1,5 +1,12 @@
+import os
 import itertools
 from cffi import FFI
+
+# Make should set OUTPUT_DIR to the place where cargo put libprimes.so
+# otherwise we use a sensible default
+OUTPUT_DIR = os.environ.get('OUTPUT_DIR', "../../target/debug")
+DLL = OUTPUT_DIR + '/libprimes.so'
+
 
 ffi = FFI()
 
@@ -14,7 +21,7 @@ ffi.cdef("""
         unsigned int primes_next(void *primes);
         """)
 
-primal = ffi.dlopen('./primes/target/debug/libprimes.so')
+primal = ffi.dlopen(DLL)
 
 
 class Sieve:

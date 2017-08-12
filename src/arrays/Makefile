@@ -8,7 +8,7 @@ libaverages.a: averages.rs
 	rustc --crate-type staticlib averages.rs
 
 main: main.c libaverages.a
-		$(CC) -l dl \
+		$(CC) $(CFLAGS) -l dl \
 		-l rt \
 		-l pthread \
 		-l gcc_s \

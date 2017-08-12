@@ -1,23 +1,41 @@
 OPEN := xdg-open
-DIRS := $(shell find ./src -maxdepth 1 -type d)
-CC := clang
+DIRS := $(shell find ./src -mindepth 1 -maxdepth 1 -type d)
 
-
-define run-in-sub-dirs
-	for sub_dir in $(DIRS); do \
-		$(MAKE) -C $$sub_dir $1; \
-	done
-endef
+# Export some default variables that all sub-makefiles should use
+export OUTPUT_DIR := ${CURDIR}/target/debug
+export CC := clang
+export CFLAGS := -std=c99
 
 
 build:
-	$(call run-in-sub-dirs,build)
+	$(MAKE) -C src/arrays build
+	$(MAKE) -C src/bindgen build
+	$(MAKE) -C src/callbacks build
+	$(MAKE) -C src/dynamic_loading build
+	$(MAKE) -C src/introduction build
+	$(MAKE) -C src/pythonic build
+	$(MAKE) -C src/strings build
+	$(MAKE) -C src/structs build
 
 test:
-	$(call run-in-sub-dirs,test)
+	$(MAKE) -C src/arrays test
+	$(MAKE) -C src/bindgen test
+	$(MAKE) -C src/callbacks test
+	$(MAKE) -C src/dynamic_loading test
+	$(MAKE) -C src/introduction test
+	$(MAKE) -C src/pythonic test
+	$(MAKE) -C src/strings test
+	$(MAKE) -C src/structs test
 
 clean:
-	$(call run-in-sub-dirs,clean)
+	$(MAKE) -C src/arrays clean
+	$(MAKE) -C src/bindgen clean
+	$(MAKE) -C src/callbacks clean
+	$(MAKE) -C src/dynamic_loading clean
+	$(MAKE) -C src/introduction clean
+	$(MAKE) -C src/pythonic clean
+	$(MAKE) -C src/strings clean
+	$(MAKE) -C src/structs clean
 	cargo clean
 
 word_count:
