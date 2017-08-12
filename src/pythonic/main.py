@@ -30,6 +30,9 @@ class Sieve:
         primal.sieve_destroy(self.sieve)
 
     def is_prime(self, n):
+        if n > self.upper_bound():
+            raise IndexError("{} not in upper bound {}"
+                             .format(n, self.upper_bound()))
         return primal.sieve_is_prime(self.sieve, n) != 0
 
     def upper_bound(self):
@@ -48,11 +51,10 @@ class Primes:
         return primal.primes_next(self.iterator)
 
     def __iter__(self):
-        running = True
-        while running:
-            prime = self.next()
+        prime = self.next()
+        while prime != 0:
             yield prime
-            running = prime != 0
+            prime = self.next()
 
 
 if __name__ == "__main__":
@@ -60,5 +62,7 @@ if __name__ == "__main__":
         print(s.is_prime(5))
 
     with Primes() as p:
-        first_20 = list(itertools.islice(p, 20))
-        print(first_20)
+        n = 20
+        primes = list(itertools.islice(p, n))
+        print('The first {} prime numbers are {}'
+              .format(n, ', '.join([str(p) for p in primes])))

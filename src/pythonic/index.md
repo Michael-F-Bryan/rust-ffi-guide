@@ -74,6 +74,10 @@ pub unsafe extern "C" fn primes_destroy(primes: *mut Primes) {
 /// # Remarks
 ///
 /// If zero is returned then there the iterator is finished.
+///
+/// # Panics
+///
+/// If `n` is greater than `upper_bound`
 #[no_mangle]
 pub unsafe extern "C" fn primes_next(primes: *mut Primes) -> libc::c_uint {
     (&mut *primes).next().unwrap_or(0)
@@ -172,15 +176,21 @@ class Sieve:
 
     def __exit__(self, *args):
         primal.sieve_destroy(self.sieve)
-
+```
+A Python `Exception` is preferable over rust panicking and
+unwinding, so `is_prime` checks if `n` exceeds `upper_bound`.
+```Python
     def is_prime(self, n):
+        if n > self.upper_bound():
+            raise IndexError("{} not in upper bound {}"
+                             .format(n, self.upper_bound()))
         return primal.sieve_is_prime(self.sieve, n) != 0
 
     def upper_bound(self):
         return primal.sieve_upper_bound(self.sieve)
 ```
 
-A similar thing is done for the prime number iterator, converting the 
+A similar wrapper is written around the prime number iterator, converting the
 repetitive `primes_next()` call into a more pythonic iterator with 
 `__iter__()`.
 
@@ -197,11 +207,10 @@ class Primes:
         return primal.primes_next(self.iterator)
 
     def __iter__(self):
-        running = True
-        while running:
-            prime = self.next()
+        prime = self.next()
+        while prime != 0:
             yield prime
-            running = prime != 0
+            prime = self.next()
 ```
 
 And finally the code to run it:
@@ -214,7 +223,8 @@ if __name__ == "__main__":
     with Primes() as p:
         n = 20
         primes = list(itertools.islice(p, n))
-        print('The first {} prime numbers are {}'.format(n, ', '.join(primes)))
+        print('The first {} prime numbers are {}'
+              .format(n, ', '.join([str(p) for p in primes])))
 ```
 
 If you were paying close attention when the Rust functions were first defined

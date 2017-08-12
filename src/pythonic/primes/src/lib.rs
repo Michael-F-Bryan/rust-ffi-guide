@@ -45,6 +45,9 @@ pub unsafe extern "C" fn primes_destroy(primes: *mut Primes) {
 /// # Remarks
 ///
 /// If zero is returned then there the iterator is finished.
+/// 
+/// # Panics
+/// If `n` is greater than `upper_bound`
 #[no_mangle]
 pub unsafe extern "C" fn primes_next(primes: *mut Primes) -> libc::c_uint {
     match (&mut *primes).next() {
