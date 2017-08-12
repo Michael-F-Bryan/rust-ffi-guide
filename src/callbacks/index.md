@@ -42,7 +42,7 @@ a function which satisfies the function signature required.
 The biggest thing to worry about is ensuring the Rust callback's signature is
 *exactly* the same as the one your C program is expecting. If it isn't, this is
 **undefined behaviour** (roughly point [768] of the C spec) and will probably
-result in you recieving garbage then segfaulting when the function returns.
+result in you receiving garbage then segfaulting when the function returns.
 
 First, let's make a `typedef` for the callback function.
 

@@ -26,7 +26,7 @@ In general, you'll want to:
 * Make sure that memory is only free'd from the language it was allocated in
 * Check for null pointers. Everywhere.
 * Document the assumptions which are normally enforced by the Rust type system 
-  like whether a function recieving a pointer gains ownership of the data being
+  like whether a function receiving a pointer gains ownership of the data being
   pointed to or is only taking it as a reference
 
 Where possible, try to enforce memory safety to prevent against accidental 
