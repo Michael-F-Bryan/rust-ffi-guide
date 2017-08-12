@@ -1,10 +1,10 @@
 LIBRARIES := libadder.so
 
 
-all: $(LIBRARIES) loading
+build: $(LIBRARIES) loading
 
-run: $(LIBRARIES)
-	cd loading && cargo run -- ../libadder.so
+test: $(LIBRARIES)
+	cd loading && cargo run -- ../libadder.so | grep '1 + 2 = 3'
 
 loading:
 	cd loading && cargo build
@@ -16,4 +16,4 @@ clean:
 	$(RM) $(LIBRARIES)
 	cd loading && cargo clean
 
-.PHONY: clean loading
+.PHONY: clean test loading

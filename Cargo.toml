@@ -1,0 +1,6 @@
+[workspace]
+members = ["src/bindgen/bzip2",
+           "src/callbacks/app",
+           "src/dynamic_loading/loading",
+           "src/pythonic/primes",
+           "src/structs/get_usage"]

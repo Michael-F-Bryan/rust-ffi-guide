@@ -7,3 +7,6 @@ main
 main_versions
 main_chars
 target
+Cargo.lock
+__pycache__
+.cache

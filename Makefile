@@ -1,7 +1,42 @@
 OPEN := xdg-open
+DIRS := $(shell find ./src -mindepth 1 -maxdepth 1 -type d)
+
+# Export some default variables that all sub-makefiles should use
+export OUTPUT_DIR := ${CURDIR}/target/debug
+export CC := clang
+export CFLAGS := -std=c99
 
 
-all: book intro arrays structs pythonic strings bindgen dynamic_loading callbacks
+build:
+	$(MAKE) -C src/arrays build
+	$(MAKE) -C src/bindgen build
+	$(MAKE) -C src/callbacks build
+	$(MAKE) -C src/dynamic_loading build
+	$(MAKE) -C src/introduction build
+	$(MAKE) -C src/pythonic build
+	$(MAKE) -C src/strings build
+	$(MAKE) -C src/structs build
+
+test:
+	$(MAKE) -C src/arrays test
+	$(MAKE) -C src/bindgen test
+	$(MAKE) -C src/callbacks test
+	$(MAKE) -C src/dynamic_loading test
+	$(MAKE) -C src/introduction test
+	$(MAKE) -C src/pythonic test
+	$(MAKE) -C src/strings test
+	$(MAKE) -C src/structs test
+
+clean:
+	$(MAKE) -C src/arrays clean
+	$(MAKE) -C src/bindgen clean
+	$(MAKE) -C src/callbacks clean
+	$(MAKE) -C src/dynamic_loading clean
+	$(MAKE) -C src/introduction clean
+	$(MAKE) -C src/pythonic clean
+	$(MAKE) -C src/strings clean
+	$(MAKE) -C src/structs clean
+	cargo clean
 
 word_count:
 	@find -name '*.md' -print0 | wc --files0-from=-
@@ -15,44 +50,4 @@ open: book
 book:
 	mdbook build
 
-intro:
-	$(MAKE) -C src/introduction
-
-arrays:
-	$(MAKE) -C src/arrays
-
-strings:
-	$(MAKE) -C src/strings
-
-dynamic_loading:
-	$(MAKE) -C src/dynamic_loading
-
-structs:
-	cd src/structs/get_usage/ && cargo build
-
-pythonic:
-	cd src/pythonic/primes/ && cargo build
-
-callbacks:
-	cd src/callbacks/app/ && cargo run
-	$(MAKE) -C src/callbacks
-
-# This requires a hack so that we don't try to build bindgen 
-# when being run by Travis (it errors)
-bindgen:
-	if [ -z "$(TRAVIS_BRANCH)" ]; then \
-		cd src/bindgen/bzip2/ && cargo build; \
-	fi
-
-
-clean:
-	rm -rf ./book/*
-	$(MAKE) -C src/introduction clean
-	$(MAKE) -C src/arrays clean
-	cd src/structs/get_usage/ && cargo clean
-	cd src/pythonic/primes/ && cargo clean
-	cd src/bindgen/bzip2/ && cargo clean
-	cd src/callbacks/app/ && cargo clean 
-	$(MAKE) -C src/callbacks clean
-
-.PHONY: clean build book todo
+.PHONY: clean build test book todo word_count open

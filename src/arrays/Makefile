@@ -1,11 +1,14 @@
 
-all: libaverages.a main
+build: libaverages.a main
+
+test: build
+	./main | grep '123.5'
 
 libaverages.a: averages.rs
 	rustc --crate-type staticlib averages.rs
 
 main: main.c libaverages.a
-		clang -l dl \
+		$(CC) $(CFLAGS) -l dl \
 		-l rt \
 		-l pthread \
 		-l gcc_s \
