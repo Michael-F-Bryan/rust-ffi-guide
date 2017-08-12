@@ -31,12 +31,4 @@ open: book
 book:
 	mdbook build
 
-# This requires a hack so that we don't try to build bindgen 
-# when being run by Travis (it errors)
-bindgen:
-	if [ -z "$(TRAVIS_BRANCH)" ]; then \
-		cd src/bindgen/bzip2/ && cargo build; \
-	fi
-
-
-.PHONY: clean build book todo
+.PHONY: clean build test book todo word_count open
