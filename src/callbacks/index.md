@@ -44,7 +44,7 @@ The biggest thing to worry about is ensuring the Rust callback's signature is
 **undefined behaviour** (roughly point [768] of the C spec) and will probably
 result in you recieving garbage then segfaulting when the function returns.
 
-First, lets make a `typedef` for the callback function.
+First, let's make a `typedef` for the callback function.
 
 ```rust
 type Callback = unsafe extern "C" fn(c_int) -> c_int;
@@ -293,7 +293,7 @@ pub unsafe extern "C" fn get_item_10000(buffer: *const u8, len: usize) -> u8 {
 }
 ```
 
-Now lets call it from the following `main.c`:
+Now let's call it from the following `main.c`:
 
 
 ```c
