@@ -1,7 +1,23 @@
 OPEN := xdg-open
+DIRS := $(shell find ./src -maxdepth 1 -type d)
+CC := clang
 
 
-all: book intro arrays structs pythonic strings bindgen dynamic_loading callbacks
+define run-in-sub-dirs
+	for sub_dir in $(DIRS); do \
+		$(MAKE) -C $$sub_dir $1; \
+	done
+endef
+
+
+build:
+	$(call run-in-sub-dirs build)
+
+test:
+	$(call run-in-sub-dirs test)
+
+clean:
+	$(call run-in-sub-dirs clean)
 
 word_count:
 	@find -name '*.md' -print0 | wc --files0-from=-
@@ -15,28 +31,6 @@ open: book
 book:
 	mdbook build
 
-intro:
-	$(MAKE) -C src/introduction
-
-arrays:
-	$(MAKE) -C src/arrays
-
-strings:
-	$(MAKE) -C src/strings
-
-dynamic_loading:
-	$(MAKE) -C src/dynamic_loading
-
-structs:
-	cd src/structs/get_usage/ && cargo build
-
-pythonic:
-	cd src/pythonic/primes/ && cargo build
-
-callbacks:
-	cd src/callbacks/app/ && cargo run
-	$(MAKE) -C src/callbacks
-
 # This requires a hack so that we don't try to build bindgen 
 # when being run by Travis (it errors)
 bindgen:
@@ -44,15 +38,5 @@ bindgen:
 		cd src/bindgen/bzip2/ && cargo build; \
 	fi
 
-
-clean:
-	rm -rf ./book/*
-	$(MAKE) -C src/introduction clean
-	$(MAKE) -C src/arrays clean
-	cd src/structs/get_usage/ && cargo clean
-	cd src/pythonic/primes/ && cargo clean
-	cd src/bindgen/bzip2/ && cargo clean
-	cd src/callbacks/app/ && cargo clean 
-	$(MAKE) -C src/callbacks clean
 
 .PHONY: clean build book todo

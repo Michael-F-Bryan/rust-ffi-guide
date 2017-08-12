@@ -1,5 +1,8 @@
 
-all: libaverages.a main
+build: libaverages.a main
+
+test: build
+	./main | grep '123.5'
 
 libaverages.a: averages.rs
 	rustc --crate-type staticlib averages.rs
