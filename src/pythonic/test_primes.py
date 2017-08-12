@@ -9,7 +9,7 @@ def test_sieve_limit():
         assert s.upper_bound() >= limit
 
 
-def test_upper_bound_exception():
+def test_checking_above_upper_bound_is_an_error():
     limit = 10
     with Sieve(limit) as s:
         with pytest.raises(IndexError):
