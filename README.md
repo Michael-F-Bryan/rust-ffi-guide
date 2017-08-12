@@ -44,5 +44,11 @@ files may need to update the chapter's `Makefile` so that it is tested
 automatically.
 
 
+### Contributors
+
+- [Michael-F-Bryan](https://github.com/Michael-F-Bryan)
+- [gurgalex](https://github.com/gurgalex)
+
+
 [gh-pages]: https://michael-f-bryan.github.io/rust-ffi-guide/
 [issues]: https://github.com/Michael-F-Bryan/rust-ffi-guide/issues/new
