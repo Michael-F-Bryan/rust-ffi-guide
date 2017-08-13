@@ -1,6 +1,6 @@
 # Making Rust Pythonic
 
-Lets give C a rest for a while and try to speed up our Python programs. For 
+Let's give C a rest for a while and try to speed up our Python programs. For
 this example we will build a *pythonic* interface to the amazing
 [primal][primal] crate.
 
@@ -108,7 +108,7 @@ for conveying what you're doing.
 
 > **Hint:** when crossing the FFI boundary you tend to play fast and loose with
 > your pointers and data types. You'll notice that any function 
-> which is recieving raw pointers from an untrusted source (i.e. Python/C) 
+> which is receiving raw pointers from an untrusted source (i.e. Python/C) 
 > has been marked as `unsafe`. Typically you'd go to great lengths to document under what 
 > conditions the user will violate memory safety. The `# Safety` and `# Remarks` headers
 > in these doc-comments are used for each function which could provoke unsafe behaviour.

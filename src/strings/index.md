@@ -3,11 +3,11 @@
 
 ## String Arguments
 
-Lets imagine you have an awesome Rust function which lets you count the number
+Let's imagine you have an awesome Rust function which lets you count the number
 of characters in any UTF-8 string, and you want to make it usable from your C
 code. How would you do this?
 
-First, lets define the Rust function:
+First, let's define the Rust function:
 
 ```rust
 fn count_chars(s: &str) -> usize {

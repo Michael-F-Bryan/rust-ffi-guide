@@ -1,6 +1,6 @@
 # Arrays
 
-Now that you've got the basics, lets try to do something a little more
+Now that you've got the basics, let's try to do something a little more
 interesting. Using arrays as function parameters.
 
 For a change, Rust will be used as a library (i.e. the "guest" language) and
@@ -65,7 +65,7 @@ Issues like these are important to keep in mind when writing `unsafe` rust,
 although they are probably quite familiar for people who've written C/C++ code
 before.
 
-Without further ado, lets compile the library.
+Without further ado, let's compile the library.
 <span id="rustc-static-notes"></span>
 ```bash
 $ rustc --crate-type staticlib -o libaverages.a averages.rs
@@ -136,7 +136,7 @@ about. When everything is statically compiled, **all** your dependencies must
 be included. This wasn't an issue when dynamically linking because the loader
 found everything for you.
 
-Okay, lets try again...
+Okay, let's try again...
 
 ```bash
 $ clang -l dl \
