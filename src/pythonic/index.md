@@ -116,6 +116,23 @@ for conveying what you're doing.
 > Also, make sure you document your exported functions. From experience, working with 
 > libraries with non-existent documentation is not fun. Please don't add to the problem!
 
+The contents of [Cargo.toml](./pythonic/primes/Cargo.toml) are below:
+```
+[package]
+name = "primes"
+version = "0.1.0"
+authors = ["Michael Bryan <michaelfbryan@gmail.com>"]
+
+[dependencies]
+primal = "*"
+libc = "*"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+```
+
+Adding `cdylib` to the `lib` section compiles the crate as a system library
+usable by other languages.
 
 ## Wrapping It With Python
 
