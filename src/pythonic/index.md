@@ -128,11 +128,12 @@ primal = "*"
 libc = "*"
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["cdylib"]
 ```
 
 Adding `cdylib` to the `lib` section compiles the crate as a system library
-usable by other languages.
+usable by other languages. More info on crate-types can be
+found [here.][ref-linkage]
 
 ## Wrapping It With Python
 
@@ -263,6 +264,7 @@ your API exposes.
 
 
 [primal]: https://github.com/huonw/primal
+[ref-linkage]: https://doc.rust-lang.org/reference/linkage.html
 [drop]: https://doc.rust-lang.org/std/ops/trait.Drop.html
 [npo]: https://doc.rust-lang.org/book/ffi.html#the-nullable-pointer-optimization
 [cffi]: http://cffi.readthedocs.io/en/latest/overview.html
