@@ -116,6 +116,24 @@ for conveying what you're doing.
 > Also, make sure you document your exported functions. From experience, working with 
 > libraries with non-existent documentation is not fun. Please don't add to the problem!
 
+The contents of [Cargo.toml](./pythonic/primes/Cargo.toml) are below:
+```
+[package]
+name = "primes"
+version = "0.1.0"
+authors = ["Michael Bryan <michaelfbryan@gmail.com>"]
+
+[dependencies]
+primal = "*"
+libc = "*"
+
+[lib]
+crate-type = ["cdylib"]
+```
+
+Adding `cdylib` to the `lib` section compiles the crate as a system library
+usable by other languages. More info on crate-types can be
+found [here.][ref-linkage]
 
 ## Wrapping It With Python
 
@@ -246,6 +264,7 @@ your API exposes.
 
 
 [primal]: https://github.com/huonw/primal
+[ref-linkage]: https://doc.rust-lang.org/reference/linkage.html
 [drop]: https://doc.rust-lang.org/std/ops/trait.Drop.html
 [npo]: https://doc.rust-lang.org/book/ffi.html#the-nullable-pointer-optimization
 [cffi]: http://cffi.readthedocs.io/en/latest/overview.html
