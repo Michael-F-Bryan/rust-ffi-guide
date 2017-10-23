@@ -6,7 +6,7 @@ cache:
   - cargo
 script: 
   - docker pull michaelfbryan/ffi-guide
-  - docker run -v .:/code michaelfbryan/ffi-guide ci/build.sh
+  - docker run -v $(pwd):/code michaelfbryan/ffi-guide ci/build.sh
 after_success: ./ci/deploy.sh
 env:
   global:
