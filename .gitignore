@@ -1,11 +1,5 @@
-book
-
 *.so
 *.o
 *.a
-main
-main_versions
-main_chars
-target
-__pycache__
-.cache
+target/
+build/
