@@ -39,8 +39,8 @@ To build the application itself you'll need the following installed:
 - rust (install with [rustup])
 - mdbook (`cargo install mdbook`)
 
-In this application we're using `qmake` as the build system. The
-`ci/build.sh` script will make a `build/` directory and invoke `qmake` to 
+In this application we're using `cmake` as the build system. The
+`ci/build.sh` script will make a `build/` directory and invoke `cmake` to 
 compile everything.
 
 ```

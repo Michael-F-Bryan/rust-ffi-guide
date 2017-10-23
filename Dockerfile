@@ -1,7 +1,7 @@
 FROM ubuntu:artful
 
 RUN apt-get update \
-    && apt-get install -y qt5-default build-essential curl cmake gcc python3 python3-pip openssl ca-certificates pkg-config \
+    && apt-get install -y qt5-default build-essential curl cmake gcc python3 python3-pip libssl-dev ca-certificates pkg-config \
     && apt-get autoremove \
     && apt-get autoclean
 

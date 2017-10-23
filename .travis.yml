@@ -3,10 +3,12 @@ sudo: required
 services:
   - docker
 cache:
-  - cargo
+  cargo: true
+  directories:
+    - build
 script: 
   - docker pull michaelfbryan/ffi-guide
-  - docker run -v $(pwd):/code michaelfbryan/ffi-guide ci/build.sh
+  - docker run -v $(pwd):/code michaelfbryan/ffi-guide ci/test.sh
 after_success: ./ci/deploy.sh
 env:
   global:
