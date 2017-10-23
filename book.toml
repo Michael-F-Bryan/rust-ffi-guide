@@ -5,4 +5,4 @@ source = "book"
 
 [output.html]
 google-analytics = "UA-78714693-2"
-destination = "build"
+destination = "build/book"

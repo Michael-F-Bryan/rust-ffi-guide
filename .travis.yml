@@ -1,19 +1,12 @@
-language: rust
-install:
-  - ci/install.sh
-addons:
-    apt: 
-      packages: 
-      - clang
-      - bzip2
+language: c++
+sudo: required
+services:
+  - docker
 cache:
-- cargo
-- pip
-before_cache:
-  - chmod -R a+r $HOME/.cargo
+  - cargo
 script: 
-  - make build
-  - make test
+  - docker pull michaelfbryan/ffi-guide
+  - docker run -v .:/code michaelfbryan/ffi-guide ci/build.sh
 after_success: ./ci/deploy.sh
 env:
   global:
