@@ -1,4 +1,4 @@
-CONFIG += debug
+CONFIG += debug_and_release
 TEMPLATE = app
 TARGET = rest_client
 INCLUDEPATH += .
