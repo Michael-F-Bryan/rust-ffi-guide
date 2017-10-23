@@ -1,11 +1,11 @@
+#include "gui/main_window.hpp"
 #include <QtWidgets/QApplication>
-#include <QtWidgets/QTextEdit>
 
 int main(int argc, char **argv) {
   QApplication app(argc, argv);
 
-  QTextEdit editor;
-  editor.show();
+  MainWindow *ui = new MainWindow();
+  ui->show();
 
   app.exec();
 }

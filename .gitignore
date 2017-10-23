@@ -42,3 +42,5 @@ target_wrapper.*
 *.qmlproject.user
 *.qmlproject.user.*
 build
+
+target/

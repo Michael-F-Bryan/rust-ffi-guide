@@ -1,3 +1,4 @@
 # Summary
 
-- [Chapter 1](./chapter_1.md)
+- [Overview](./overview.md)
+- [Setting Up](./setting_up.md)
