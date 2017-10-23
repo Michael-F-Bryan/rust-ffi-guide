@@ -1,10 +1,9 @@
 #include "gui/main_window.hpp"
+#include <iostream>
 
-extern "C" {
-void hello_world();
+void MainWindow::onClick() {
+  std::cout << "Clicked" << std::endl;
 }
-
-void MainWindow::onClick() { hello_world(); }
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   button = new QPushButton("Click Me", this);
