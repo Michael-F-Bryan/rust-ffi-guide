@@ -34,40 +34,68 @@ error_chain!{
 First lets create a `Request` object;
 
 ```rust
-use reqwest::{Method, Url};
-use reqwest::header::Headers;
-use cookie::CookieJar;
+// client/src/request.rs
 
+use cookie::CookieJar;
+use reqwest::{self, Method, Url};
+use reqwest::header::{Cookie, Headers};
+
+
+/// A HTTP request.
 #[derive(Debug, Clone)]
 pub struct Request {
     pub destination: Url,
     pub method: Method,
     pub headers: Headers,
     pub cookies: CookieJar,
+    pub body: Option<Vec<u8>>,
 }
+```
 
+We'll also need to be able to convert our `Request` into a `reqwest::Reqwest` 
+before we can send it so lets add a helper method for that.
+
+```rust
+impl Request {
+    pub(crate) fn to_reqwest(self) -> reqwest::Request {
+        let mut r = reqwest::Request::new(self.method, self.destination);
+
+        r.headers_mut().extend(self.headers.iter());
+
+        let mut cookie_header = Cookie::new();
+
+        for cookie in self.cookies.iter() {
+            cookie_header.set(cookie.name().to_owned(), cookie.value().to_owned());
+        }
+        r.headers_mut().set(cookie_header);
+
+        r
+    }
+}
 ```
 
 We also want to create our own vastly simplified `Response` so it can be 
-accessed by the C++ GUI.
+accessed by the C++ GUI, it gets a helper method too.
 
 ```rust
+// client/src/response.rs
+
+use std::io::Read;
+use reqwest::{self, StatusCode};
+use reqwest::header::Headers;
+
+use errors::*;
+
+
 #[derive(Debug, Clone)]
 pub struct Response {
     pub headers: Headers,
     pub body: Vec<u8>,
     pub status: StatusCode,
 }
-```
-
-For convenience, we'll also add a helper method for converting from a 
-`reqwest::Response` to our own `Response`.
-
-```rust
-use std::io::Read;
 
 impl Response {
-    fn from_reqwest(original: reqwest::Response) -> Result<Response> {
+    pub(crate) fn from_reqwest(original: reqwest::Response) -> Result<Response> {
         let mut original = original.error_for_status()?;
         let headers = original.headers().clone();
         let status = original.status();
@@ -77,7 +105,11 @@ impl Response {
             .read_to_end(&mut body)
             .chain_err(|| "Unable to read the response body")?;
 
-        Ok(Response { status, body, headers })
+        Ok(Response {
+            status,
+            body,
+            headers,
+        })
     }
 }
 ```
@@ -155,32 +187,41 @@ pub fn backtrace(e: &Error) {
 }
 ```
 
-We'll create a `get()` function which performs (surprise, surprise) a `GET` 
-request. This is fairly standard in that we create a `reqwest::Client` using
-the builder (that way we can detect errors initializing TLS, preventing a panic),
-then convert our `Request` type into something `reqwest` can use. making sure to
-set all the headers and cookies appropriately.
+We'll also create a generic `send_request()` function which takes a `Request` 
+object and sends it, retrieving the resulting `Response`. Thanks to our two 
+helper functions the implementation is essentially trivial (modulo some logging
+stuff).
 
 ```rust
-// client/src/methods.rs
+// client/src/lib.rs
 
-/// Perform a single `GET` request.
-pub fn get(req: Request) -> Result<Response> {
+use reqwest::Client;
+use request::Request;
+use response::Response;
+use errors::*;
+
+
+/// Send a `Request`.
+pub fn send_request(req: Request) -> Result<Response> {
+    info!("Sending a GET request to {}", req.destination);
+    if log_enabled!(::log::LogLevel::Debug) {
+        debug!("Sending {} Headers", req.headers.len());
+        for header in req.headers.iter() {
+            debug!("\t{}: {}", header.name(), header.value_string());
+        }
+        for cookie in req.cookies.iter() {
+            debug!("\t{} = {}", cookie.name(), cookie.value());
+        }
+
+        trace!("{:#?}", req);
+    }
+
     let client = Client::builder()
         .build()
         .chain_err(|| "The native TLS backend couldn't be initialized")?;
 
-    let mut rb = client.get(req.destination);
-
-    rb.headers(req.headers);
-    let mut cookie_header = Cookie::new();
-
-    for cookie in req.cookies.iter() {
-        cookie_header.set(cookie.name().to_owned(), cookie.value().to_owned());
-    }
-    rb.header(cookie_header);
-
-    rb.send()
+    client
+        .execute(req.to_reqwest())
         .chain_err(|| "The request failed")
         .and_then(|r| Response::from_reqwest(r))
 }
