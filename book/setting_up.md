@@ -5,39 +5,39 @@ and run a hello world program to check everything works.
 
 ## Setting up Qt and the Build System
 
-First, create a new `qmake` project in a directory of your choosing.
+First, create a new `cmake` project in a directory of your choosing.
 
 ```bash
 $ mkdir rest_client && cd rest_client
 $ mkdir gui
 $ touch gui/main.cpp
-$ qmake -project
+$ touch CMakeLists.txt
 ```
 
-You'll then want to make sure your `rest_client.pro` file (the file specifying 
+You'll then want to make sure your `CMakeLists.txt` file (the file specifying 
 the project and build settings) looks something like this.
 
 ```
-TEMPLATE = app
-TARGET = rest_client
-INCLUDEPATH += .
+# CMakeLists.txt
 
-DEFINES += QT_DEPRECATED_WARNINGS
+cmake_minimum_required(VERSION 3.7)
+project(rest-client)
 
-# Input
-SOURCES += gui/main.cpp
-
-QT += widgets
+enable_testing()
+add_subdirectory(client)
+add_subdirectory(gui)
 ```
 
-This says we're building an `app` called `rest_client` where the only source 
-files (for the moment) are `gui/main.cpp`. We also need to tell Qt to include 
-the widget modules with `QT += widgets`.
+This says we're building a project called `rest-client` that requires at least 
+`cmake` version 3.7. We've also enabled testing and added two subdirectories to
+the project (`client` and `gui`).
 
 Our `main.cpp` is still empty, lets rectify that by adding in a [button].
 
 
 ```cpp
+// gui/main.cpp
+
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QPushButton>
 
@@ -51,19 +51,35 @@ int main(int argc, char **argv) {
 }
 ```
 
-Now we can compile and run this basic program to make sure everything is 
-working. You'll probably want to create a separate `build/` directory so you 
-don't pollute the rest of the project with random build artefacts.
+We need to add a `CMakeLists.txt` to let `cmake` know how to build our GUI.
 
+```cmake
+# gui/CMakeLists.txt
+
+project(rest-client)
+set(CMAKE_CXX_STANDARD 14)
+
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+find_package(Qt5Widgets)
+
+add_executable(gui 
+    main_window.cpp main_window.hpp main.cpp)
+target_link_libraries(gui Qt5::Widgets)
+add_dependencies(gui client)
 ```
-$ mkdir build && cd build
-$ qmake ..
-$ make
-$ ./rest_client
-```
+
+This is mostly concerned with adding the correct options so Qt's meta-object 
+compiler can do its thing and we can locate the correct Qt libraries, however 
+right down the bottom you'll notice that we create a new executable with 
+`add_executable()`. This says our `gui` target has 3 source files. It also needs 
+to link to `Qt5::Widgets` and depends on our `client` (the Rust library), which 
+hasn't yet been configured.
 
 
-## Building Rust with Qmake
+## Building Rust with CMake
 
 Next we need to create the Rust project.
 
@@ -72,7 +88,8 @@ $ cargo new client
 ```
 
 To make it accessible from C++ we need to make sure `cargo` generates a 
-dynamically linked library. This is just a case of tweaking our `Cargo.toml`. 
+dynamically linked library. This is just a case of tweaking our `Cargo.toml` to
+tell `cargo` we're creating a `cdylib` instead of the usual library format. 
 
 
 ```toml
@@ -100,83 +117,37 @@ $ ls target/debug/
 build  deps  examples  incremental  libclient.d  libclient.so  native
 ```
 
-Now we know the Rust compiles, we just need to hook it up to `qmake`. To do 
-this, we need to add a custom build target to our `rest_client.pro` project 
-file.
-
-First add a couple useful variables
-
-```
-CONFIG(debug, debug|release) {
-    CARGO_TARGET = debug
-    CARGO_CMD = cargo build 
-} else {
-    CARGO_TARGET = release
-    CARGO_CMD = cargo build --release
-}
-```
-
-This will check whether we are running a `debug` or `release` build and set the
-`CARGO_CMD` and `CARGO_TARGET` variables accordingly. 
-
-Next we add a new build target, `client`, which will `cd` into our `client/` 
-directory, call `cargo` using the `CARGO_CMD` command we defined earlier, then 
-copy the compiled library to the output directory. Cargo does its own dependency
-checking and will recompile as necessary, so we'll just invoke it on every build
-(the `client.depends = FORCE` bit).
+Now we know the Rust compiles, we just need to hook it up to `cmake`. We do this
+by writing a `CMakeLists.txt` in the `client/` directory. As a general rule, 
+you'll have one `CMakeLists.txt` for every "area" of your code. This usually 
+up being one per directory, but not always.
 
 
-```
-CLIENT_DIR = $$PWD/client
-CLIENT_SO = $$CLIENT_DIR/target/$$CARGO_TARGET/libclient.so
+```cmake
+# client/CMakeLists.txt
 
-client.target = $$OUT_PWD/libclient.so
-client.depends = FORCE
-client.commands = cd $$CLIENT_DIR && $$CARGO_CMD && cp $$CLIENT_SO $$client.target
+add_custom_target(client
+    COMMAND cargo build
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_test(NAME client_test 
+    COMMAND cargo test
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 ```
 
-And finally we need to let `qmake` know there's an extra target as well as a new
-build artefact.
+This just adds a new custom target where we invoke `cargo build` for the build
+step. We aren't differentiating between debug vs release builds yet, but we can 
+deal with that later.
+
+Now we can compile and run this basic program to make sure everything is 
+working. You'll probably want to create a separate `build/` directory so you 
+don't pollute the rest of the project with random build artefacts.
 
 ```
-QMAKE_EXTRA_TARGETS += client
-OBJECTS += $$client.target
-```
-
-Your full project file should now look something like this
-
-```
-# rest_client.pro
-
-CONFIG += debug
-TEMPLATE = app
-TARGET = rest_client
-INCLUDEPATH += .
-
-DEFINES += QT_DEPRECATED_WARNINGS
-
-# Input
-SOURCES += gui/main.cpp
-
-QT += widgets
-
-CONFIG(debug, debug|release) {
-    CARGO_TARGET = debug
-    CARGO_CMD = cargo build 
-} else {
-    CARGO_TARGET = release
-    CARGO_CMD = cargo build --release
-}
-
-CLIENT_DIR = $$PWD/client
-CLIENT_SO = $$CLIENT_DIR/target/$$CARGO_TARGET/libclient.so
-
-client.target = $$OUT_PWD/libclient.so
-client.depends = FORCE
-client.commands = cd $$CLIENT_DIR && $$CARGO_CMD && cp $$CLIENT_SO $$client.target
-
-OBJECTS += $$client.target
-QMAKE_EXTRA_TARGETS += client
+$ mkdir build && cd build
+$ cmake ..
+$ make
+$ ./gui/gui
 ```
 
 
@@ -226,7 +197,7 @@ convention is to "just do what C does".
 
 The rest of the function declaration should be fairly intuitive.
 
-After recompiling (`cd build && qmake .. && make`) you can inspect the generated
+After recompiling (`cd build && cmake .. && make`) you can inspect the generated
 binary using `nm` to make sure the `hello_world()` function is there.
 
 ```

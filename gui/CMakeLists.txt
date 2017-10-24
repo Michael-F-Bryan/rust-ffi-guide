@@ -1,4 +1,3 @@
-project(rest-client)
 set(CMAKE_CXX_STANDARD 14)
 
 set(CMAKE_AUTOMOC ON)
