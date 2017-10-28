@@ -51,18 +51,18 @@ int main(int argc, char **argv) {
 }
 ```
 
-We need to add a `CMakeLists.txt` to let `cmake` know how to build our GUI.
+We need to add a `CMakeLists.txt` to the `gui/` directory to let `cmake` know
+how to build our GUI.
 
 ```cmake
 # gui/CMakeLists.txt
 
-project(rest-client)
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
 find_package(Qt5Widgets)
 
 add_executable(gui 
@@ -109,7 +109,7 @@ crate-type = ["cdylib"]
 ```
 
 If you then compile the project you'll see `cargo` build a shared object 
-(`*.so`) instead of the normal `*.rlib` file.
+(`libclient.so`) instead of the normal `*.rlib` file.
 
 ```
 $ cargo build
@@ -117,17 +117,25 @@ $ ls target/debug/
 build  deps  examples  incremental  libclient.d  libclient.so  native
 ```
 
-Now we know the Rust compiles, we just need to hook it up to `cmake`. We do this
-by writing a `CMakeLists.txt` in the `client/` directory. As a general rule, 
-you'll have one `CMakeLists.txt` for every "area" of your code. This usually 
-up being one per directory, but not always.
-
+Now we know the Rust compiles natively with `cargo`, we need to hook it up to
+`cmake`. We do this by writing a `CMakeLists.txt` in the `client/` directory.
+As a general rule, you'll have one `CMakeLists.txt` for every "area" of your
+code. This usually up being one per directory, but not always.
 
 ```cmake
 # client/CMakeLists.txt
 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CARGO_CMD cargo build)
+    set(TARGET_DIR "debug")
+else ()
+    set(CARGO_CMD cargo build --release)
+    set(TARGET_DIR "release")
+endif ()
+
 add_custom_target(client
-    COMMAND cargo build
+    COMMAND ${CARGO_CMD} 
+    COMMAND cp "${CMAKE_CURRENT_SOURCE_DIR}/target/${TARGET_DIR}/libclient.so" ${CMAKE_BINARY_DIR}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_test(NAME client_test 
@@ -135,9 +143,18 @@ add_test(NAME client_test
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 ```
 
-This just adds a new custom target where we invoke `cargo build` for the build
-step. We aren't differentiating between debug vs release builds yet, but we can 
-deal with that later.
+This is our first introduction to the difference between a debug and release
+build. So we know whether to compile our program using different optimisation
+levels and debug symbols, `cmake` will set a `CMAKE_BUILD_TYPE` variable
+containing either `Debug` or `Release`. 
+
+Here we're just using an `if` statement to set the `cargo` build command and
+the target directory, then using those to add a custom target which will
+first build the library, then copy the generated binary to the
+`CMAKE_BINARY_DIR`.
+
+For good measure, lets add a test (`client_test`) which lets `cmake` know how to
+test our Rust module.
 
 Now we can compile and run this basic program to make sure everything is 
 working. You'll probably want to create a separate `build/` directory so you 
@@ -202,7 +219,7 @@ binary using `nm` to make sure the `hello_world()` function is there.
 
 ```
 $ nm libclient.so | grep ' T '
-0000000000003330 T hello_world
+0000000000003330 T hello_world          <-- the function we created
 00000000000096c0 T __rdl_alloc
 00000000000098d0 T __rdl_alloc_excess
 0000000000009840 T __rdl_alloc_zeroed
@@ -236,7 +253,7 @@ class MainWindow : public QMainWindow {
   Q_OBJECT
 
 public:
-  explicit MainWindow(QWidget *parent = 0);
+  MainWindow(QWidget *parent = 0);
 private slots:
   void onClick();
 
@@ -254,7 +271,7 @@ We also need to fill out the `MainWindow` methods and hook up the button's
 ```cpp
 // gui/main_window.cpp
 
-#include "gui/main_window.hpp"
+#include "main_window.hpp"
 
 extern "C" {
 void hello_world();
@@ -279,7 +296,7 @@ Don't forget to update `main.cpp` to use the new `MainWindow`.
 ```cpp
 // gui/main.cpp
 
-#include "gui/main_window.hpp"
+#include "main_window.hpp"
 #include <QtWidgets/QApplication>
 
 int main(int argc, char **argv) {
@@ -290,24 +307,10 @@ int main(int argc, char **argv) {
 
   app.exec();
 }
-
 ```
 
-Finally, `cmake` needs to be told that there are now two more source files to 
-keep track of. Update the section underneath the `# Input` comment to include
-our `main_window` header and `cpp` files.
-
-```
-...
-# Input
-INCLUDEPATH += gui
-SOURCES += gui/main.cpp gui/main_window.cpp
-HEADERS += gui/main_window.hpp
-...
-```
-
-And, now when you compile and run it "Hello World" wil be printed to the console
-every time you click on the button. 
+Now when you compile and run `./gui`, "Hello World" wil be printed to the
+console every time you click on the button.
 
 If you got to this point then congratulations, you've just finished the most 
 difficult part - getting everything to build!
