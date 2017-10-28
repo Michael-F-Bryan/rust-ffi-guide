@@ -8,16 +8,18 @@ extern crate fern;
 #[macro_use]
 extern crate log;
 extern crate reqwest;
+extern crate libc;
 
 pub mod errors;
 pub mod utils;
+pub mod ffi;
 mod request;
 mod response;
 
+pub use request::Request;
+pub use response::Response;
 
 use reqwest::Client;
-use request::Request;
-use response::Response;
 use errors::*;
 
 

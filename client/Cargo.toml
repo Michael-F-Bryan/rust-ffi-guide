@@ -13,6 +13,7 @@ fern = "0.4.3"
 http = "0.1.1"
 log = "0.3.8"
 reqwest = "0.8.0"
+libc = "0.2"
 
 [lib]
 crate-type = ["cdylib"]

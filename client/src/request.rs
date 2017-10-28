@@ -14,6 +14,14 @@ pub struct Request {
 }
 
 impl Request {
+    pub fn new(destination: Url, method: Method) -> Request {
+        let headers = Headers::default();
+        let cookies = CookieJar::default();
+        let body = None;
+
+        Request { destination, method, headers, cookies, body }
+    }
+
     pub(crate) fn to_reqwest(self) -> reqwest::Request {
         let mut r = reqwest::Request::new(self.method, self.destination);
 
