@@ -147,12 +147,175 @@ dynamically allocated type native to a particular language, that means the
 caller **must** return that object to the language so it can be free'd 
 appropriately. This can get pretty error-prone and annoying after a while.
 
-A good rule of thumb is that if a language creates something on the stack, you 
-should return the object to the original language once you're done with it so 
-it can be free'd properly. Failing to do this could end up either confusing the
-allocator's internal bookkeeping or even result in segfaults because one 
-allocator (e.g. libc's `malloc`) is trying to free memory belonging to a 
-completely different allocator (e.g. Rust's `jemalloc`).
+> A good rule of thumb is that if a language creates something on the stack, you 
+> should return the object to the original language once you're done with it so 
+> it can be free'd properly. Failing to do this could end up either confusing 
+> the allocator's internal bookkeeping or even result in segfaults because one 
+> allocator (e.g. libc's `malloc`) is trying to free memory belonging to a 
+> completely different allocator (e.g. Rust's `jemalloc`).
+
+
+## C++ Wrapper
+
+The next thing we'll need to do is create a wrapper around a `Response`. This
+will be almost identical to the `Request` wrapper, although we'll need to add a
+`read_body()` method so people can access the response body.
+
+The `Response` class definition isn't overly interesting:
+
+```cpp
+// gui/wrappers.hpp
+
+...
+
+class Response {
+public:
+  std::vector<char> read_body();
+  Response(void *raw) : raw(raw){};
+  ~Response();
+
+private:
+  void *raw;
+};
+```
+
+In the implementation, we need to update the `extern` block to include the new
+Rust functions.
+
+```cpp
+// gui/wrappers.cpp
+
+extern "C" {
+...
+void response_destroy(void *);
+int response_body_length(void *);
+int response_body(void *, char *, int);
+}
+```
+
+As was mentioned earlier when writing the Rust bindings, in order to read the
+response body callers will need to create their own buffer and pass it to Rust.
+We've chosen to use a `std::vector<char>` as the buffer and added a couple 
+`assert()` statements to check for errors (we'll do proper error handling 
+later).
+
+```cpp
+// gui/wrappers.cpp
+
+Response::~Response() { response_destroy(raw); }
+
+std::vector<char> Response::read_body() {
+  int length = response_body_length(raw);
+  assert(length >= 0);
+
+  std::vector<char> buffer(length);
+
+  int bytes_written = response_body(raw, buffer.data(), buffer.size());
+  assert(bytes_written == length);
+
+  return buffer;
+}
+```
+
+The next step is to add a `send()` method to a `Request`. This is just a case of
+adding a new public method to `Request` and then deferring to `send_request` in
+our `client` module. You'll probably need to move `Response` above `Request` at
+this point so `Request` can use it.
+
+```cpp
+// gui/wrappers.hpp
+
+...
+
+class Request {
+public:
+  Request(const std::string);
+  Response send();
+  ~Request();
+
+private:
+  void *raw;
+};
+```
+
+Next we'll need to actually implement this `send()` method.
+
+```cpp
+// gui/wrappers.cpp
+
+...
+
+extern "C" {
+...
+void *request_send(void *);
+}
+
+...
+
+Response Request::send() {
+  void *raw_response = request_send(raw);
+
+  if (raw_response == nullptr) {
+    throw "Request failed";
+  }
+
+  return Response(raw_response);
+}
+```
+
+Here we simply called the `request_send()` function, checked whether the result
+was a null pointer (indicating an error), then created a new `Response` and 
+returned it.
+
+
+## Testing the Process
+
+We've *finally* got all the infrastructure set up to send a single `GET` request
+to a server and then read back the response. To make sure it actually works, 
+lets hook it up to our GUI's button.
+
+
+```cpp
+// gui/main_window.cpp
+
+void MainWindow::onClick() {
+  std::cout << "Creating the request" << std::endl;
+  Request req("https://www.rust-lang.org/");
+  std::cout << "Sending Request" << std::endl;
+  Response res = req.send();
+  std::cout << "Received Response" << std::endl;
+
+  std::vector<char> raw_body = res.read_body();
+  std::string body(raw_body.begin(), raw_body.end());
+  std::cout << body << std::endl;
+}
+```
+
+If you compile and run this then click the button you should see something 
+similar to this printed to the terminal.
+
+```
+$ cmake .. && make
+$ ./gui/gui
+Creating the request
+Sending Request
+Received Response
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>The Rust Programming Language</title>
+    ...
+  </head>
+  <body>
+    <p><a href="/en-US/">Click here</a> to be redirected.</p>
+  </body>
+</html>
+```
+
+If you've gotten this far, take a second to give yourself a pat on the back. You
+deserve it.
+
 
 [`slice::from_raw_parts_mut()`]: https://doc.rust-lang.org/std/slice/fn.from_raw_parts_mut.html
 [`ptr::copy_nonoverlapping()`]: https://doc.rust-lang.org/std/ptr/fn.copy_nonoverlapping.html

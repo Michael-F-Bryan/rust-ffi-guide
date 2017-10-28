@@ -4,8 +4,14 @@
 
 void MainWindow::onClick() {
   std::cout << "Creating the request" << std::endl;
-  Request req("https://google.com/");
-  std::cout << "Request created" << std::endl;
+  Request req("https://www.rust-lang.org/");
+  std::cout << "Sending Request" << std::endl;
+  Response res = req.send();
+  std::cout << "Received Response" << std::endl;
+
+  std::vector<char> raw_body = res.read_body();
+  std::string body(raw_body.begin(), raw_body.end());
+  std::cout << "Body:" << std::endl << body << std::endl;
 }
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
