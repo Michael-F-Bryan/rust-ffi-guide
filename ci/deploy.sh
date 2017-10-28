@@ -4,8 +4,6 @@ set -ex
 BOOK_DIR=build/book
 
 # TODO: remove me when PR #41 is merged
-command -v mdbook >/dev/null 2>&1 || cargo install mdbook
-command -v aws >/dev/null 2>&1 || pip3 install awscli
 mdbook build 
 aws s3 sync $BOOK_DIR s3://temp.michaelfbryan.com
 
