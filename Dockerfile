@@ -12,7 +12,8 @@ ENV RUSTUP_HOME=/usr/local/rustup \
     PATH=/usr/local/cargo/bin:$PATH
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.21.0
-
 RUN cargo install mdbook
+
+RUN pip3 install awscli 
 
 WORKDIR /code
