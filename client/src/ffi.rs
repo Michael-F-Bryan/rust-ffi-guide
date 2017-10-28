@@ -24,6 +24,10 @@ use Request;
 /// [`request_destroy()`]: fn.request_destroy.html
 #[no_mangle]
 pub unsafe extern "C" fn request_create(url: *const c_char) -> *mut Request {
+    if url.is_null() {
+        return ptr::null_mut();
+    }
+
     let raw = CStr::from_ptr(url);
 
     let url_as_str = match raw.to_str() {

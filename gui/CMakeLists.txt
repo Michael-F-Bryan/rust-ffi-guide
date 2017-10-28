@@ -6,7 +6,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 find_package(Qt5Widgets)
 
-add_executable(gui 
-    main_window.cpp main_window.hpp main.cpp)
-target_link_libraries(gui Qt5::Widgets)
+set(SOURCE main_window.cpp main_window.hpp wrappers.cpp wrappers.hpp main.cpp)
+
+add_executable(gui ${SOURCE})
+target_link_libraries(gui Qt5::Widgets ${CMAKE_BINARY_DIR}/libclient.so)
 add_dependencies(gui client)
