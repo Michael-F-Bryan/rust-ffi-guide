@@ -4,7 +4,7 @@
 use std::ffi::CStr;
 use std::ptr;
 use std::slice;
-use libc::{c_char, c_int};
+use libc::{c_char, size_t, c_int};
 use reqwest::{Method, Url};
 
 use {send_request, Request, Response};
@@ -82,12 +82,12 @@ pub unsafe extern "C" fn response_destroy(res: *mut Response) {
 
 /// Get the length of a `Response`'s body.
 #[no_mangle]
-pub unsafe extern "C" fn response_body_length(res: *mut Response) -> c_int {
+pub unsafe extern "C" fn response_body_length(res: *const Response) -> size_t {
     if res.is_null() {
         return 0;
     }
 
-    (&*res).body.len() as c_int
+    (&*res).body.len() as size_t
 }
 
 /// Copy the response body into a user-provided buffer, returning the number of
@@ -96,9 +96,9 @@ pub unsafe extern "C" fn response_body_length(res: *mut Response) -> c_int {
 /// If an error is encountered, this returns `-1`.
 #[no_mangle]
 pub unsafe extern "C" fn response_body(
-    res: *mut Response,
+    res: *const Response,
     buffer: *mut c_char,
-    length: c_int,
+    length: size_t,
 ) -> c_int {
     if res.is_null() || buffer.is_null() {
         return -1;
