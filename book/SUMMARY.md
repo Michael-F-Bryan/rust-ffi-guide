@@ -8,3 +8,9 @@
 - [Generating a Header File](./cbindgen.md)
 - [Better Error Handling](./error_handling.md)
 - [Future Work](./future_work.md)
+
+---
+
+- [Break All The Things!!1!](./fun/index.md)
+    - [Problems](./fun/problems.md)
+    - [Solutions](./fun/solutions.md)
