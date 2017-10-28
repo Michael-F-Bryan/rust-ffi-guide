@@ -6,12 +6,18 @@ cache:
   directories:
   - build
 script:
+- export CARGO_HOME=$HOME/.cargo
 - docker pull michaelfbryan/ffi-guide
-- docker run -v $(pwd):/code michaelfbryan/ffi-guide ci/test.sh
+- docker run -v $(pwd):/code 
+    -v $CARGO_HOME:$CARGO_HOME \
+    -e CARGO_HOME \
+    michaelfbryan/ffi-guide ci/test.sh
 after_success:
   - docker run -v $(pwd):/code \
-    -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
-    -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+    -v $CARGO_HOME:$CARGO_HOME \
+    -e AWS_SECRET_ACCESS_KEY \
+    -e AWS_ACCESS_KEY_ID \
+    -e CARGO_HOME_DIR \
     michaelfbryan/ffi-guide ci/deploy.sh
 env:
   global:
