@@ -140,14 +140,19 @@ else ()
     set(TARGET_DIR "release")
 endif ()
 
+set(CLIENT_SO "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_DIR}/libclient.so")
+
 add_custom_target(client
-    COMMAND ${CARGO_CMD} 
-    COMMAND cp "${CMAKE_CURRENT_SOURCE_DIR}/target/${TARGET_DIR}/libclient.so" ${CMAKE_BINARY_DIR}
+    COMMENT "Compiling client module"
+    COMMAND CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} ${CARGO_CMD} 
+    COMMAND cp ${CLIENT_SO} ${CMAKE_CURRENT_BINARY_DIR}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+set_target_properties(client PROPERTIES LOCATION ${CMAKE_CURRENT_BINARY_DIR})
 
 add_test(NAME client_test 
     COMMAND cargo test
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
 ```
 
 This is our first introduction to the difference between a debug and release
@@ -163,19 +168,31 @@ first build the library, then copy the generated binary to the
 For good measure, lets add a test (`client_test`) which lets `cmake` know how to
 test our Rust module.
 
-To make sure our `libclient.so` can be linked into the final executable
-properly we've copied it out of the `target/` directory (the second `COMMAND`
-in `add_custom_target()`) created by `cargo` into `${CMAKE_BINARY_DIR}` which
-is `build/` in our case. Then we need to make sure the C++ compiler also
-links to `libclient.so` by updating `gui/CMakeLists.txt`.
+To make sure `cargo` puts all compiled artefacts in the correct spot within 
+`build/`, we set the `CARGO_TARGET_DIR` environment variable while invoking the
+`CARGO_CMD`. The compiled library is then copied from into 
+`CMAKE_CURRENT_BINARY_DIR` and we set the `LOCATION` property on the overall 
+target to be `CMAKE_CURRENT_BINARY_DIR`.
+
+The purpose of that little dance is so that no matter what type of build 
+(release or debug) we do, the compiled library will be in the same spot. We then
+set the `client` target's `LOCATION` property so that anyone else who needs to 
+use `client`'s outputs knows which directory they'll be in.
+
+Now we know where the compiled `client` module will be, we can tell our `gui` to
+link to it.
 
 ```diff
 # gui/CMakeLists.txt
 
-add_executable(gui 
-    main_window.cpp main_window.hpp main.cpp)
-- target_link_libraries(gui Qt5::Widgets)
-+ target_link_libraries(gui Qt5::Widgets ${CMAKE_BINARY_DIR}/libclient.so)
+...
+
+set(SOURCE main_window.cpp main_window.hpp wrappers.cpp wrappers.hpp main.cpp)
+add_executable(gui ${SOURCE})
+
++ get_target_property(CLIENT_DIR client LOCATION)
+target_link_libraries(gui Qt5::Widgets)
++ target_link_libraries(gui ${CLIENT_DIR}/libclient.so)
 add_dependencies(gui client)
 ```
 

@@ -6,10 +6,14 @@ else ()
     set(TARGET_DIR "release")
 endif ()
 
+set(CLIENT_SO "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_DIR}/libclient.so")
+
 add_custom_target(client
-    COMMAND ${CARGO_CMD} 
-    COMMAND cp "${CMAKE_CURRENT_SOURCE_DIR}/target/${TARGET_DIR}/libclient.so" ${CMAKE_BINARY_DIR}
+    COMMENT "Compiling client module"
+    COMMAND CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} ${CARGO_CMD} 
+    COMMAND cp ${CLIENT_SO} ${CMAKE_CURRENT_BINARY_DIR}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+set_target_properties(client PROPERTIES LOCATION ${CMAKE_CURRENT_BINARY_DIR})
 
 add_test(NAME client_test 
     COMMAND cargo test

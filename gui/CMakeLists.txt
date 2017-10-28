@@ -9,5 +9,8 @@ find_package(Qt5Widgets)
 set(SOURCE main_window.cpp main_window.hpp wrappers.cpp wrappers.hpp main.cpp)
 
 add_executable(gui ${SOURCE})
-target_link_libraries(gui Qt5::Widgets ${CMAKE_BINARY_DIR}/libclient.so)
+
+get_target_property(CLIENT_DIR client LOCATION)
+target_link_libraries(gui Qt5::Widgets)
+target_link_libraries(gui ${CLIENT_DIR}/libclient.so)
 add_dependencies(gui client)
