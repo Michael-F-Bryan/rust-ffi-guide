@@ -163,6 +163,22 @@ first build the library, then copy the generated binary to the
 For good measure, lets add a test (`client_test`) which lets `cmake` know how to
 test our Rust module.
 
+To make sure our `libclient.so` can be linked into the final executable
+properly we've copied it out of the `target/` directory (the second `COMMAND`
+in `add_custom_target()`) created by `cargo` into `${CMAKE_BINARY_DIR}` which
+is `build/` in our case. Then we need to make sure the C++ compiler also
+links to `libclient.so` by updating `gui/CMakeLists.txt`.
+
+```diff
+# gui/CMakeLists.txt
+
+add_executable(gui 
+    main_window.cpp main_window.hpp main.cpp)
+- target_link_libraries(gui Qt5::Widgets)
++ target_link_libraries(gui Qt5::Widgets ${CMAKE_BINARY_DIR}/libclient.so)
+add_dependencies(gui client)
+```
+
 Now we can compile and run this basic program to make sure everything is 
 working. You'll probably want to create a separate `build/` directory so you 
 don't pollute the rest of the project with random build artefacts.

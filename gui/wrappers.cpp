@@ -14,7 +14,7 @@ void *request_send(void *);
 
 Request::~Request() { request_destroy(raw); }
 
-Request::Request(const std::string url) {
+Request::Request(const std::string &url) {
   raw = request_create(url.c_str());
   if (raw == nullptr) {
     throw "Invalid URL";

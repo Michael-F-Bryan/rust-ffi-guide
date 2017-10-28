@@ -13,7 +13,7 @@ private:
 
 class Request {
 public:
-  Request(const std::string);
+  Request(const std::string&);
   Response send();
   ~Request();
 

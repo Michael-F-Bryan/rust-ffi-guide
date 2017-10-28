@@ -60,7 +60,7 @@ the exact same as our `Request` destructor.
 #[no_mangle]
 pub unsafe extern "C" fn response_destroy(res: *mut Response) {
     if !res.is_null() {
-        let _ = Box::from_raw(res);
+        drop(Box::from_raw(res));
     }
 }
 ```

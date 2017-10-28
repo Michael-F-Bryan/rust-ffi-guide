@@ -6,4 +6,5 @@ get some context behind an error and possibly present a nice friendly message
 to the user.
 
 
-> **TODO:** Talk about errno-style error handling and logs and stuff
+> **TODO:** Talk about errno-style error handling, logs, `catch_unwind()` and 
+> all that good stuff.

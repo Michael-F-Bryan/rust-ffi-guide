@@ -49,7 +49,7 @@ pub unsafe extern "C" fn request_create(url: *const c_char) -> *mut Request {
 #[no_mangle]
 pub unsafe extern "C" fn request_destroy(req: *mut Request) {
     if !req.is_null() {
-        let _ = Box::from_raw(req);
+        drop(Box::from_raw(req));
     }
 }
 
@@ -76,7 +76,7 @@ pub unsafe extern "C" fn request_send(req: *const Request) -> *mut Response {
 #[no_mangle]
 pub unsafe extern "C" fn response_destroy(res: *mut Response) {
     if !res.is_null() {
-        let _ = Box::from_raw(res);
+        drop(Box::from_raw(res));
     }
 }
 

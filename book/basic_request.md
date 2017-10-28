@@ -108,8 +108,8 @@ check.
 
 The destructor is significantly easier to write. All we need to do is accept
 a raw pointer to some `Request`, convert it back to a `Box` with
-`Box::from_raw()`, then let the `Box<Request>` fall out of scope and be
-destroyed like normal. 
+`Box::from_raw()`, then the `Box<Request>` can either be explicitly dropped or
+allowed to fall out of scope to destroy it like normal. 
 
 ```rust
 // client/src/ffi.rs
@@ -118,7 +118,7 @@ destroyed like normal.
 #[no_mangle]
 pub unsafe extern "C" fn request_destroy(req: *mut Request) {
     if !req.is_null() {
-        let _ = Box::from_raw(req);
+        drop(Box::from_raw(req));
     }
 }
 ```
@@ -254,7 +254,7 @@ pub unsafe extern "C" fn request_create(url: *const c_char) -> *mut Request {
 pub unsafe extern "C" fn request_destroy(req: *mut Request) {
     if !req.is_null() {
         println!("Request was destroyed");
-        let _ = Box::from_raw(req);
+        drop(Box::from_raw(req));
     }
 }
 ```
