@@ -19,11 +19,17 @@ impl Request {
         let cookies = CookieJar::default();
         let body = None;
 
-        Request { destination, method, headers, cookies, body }
+        Request {
+            destination,
+            method,
+            headers,
+            cookies,
+            body,
+        }
     }
 
-    pub(crate) fn to_reqwest(self) -> reqwest::Request {
-        let mut r = reqwest::Request::new(self.method, self.destination);
+    pub(crate) fn to_reqwest(&self) -> reqwest::Request {
+        let mut r = reqwest::Request::new(self.method.clone(), self.destination.clone());
 
         r.headers_mut().extend(self.headers.iter());
 

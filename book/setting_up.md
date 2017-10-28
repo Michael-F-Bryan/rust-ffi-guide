@@ -3,6 +3,13 @@
 Before we can start doing any coding we need to get a build environment set up
 and run a hello world program to check everything works.
 
+This chapter will cover:
+
+- Setting up a C++ build system
+- Integrating `cargo` into the build system transparently
+- A "hello world" to test that C++ can call Rust functions
+
+
 ## Setting up Qt and the Build System
 
 First, create a new `cmake` project in a directory of your choosing.

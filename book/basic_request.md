@@ -1,14 +1,22 @@
-# Construct a Basic Request
+# Constructing a Basic Request
 
 In this step we want to construct a very simple `Request` which we can later use
 to tell the `client` module to fetch http://google.com/. This requires roughly
-two steps:
+three steps:
 
 - Create a C interface which exposes our Rust `Request` in a way that can be used
   and manipulated from our C++ application, 
 - Write a thin C++ wrapper class which gives us an abstraction over the raw 
   C-style interface, and
 - Update the form so it can accept user inputs and create our `Request`.
+
+We'll also touch on the following topics:
+
+- Exposing a FFI interface in Rust
+- Calling Rust functions from C++
+- Passing strings back and forth across the FFI barrier
+- Passing an opaque Rust struct to C++ and ensuring it gets free'd at the 
+  correct time
 
 
 ## Creating the C Interface

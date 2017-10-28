@@ -5,10 +5,10 @@ extern crate cookie;
 #[macro_use]
 extern crate error_chain;
 extern crate fern;
+extern crate libc;
 #[macro_use]
 extern crate log;
 extern crate reqwest;
-extern crate libc;
 
 pub mod errors;
 pub mod utils;
@@ -24,7 +24,7 @@ use errors::*;
 
 
 /// Perform a single `GET` request.
-pub fn send_request(req: Request) -> Result<Response> {
+pub fn send_request(req: &Request) -> Result<Response> {
     info!("Sending a GET request to {}", req.destination);
     if log_enabled!(::log::LogLevel::Debug) {
         debug!("Sending {} Headers", req.headers.len());
