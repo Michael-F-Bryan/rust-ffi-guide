@@ -8,3 +8,7 @@ to the user.
 
 > **TODO:** Talk about errno-style error handling, logs, `catch_unwind()` and 
 > all that good stuff.
+
+Useful links:
+
+- [libgit2's error handling docs](https://github.com/libgit2/libgit2/blob/master/docs/error-handling.md)

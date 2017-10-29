@@ -81,3 +81,61 @@ $ clang++ -std=c++14 -c main.cpp
 $ clang++ -std=c++14 -o main -L. -lfoo main.o
 $ ./main
 ```
+
+
+## Problem 3
+
+```rust
+// home.rs
+
+use std::ffi::CString;
+use std::env;
+use std::ptr;
+use std::os::c_char;
+
+
+#[no_mangle]
+pub extern "C" fn home_directory() -> *const c_char {
+    let home = match env::home_dir() {
+        Some(p) => p,
+        None => return ptr::null(),
+    };
+
+    let c_string = match CString::new(home){
+        Ok(s) => s,
+        Err(_) => return ptr::null(),
+    };
+
+    c_string.as_ptr()
+}
+```
+
+
+```cpp
+// main.cpp
+
+#include <iostream>
+
+extern "C" {
+    char *home_directory();
+}
+
+int main() {
+    char* home = home_directory();
+
+    if (home == nullptr) {
+        std::cout << "Unable to find the home directory" << std::endl;
+    } else {
+        std::cout << "Home directory is " << home << std::endl; 
+    }
+}
+```
+
+Compiling and running:
+
+```
+$ rustc --crate-type cdylib home.rs
+$ clang++ -std=c++14 -c main.cpp
+$ clang++ -std=c++14 -o main -L. -lhome main.o
+$ ./main
+```
