@@ -7,7 +7,6 @@
 - [Sending the Request](./send_basic.md)
 - [Generating a Header File](./cbindgen.md)
 - [Better Error Handling](./error_handling.md)
-- [Future Work](./future_work.md)
 
 ---
 
