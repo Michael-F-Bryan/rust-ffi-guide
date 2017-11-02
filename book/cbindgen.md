@@ -6,9 +6,6 @@ generate a header file that corresponds to `ffi.rs` and just `#include` that.
 Fortunately there exists a tool which does exactly this called [cbindgen]!
 
 
-> **TODO:** write about how you can get `cbindgen` to generate a header file in
-> `build.rs` and hook it up to `cmake` so our C++ code can `#include` it.
-
 ## Adding Cbindgen
 
 You can use `cbindgen` to generate header files in a couple ways, the first is
