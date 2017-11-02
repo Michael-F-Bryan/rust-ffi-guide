@@ -1,22 +1,23 @@
+#include "client.h"
 #include <string>
 #include <vector>
 
 class Response {
 public:
   std::vector<char> read_body();
-  Response(void *raw) : raw(raw){};
+  Response(ffi::Response *raw) : raw(raw){};
   ~Response();
 
 private:
-  void *raw;
+  ffi::Response *raw;
 };
 
 class Request {
 public:
-  Request(const std::string&);
+  Request(const std::string &);
   Response send();
   ~Request();
 
 private:
-  void *raw;
+  ffi::Request *raw;
 };

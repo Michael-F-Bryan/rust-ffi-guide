@@ -6,7 +6,11 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 find_package(Qt5Widgets)
 
-set(SOURCE main_window.cpp main_window.hpp wrappers.cpp wrappers.hpp main.cpp)
+set(CLIENT_BUILD_DIR ${CMAKE_BINARY_DIR}/client)
+include_directories(${CLIENT_BUILD_DIR})
+
+set(SOURCE main_window.cpp main_window.hpp wrappers.cpp wrappers.hpp main.cpp
+    ${CLIENT_BUILD_DIR}/client.h)
 
 add_executable(gui ${SOURCE})
 
