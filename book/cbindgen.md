@@ -138,8 +138,8 @@ linker errors if your forward declarations become out of sync (or crashes and
 data corruption if function arguments change).
 
 To actually `#include` the generated header file we need to make a couple 
-adjustments to the `CMakeLists.txt` file to let `cmake` know where our header 
-file is and that the `gui` program depends on it.
+adjustments to the `CMakeLists.txt` file to let `cmake` know to add the 
+`build/client/` output directory to the include path.
 
 
 ```diff
@@ -151,8 +151,7 @@ find_package(Qt5Widgets)
 + set(CLIENT_BUILD_DIR ${CMAKE_BINARY_DIR}/client)
 + include_directories(${CLIENT_BUILD_DIR})
 +
-+ set(SOURCE main_window.cpp main_window.hpp wrappers.cpp wrappers.hpp main.cpp
-+     ${CLIENT_BUILD_DIR}/client.h)
+set(SOURCE main_window.cpp main_window.hpp wrappers.cpp wrappers.hpp main.cpp)
 
 add_executable(gui ${SOURCE})
 ```

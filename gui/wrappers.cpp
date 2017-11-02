@@ -1,5 +1,5 @@
 #include "wrappers.hpp"
-#include "client.h"
+#include "client.hpp"
 #include <cassert>
 #include <string>
 #include <vector>
