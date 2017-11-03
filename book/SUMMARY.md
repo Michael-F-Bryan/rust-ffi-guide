@@ -8,6 +8,7 @@
 - [Generating a Header File](./cbindgen.md)
 - [Better Error Handling](./error_handling.md)
 - [Asynchronous Operations](./async.md)
+- [More Complex Requests](./complex_request.md)
 
 ---
 
