@@ -4,7 +4,7 @@
 use std::ffi::CStr;
 use std::ptr;
 use std::slice;
-use libc::{c_char, size_t, c_int};
+use libc::{c_char, c_int, size_t};
 use reqwest::{Method, Url};
 
 use {send_request, Request, Response};
@@ -105,16 +105,13 @@ pub unsafe extern "C" fn response_body(
     }
 
     let res = &*res;
-    let buffer: &mut [u8] = slice::from_raw_parts_mut(buffer as *mut u8, 
-                                                      length as usize);
+    let buffer: &mut [u8] = slice::from_raw_parts_mut(buffer as *mut u8, length as usize);
 
     if buffer.len() < res.body.len() {
         return -1;
     }
 
-    ptr::copy_nonoverlapping(res.body.as_ptr(), 
-                             buffer.as_mut_ptr(), 
-                             res.body.len());
+    ptr::copy_nonoverlapping(res.body.as_ptr(), buffer.as_mut_ptr(), res.body.len());
 
     res.body.len() as c_int
 }
