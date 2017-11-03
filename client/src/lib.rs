@@ -10,6 +10,7 @@ extern crate libc;
 extern crate log;
 extern crate reqwest;
 
+mod plugins;
 pub mod errors;
 pub mod utils;
 pub mod ffi;
@@ -18,6 +19,7 @@ mod response;
 
 pub use request::Request;
 pub use response::Response;
+pub use plugins::Plugin;
 
 use reqwest::Client;
 use errors::*;

@@ -5,6 +5,7 @@ use reqwest::header::Headers;
 use errors::*;
 
 
+/// Response received from the server.
 #[derive(Debug, Clone)]
 pub struct Response {
     pub headers: Headers,

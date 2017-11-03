@@ -1,3 +1,5 @@
+//! Common error types used in this crate.
+
 error_chain!{
     foreign_links {
         Reqwest(::reqwest::Error);
