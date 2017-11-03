@@ -5,7 +5,8 @@ asynchrony are dealt with, lets flesh out this application.
 
 At the moment the entire application is composed of a button where the handler
 will fire off HTTP requests in the background. The GUI doesn't even display the 
-response body, instead printing it to the parent console.
+response body, instead printing it to the parent console. This is fine while 
+developing the backend, but not overly useful for end users.
 
 This chapter will deal with:
 

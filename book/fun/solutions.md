@@ -16,4 +16,9 @@
 > **TODO:** Talk about why [Cstring.as_ptr()] is unsafe because you are passing
 > back a dangling pointer.
 
+## Problem 4
+
+> **TODO:** Talk about how it's UB to create a Rust enum from an integer with 
+> an invalid variant
+
 [CString.as_ptr()]: https://users.rust-lang.org/t/cstring-as-ptr-is-incredibly-unsafe/11431
