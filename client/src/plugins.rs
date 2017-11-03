@@ -23,7 +23,7 @@ pub trait Plugin {
 macro_rules! declare_plugin {
     ($plugin_type:ty, $constructor:ident) => {
         #[no_mangle]
-        pub extern "C" fn __create_plugin() -> *mut $crate::Plugin {
+        pub extern "C" fn __plugin_create() -> *mut $crate::Plugin {
             // make sure the constructor is the correct type.
             let constructor: fn() -> $plugin_type = $constructor;
 
