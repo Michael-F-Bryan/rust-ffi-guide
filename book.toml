@@ -1,4 +1,4 @@
-title = "The Rust FFI Guide"
+title = "The (unofficial) Rust FFI Guide"
 author = "Michael-F-Bryan"
 description = "Using unsafe for fun and profit!"
 source = "book"
