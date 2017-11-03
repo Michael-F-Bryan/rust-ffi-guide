@@ -69,7 +69,6 @@ improved, please [create an issue][issues]. Pull requests are welcome too!
 - [gurgalex](https://github.com/gurgalex)
 
 
-
 [gh-pages]: https://michael-f-bryan.github.io/rust-ffi-guide/
 [issues]: https://github.com/Michael-F-Bryan/rust-ffi-guide/issues/new
 [rustup]: https://rustup.rs/
