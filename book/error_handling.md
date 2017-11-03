@@ -24,5 +24,8 @@ technique in practice.
 > [error handling docs][libgit]. The error handling mechanism we'll be using 
 > takes a lot of inspiration from `libgit2`.
 
+> **TODO:** Add the error handling patterns developed in this chapter to the 
+> [ffi-helpers] crate.
 
-[libgit]: (https://github.com/libgit2/libgit2/blob/master/docs/error-handling.md)
+[libgit]: https://github.com/libgit2/libgit2/blob/master/docs/error-handling.md
+[ffi-helpers]: https://github.com/Michael-F-Bryan/ffi-helpers

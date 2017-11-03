@@ -28,6 +28,7 @@ Here are a couple links and resources which you may find useful along the way.
 - [Foreign Function Interfaces for Fun & Industry](https://spin.atomicobject.com/2013/02/15/ffi-foreign-function-interfaces/)
 - [The Rust FFI Omnibus](http://jakegoulding.com/rust-ffi-omnibus/)
 - ["Unsafe Rust" chapter from *The Book*](https://doc.rust-lang.org/book/second-edition/ch19-01-unsafe-rust.html)
+- [Calling Rust from C and Java](https://speakerdeck.com/dbrgn/calling-rust-from-c-and-java)
 
 
 ## Objectives
@@ -41,3 +42,12 @@ The end objectives of this guide are:
 - Creating a C interface for a Rust library
 - Multithreading and asynchronous programming (because we'll need to wait for
   the server's response without blocking the UI)
+- Create flexible abstractions which encapsulate common patterns used when 
+  writing foreign function interfaces.
+
+The [ffi-helpers] crate was written in parallel with this guide. It takes
+advantage of the patterns and abstractions we'll come up with and allows you
+to reuse them for your own application.
+
+
+[ffi-helpers]: https://github.com/Michael-F-Bryan/ffi-helpers
