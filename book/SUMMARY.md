@@ -10,6 +10,7 @@
 - [Asynchronous Operations](./async.md)
 - [More Complex Requests](./complex_request.md)
 - [Testing](./testing.md)
+- [Dynamic Loading & Plugins](./dynamic_loading.md)
 
 ---
 
