@@ -40,14 +40,14 @@ To build the application itself you'll need the following installed:
 - mdbook (`cargo install mdbook`)
 
 In this application we're using `cmake` as the build system. The
-`ci/build.sh` script will make a `build/` directory and invoke `cmake` to 
-compile everything.
+`ci/test.sh` script will make a `build/` directory and invoke `cmake` to 
+compile and test everything.
 
 ```
-$ ./ci/build.sh
+$ ./ci/test.sh
 ```
 
-The final application should now be at `build/rest_client`.
+The final application should now be at `build/gui`.
 
 Alternatively, if you don't want to install all the dependencies I've created a
 docker image ([michaelfbryan/ffi-guide][docker]) for compiling Rust and Qt.
@@ -61,13 +61,6 @@ $ docker run -v $(pwd):/code --user $UID michaelfbryan/ffi-guide ci/test.sh
 
 If there's anything you feel is missing or could be
 improved, please [create an issue][issues]. Pull requests are welcome too!
-
-The repository has been designed so that each chapter has its own `Makefile`
-which defines three rules, `build`, `test`, and `clean`. This allows you to run 
-`make test` in the the top level directory and `make` will iterate through each
-chapter, building and testing the examples. As such, changes which add new
-files may need to update the chapter's `Makefile` so that it is tested
-automatically.
 
 
 ### Contributors

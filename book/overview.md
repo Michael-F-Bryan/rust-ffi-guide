@@ -16,6 +16,8 @@ manage and compile the Rust components. The guide was originally written on a
 linux machine, but there is no reason why it shouldn't work on Windows or Mac, 
 possibly with a couple small platform-specific tweaks (filenames, etc.).
 
+> **TODO:** Insert final screenshot here
+
 
 ## Useful Links and References
 
