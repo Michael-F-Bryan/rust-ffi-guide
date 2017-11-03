@@ -5,9 +5,9 @@ services:
 cache:
   directories:
   - build
-  - ~/.cargo
+  - cargo
 script:
-- export CARGO_HOME=~/.cargo
+- export CARGO_HOME=$(pwd)/cargo
 - docker pull michaelfbryan/ffi-guide
 - docker run -v $(pwd):/code -e CARGO_HOME michaelfbryan/ffi-guide ci/test.sh
 after_success:
