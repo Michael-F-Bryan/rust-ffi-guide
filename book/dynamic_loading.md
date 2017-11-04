@@ -28,13 +28,13 @@ The macro would then declare an `extern "C"` constructor which exports a trait
 object (`Box<Plugin>`) with some pre-defined symbol (e.g. `__plugin_create()`). 
 
 Before diving into the complexity of real code, it's probably going to be easier
-if we figure out how dynamic loading works in a contrived example.
+if we figure out how dynamic loading works using a contrived example.
 
 
 ## Contrived Example
 
-For this the function being exported doesn't need to be very complex, seeing as
-we're not actually testing it.
+For this the function being exported doesn't need to be very interesting, seeing 
+it's just an example.
 
 ```rust
 #[no_mangle]
@@ -45,9 +45,9 @@ pub extern "C" fn add(a: isize, b: isize) -> isize {
 
 This then can then be compiled into a `cdylib`. 
 
-> **Note:** Although up uptil now it hasn't made a difference whether you
-> compile as a dynamic library or a static one. However for dynamically loading 
-> a library on the fly you **must** compile as a `cdylib`.
+> **Note:** Up uptil now it hasn't mattered whether you compile as a dynamic 
+> library or a static one. However for dynamically loading a library on the fly 
+> you **must** compile as a `cdylib`.
 
 ```bash
 $ rustc --crate-type cdylib adder.rs
@@ -65,7 +65,7 @@ As you can see, the `add` function is exposed and fully accessible to other
 programs.
 
 
-## Loading the Library
+## Loading the Contrived Example
 
 Loading a function from this library and then calling it is then surprisingly
 easy. The key is to use something like the [libloading] crate. This abstracts
@@ -79,8 +79,9 @@ use std::env;
 use libloading::{Library, Symbol};
 ```
 
-It's also a good idea to add a type alias for the `add()` function to make it
-more readable.
+It's also a good idea to add a type alias for the `add()` function's signature.
+This isn't required, but when things start getting more complex and having more
+interesting arguments the extra readability really pays off.
 
 ```rust
 type AddFunc = unsafe fn(isize, isize) -> isize;
@@ -94,7 +95,8 @@ fn main() {
     println!("Loading add() from {}", library_path);
 ```
 
-Loads the library 
+Loads the library and gets a symbol (casting the function pointer so it has the
+desired signature)
 
 ``` rust
     let lib = Library::new(library_path).unwrap();
@@ -148,5 +150,45 @@ fn main() {
 ```
 
 
+## What Just Happened?
+
+Although the example `main.rs` looks quite simple, there's a surprising amount 
+of complexity going on behind the scenes!
+
+First we're creating a shared object (or DLL, depending on your platform) which
+exposes an `add` function, like we've been doing for the Rust-C++ interop in the
+previous chapters.
+
+Next, at runtime we use the `libloading` crate to load the library. This uses
+whatever mechanism (usually called the `loader`) is exposed by the Operating 
+System to load a library into the address space of the currently running 
+process. It will also make sure to load any dependencies our library may have.
+
+Now that the library is in memory we can call into the various functions it may
+contain, however before you can call a function from the library you need to 
+find its address (otherwise how does the computer know where to jump to?). This
+is where the `Library`'s `get()` method comes in. It takes in byte string and
+will try to find the symbol with that name (typically by calling 
+[GetProcAddress] on Windows or [dlsym()] on Linux).
+
+Now that we have an address we can cast it to whatever we want, in this case an
+`unsafe fn(isize, isize) -> isize`. This is quite obviously going to be an 
+extremely `unsafe` operation, because there's nothing stopping us from using the
+function with the wrong signature and invoking UB. 
+
+There are also no guarantees that the address we are given may be valid. If
+the library is later unloaded from memory the address will now be pointing
+into memory we don't own. This means calling a library's function after it is
+unloaded will be the equivalent of a use-after-free. Fortunately,
+`libloading` uses Rust's concept of lifetimes to make sure it's impossible
+for something like that to happen.
+
+For more details, Wikipedia has a very informative [article] on dynamic loading. 
+
+
+
 [dl]: https://michael-f-bryan.github.io/rust-ffi-guide/dynamic_loading/index.html
 [libloading]: https://crates.io/crates/libloading
+[article]: https://en.wikipedia.org/wiki/Dynamic_loading
+[GetProcAddress]: https://msdn.microsoft.com/en-us/library/windows/desktop/ms683212(v=vs.85).aspx
+[dlsym()]: https://linux.die.net/man/3/dlsym
