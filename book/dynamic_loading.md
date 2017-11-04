@@ -169,7 +169,7 @@ contain, however before you can call a function from the library you need to
 find its address (otherwise how does the computer know where to jump to?). This
 is where the `Library`'s `get()` method comes in. It takes in byte string and
 will try to find the symbol with that name (typically by calling 
-[GetProcAddress] on Windows or [dlsym()] on Linux).
+[GetProcAddress] on Windows or [dlsym] on Linux).
 
 Now that we have an address we can cast it to whatever we want, in this case an
 `unsafe fn(isize, isize) -> isize`. This is quite obviously going to be an 
@@ -186,9 +186,14 @@ for something like that to happen.
 For more details, Wikipedia has a very informative [article] on dynamic loading. 
 
 
+## Setting Up Plugins
+
+Now that we have a better understanding of how dynamically loading a library on
+the fly works, we can start adding plugins to our application.
+
 
 [dl]: https://michael-f-bryan.github.io/rust-ffi-guide/dynamic_loading/index.html
 [libloading]: https://crates.io/crates/libloading
 [article]: https://en.wikipedia.org/wiki/Dynamic_loading
 [GetProcAddress]: https://msdn.microsoft.com/en-us/library/windows/desktop/ms683212(v=vs.85).aspx
-[dlsym()]: https://linux.die.net/man/3/dlsym
+[dlsym]: https://linux.die.net/man/3/dlsym

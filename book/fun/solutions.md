@@ -3,6 +3,9 @@
 ## Problem 1
 
 > **TODO:** Explore name mangling and the `#[no_mangle]` attribute
+>
+> The Cherno has a [video](https://www.youtube.com/watch?v=H4s55GgAg0I) which 
+> explains the linker quite well.
 
 
 ## Problem 2

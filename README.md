@@ -53,7 +53,12 @@ Alternatively, if you don't want to install all the dependencies I've created a
 docker image ([michaelfbryan/ffi-guide][docker]) for compiling Rust and Qt.
 
 ```
-$ docker run -v $(pwd):/code --user $UID michaelfbryan/ffi-guide ci/test.sh
+$ docker run \
+    -v $(pwd):/code \
+    -v ~/.cargo:$HOME/.cargo \
+    -e CARGO_HOME=$HOME/.cargo \
+    --user $UID \
+    michaelfbryan/ffi-guide ci/test.sh
 ```
 
 
