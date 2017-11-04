@@ -17,3 +17,5 @@ get_target_property(CLIENT_DIR client LOCATION)
 target_link_libraries(gui Qt5::Widgets)
 target_link_libraries(gui ${CLIENT_DIR}/libclient.so)
 add_dependencies(gui client)
+
+install(TARGETS gui DESTINATION bin)
