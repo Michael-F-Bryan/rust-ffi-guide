@@ -417,11 +417,15 @@ pub unsafe extern "C" fn plugin_manager_pre_send(pm: *mut PluginManager, request
 
 /// Fire the `post_receive` plugin hooks.
 #[no_mangle]
-pub unsafe extern "C" fn plugin_manager_post_receive(pm: *mut PluginManager, response: *mut Response) {
+pub unsafe extern "C" fn plugin_manager_post_receive(
+    pm: *mut PluginManager,
+    response: *mut Response,
+) {
     let pm = &mut *pm;
     let response = &mut *response;
     pm.post_receive(response);
 }
+
 ```
 
 Plugin loading is a bit more interesting because we need to convert a 
@@ -432,7 +436,10 @@ straightforward.
 // client/src/ffi.rs
 
 #[no_mangle]
-pub unsafe extern "C" fn plugin_manager_load_plugin(pm: *mut PluginManager, filename: *const c_char) -> c_int {
+pub unsafe extern "C" fn plugin_manager_load_plugin(
+    pm: *mut PluginManager,
+    filename: *const c_char,
+) -> c_int {
     let pm = &mut *pm;
     let filename = CStr::from_ptr(filename);
     let filename_as_str = match filename.to_str() {
@@ -448,6 +455,56 @@ pub unsafe extern "C" fn plugin_manager_load_plugin(pm: *mut PluginManager, file
         Ok(_) => 0,
         Err(_) => -1,
     }
+}
+```
+
+Next we need to add a `PluginManager` wrapper class to our `wrappers.hpp`. We 
+should also say that `PluginManager` is a `friend` of `Request` and `Response`
+so it can access their raw pointers.
+
+```cpp
+// gui/wrappers.hpp
+
+class Request {
+  friend class PluginManager;
+  ...
+};
+
+class Response {
+  friend class PluginManager;
+  ...
+};
+
+class PluginManager {
+public:
+  PluginManager();
+  ~PluginManager();
+  void unload();
+  void pre_send(Request req);
+  void post_receive(Response res);
+
+private:
+  ffi::PluginManager *raw;
+};
+```
+
+Similar to when we were writing the Rust FFI bindings, on the C++ side you just
+need to make sure the arguments are in the right shape before deferring to the
+corresponding functions.
+
+```cpp
+// gui/wrappers.cpp
+
+PluginManager::PluginManager() { raw = ffi::plugin_manager_new(); }
+
+PluginManager::~PluginManager() { ffi::plugin_manager_destroy(raw); }
+
+void PluginManager::pre_send(Request req) {
+  ffi::plugin_manager_pre_send(raw, req.raw);
+}
+
+void PluginManager::post_receive(Response res) {
+  ffi::plugin_manager_post_receive(raw, res.raw);
 }
 ```
 

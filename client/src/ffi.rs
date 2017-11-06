@@ -7,7 +7,7 @@ use std::slice;
 use libc::{c_char, c_int, size_t};
 use reqwest::{Method, Url};
 
-use {send_request, Request, Response, PluginManager};
+use {send_request, PluginManager, Request, Response};
 
 
 /// Construct a new `Request` which will target the provided URL and fill out
@@ -132,7 +132,10 @@ pub unsafe extern "C" fn plugin_manager_destroy(pm: *mut PluginManager) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn plugin_manager_load_plugin(pm: *mut PluginManager, filename: *const c_char) -> c_int {
+pub unsafe extern "C" fn plugin_manager_load_plugin(
+    pm: *mut PluginManager,
+    filename: *const c_char,
+) -> c_int {
     let pm = &mut *pm;
     let filename = CStr::from_ptr(filename);
     let filename_as_str = match filename.to_str() {
@@ -167,7 +170,10 @@ pub unsafe extern "C" fn plugin_manager_pre_send(pm: *mut PluginManager, request
 
 /// Fire the `post_receive` plugin hooks.
 #[no_mangle]
-pub unsafe extern "C" fn plugin_manager_post_receive(pm: *mut PluginManager, response: *mut Response) {
+pub unsafe extern "C" fn plugin_manager_post_receive(
+    pm: *mut PluginManager,
+    response: *mut Response,
+) {
     let pm = &mut *pm;
     let response = &mut *response;
     pm.post_receive(response);

@@ -1,6 +1,6 @@
 use std::ffi::OsStr;
 use std::any::Any;
-use libloading::{Symbol, Library};
+use libloading::{Library, Symbol};
 
 use errors::*;
 use {Request, Response};
@@ -10,7 +10,7 @@ use {Request, Response};
 pub trait Plugin: Any + Send + Sync {
     /// Get a name describing the `Plugin`.
     fn name(&self) -> &'static str;
-    /// A callback fired immediately after the plugin is loaded. Usually used 
+    /// A callback fired immediately after the plugin is loaded. Usually used
     /// for initialization.
     fn on_plugin_load(&self) {}
     /// A callback fired immediately before the plugin is unloaded. Use this if
@@ -57,23 +57,22 @@ impl PluginManager {
         }
     }
 
-    /// Load a plugin from a DLL or shared library. 
-    /// 
+    /// Load a plugin from a DLL or shared library.
+    ///
     /// # Safety
-    /// 
-    /// This function is `unsafe` because there are no guarantees that the 
-    /// plugin loaded will be correct. In particular, all plugins must be 
-    /// compiled against the *exact* same version of the library that will be 
+    ///
+    /// This function is `unsafe` because there are no guarantees that the
+    /// plugin loaded will be correct. In particular, all plugins must be
+    /// compiled against the *exact* same version of the library that will be
     /// loading them!
-    /// 
-    /// Failure to ensure ABI compatibility will most probably result in UB 
+    ///
+    /// Failure to ensure ABI compatibility will most probably result in UB
     /// because the vtable we expect to get (from `Box<Plugin>`) and the vtable
     /// we actually get may be completely different.
     pub unsafe fn load_plugin<P: AsRef<OsStr>>(&mut self, filename: P) -> Result<()> {
         type PluginCreate = unsafe fn() -> *mut Plugin;
 
-        let lib = Library::new(filename.as_ref())
-            .chain_err(|| "Unable to load the plugin")?;
+        let lib = Library::new(filename.as_ref()).chain_err(|| "Unable to load the plugin")?;
 
         let constructor: Symbol<PluginCreate> = lib.get(b"__plugin_create")
             .chain_err(|| "The `__plugin_create` symbol wasn't found.")?;
@@ -107,7 +106,7 @@ impl PluginManager {
         }
     }
 
-    /// Unload all plugins, making sure to fire their `on_plugin_unload()` 
+    /// Unload all plugins, making sure to fire their `on_plugin_unload()`
     /// methods so they can do any necessary cleanup.
     pub fn unload(&mut self) {
         debug!("Unloading plugins");

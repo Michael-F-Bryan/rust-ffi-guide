@@ -36,3 +36,15 @@ std::vector<char> Response::read_body() {
 
   return buffer;
 }
+
+PluginManager::PluginManager() { raw = ffi::plugin_manager_new(); }
+
+PluginManager::~PluginManager() { ffi::plugin_manager_destroy(raw); }
+
+void PluginManager::pre_send(Request req) {
+  ffi::plugin_manager_pre_send(raw, req.raw);
+}
+
+void PluginManager::post_receive(Response res) {
+  ffi::plugin_manager_post_receive(raw, res.raw);
+}
