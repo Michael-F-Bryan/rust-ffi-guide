@@ -379,6 +379,78 @@ As usual, once we've added a piece of functionality to the core Rust crate we'll
 need to expose it to C++ in our `ffi` module, then add the C++ bindings to 
 `wrappers.cpp`.
 
+Writing FFI bindings should be quite familiar by now. All you are doing is 
+converting raw pointers into references, then calling a method.
+
+```rust
+// client/src/ffi.rs
+
+/// Create a new `PluginManager`.
+#[no_mangle]
+pub extern "C" fn plugin_manager_new() -> *mut PluginManager {
+    Box::into_raw(Box::new(PluginManager::new()))
+}
+
+/// Destroy a `PluginManager` once you are done with it.
+#[no_mangle]
+pub unsafe extern "C" fn plugin_manager_destroy(pm: *mut PluginManager) {
+    if !pm.is_null() {
+        let pm = Box::from_raw(pm);
+        drop(pm);
+    }
+}
+
+/// Unload all loaded plugins.
+#[no_mangle]
+pub unsafe extern "C" fn plugin_manager_unload(pm: *mut PluginManager) {
+    let pm = &mut *pm;
+    pm.unload();
+}
+
+/// Fire the `pre_send` plugin hooks.
+#[no_mangle]
+pub unsafe extern "C" fn plugin_manager_pre_send(pm: *mut PluginManager, request: *mut Request) {
+    let pm = &mut *pm;
+    let request = &mut *request;
+    pm.pre_send(request);
+}
+
+/// Fire the `post_receive` plugin hooks.
+#[no_mangle]
+pub unsafe extern "C" fn plugin_manager_post_receive(pm: *mut PluginManager, response: *mut Response) {
+    let pm = &mut *pm;
+    let response = &mut *response;
+    pm.post_receive(response);
+}
+```
+
+Plugin loading is a bit more interesting because we need to convert a 
+`*const c_char` into a `&str`, but other than that it's all pretty 
+straightforward.
+
+```rust
+// client/src/ffi.rs
+
+#[no_mangle]
+pub unsafe extern "C" fn plugin_manager_load_plugin(pm: *mut PluginManager, filename: *const c_char) -> c_int {
+    let pm = &mut *pm;
+    let filename = CStr::from_ptr(filename);
+    let filename_as_str = match filename.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            // TODO: proper error handling
+            return -1;
+        }
+    };
+
+    // TODO: proper error handling and catch_unwind
+    match pm.load_plugin(filename_as_str) {
+        Ok(_) => 0,
+        Err(_) => -1,
+    }
+}
+```
+
 ---
 
 Useful Links:

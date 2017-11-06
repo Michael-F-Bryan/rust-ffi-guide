@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::ffi::OsStr;
 use std::any::Any;
 use libloading::{Symbol, Library};
 
@@ -57,22 +57,32 @@ impl PluginManager {
         }
     }
 
-    pub fn load_plugin<P: AsRef<Path>>(&mut self, filename: P) -> Result<()> {
+    /// Load a plugin from a DLL or shared library. 
+    /// 
+    /// # Safety
+    /// 
+    /// This function is `unsafe` because there are no guarantees that the 
+    /// plugin loaded will be correct. In particular, all plugins must be 
+    /// compiled against the *exact* same version of the library that will be 
+    /// loading them!
+    /// 
+    /// Failure to ensure ABI compatibility will most probably result in UB 
+    /// because the vtable we expect to get (from `Box<Plugin>`) and the vtable
+    /// we actually get may be completely different.
+    pub unsafe fn load_plugin<P: AsRef<OsStr>>(&mut self, filename: P) -> Result<()> {
         type PluginCreate = unsafe fn() -> *mut Plugin;
 
         let lib = Library::new(filename.as_ref())
             .chain_err(|| "Unable to load the plugin")?;
 
-        unsafe {
-            let constructor: Symbol<PluginCreate> = lib.get(b"__plugin_create")
-                .chain_err(|| "The `__plugin_create` symbol wasn't found.")?;
-            let boxed_raw = constructor();
+        let constructor: Symbol<PluginCreate> = lib.get(b"__plugin_create")
+            .chain_err(|| "The `__plugin_create` symbol wasn't found.")?;
+        let boxed_raw = constructor();
 
-            let plugin = Box::from_raw(boxed_raw);
-            debug!("Loaded plugin: {}", plugin.name());
-            plugin.on_plugin_load();
-            self.plugins.push(plugin);
-        }
+        let plugin = Box::from_raw(boxed_raw);
+        debug!("Loaded plugin: {}", plugin.name());
+        plugin.on_plugin_load();
+        self.plugins.push(plugin);
 
         Ok(())
     }
