@@ -8,7 +8,7 @@ application.
 The end goal is to allow users to provide a shared library (DLL, `*.so`, etc) 
 which contains a set of pre-defined functions. These functions will then allow
 us to manipulate a request before it is sent and then manipulate/inspect the
-response before displaying it to the user.
+response before displaying it to the user. 
 
 From the Rust side of things, by far the easiest way to establish this is to 
 define a `Plugin` trait which does the various manipulations, then add in a 
@@ -19,8 +19,9 @@ Our `Plugin` trait may look something like this:
 ```rust
 pub trait Plugin {
     fn name(&self) -> &'static str;
-    fn pre_send(&mut self, _request: &mut Request) {}
-    fn post_receive(&mut self, _response: &mut Response) {}
+    fn on_plugin_load(&self) {}
+    fn pre_send(&self, _request: &mut Request) {}
+    fn post_receive(&self, _response: &mut Response) {}
 }
 ```
 
@@ -191,9 +192,210 @@ For more details, Wikipedia has a very informative [article] on dynamic loading.
 Now that we have a better understanding of how dynamically loading a library on
 the fly works, we can start adding plugins to our application.
 
+First we'll define a `Plugin` trait which all plugins must implement. This has
+been copied pretty much verbatim from the beginning of the chapter.
+
+```rust
+// client/src/plugins.rs
+
+/// A plugin which allows you to add extra functionality to the REST client.
+pub trait Plugin: Any + Send + Sync {
+    /// Get a name describing the `Plugin`.
+    fn name(&self) -> &'static str;
+    /// A callback fired immediately after the plugin is loaded. Usually used 
+    /// for initialization.
+    fn on_plugin_load(&self) {}
+    /// A callback fired immediately before the plugin is unloaded. Use this if
+    /// you need to do any cleanup.
+    fn on_plugin_unload(&self) {}
+    /// Inspect (and possibly mutate) the request before it is sent.
+    fn pre_send(&self, _request: &mut Request) {}
+    /// Inspect and/or mutate the received response before it is displayed to
+    /// the user.
+    fn post_receive(&self, _response: &mut Response) {}
+}
+```
+
+This is all pretty standard. Notice that the `Plugin` *must* be sendable between
+threads and that all callbacks take `&self` instead of `&mut self`. This means
+that any mutation must be done using interior mutability. the `Send + Sync` 
+bound also means that this mutation must be done using the appropriate 
+synchronisation mechanisms (e.g. a `Mutex`).
+
+We also define a convenience macro that users can call to export their `Plugin`
+in a safe manner. This just declares a new `extern "C"` function called 
+`__plugin_create()` which will call the constructor and return a new boxed 
+`Plugin`.
+
+```rust
+// client/src/plugins.rs
+
+/// Declare a plugin type and its constructor.
+///
+/// # Notes
+///
+/// This works by automatically generating an `extern "C"` function with a
+/// pre-defined signature and symbol name. Therefore you will only be able to
+/// declare one plugin per library.
+#[macro_export]
+macro_rules! declare_plugin {
+    ($plugin_type:ty, $constructor:ident) => {
+        #[no_mangle]
+        pub extern "C" fn __plugin_create() -> *mut $crate::Plugin {
+            // make sure the constructor is the correct type.
+            let constructor: fn() -> $plugin_type = $constructor;
+
+            let object = $constructor();
+            let boxed: Box<$crate::Plugin> = Box::new(object);
+            Box::into_raw(boxed)
+        }
+    };
+}
+```
+
+Another thing we're going to need is a way to manage plugins and make sure they
+are called at the appropriate time. This is usually done with a `PluginManager`.
+
+First lets add the struct definition and a constructor,
+
+```rust
+// client/src/plugins.rs
+
+pub struct PluginManager {
+    plugins: Vec<Box<Plugin>>,
+}
+
+impl PluginManager {
+    pub fn new() -> PluginManager {
+        PluginManager {
+            plugins: Vec::new(),
+        }
+    }
+```
+
+Next comes the actual plugin loading part. Make sure to add `libloading` as a 
+dependency to your `Cargo.toml`, then we can use it to dynamically load the 
+plugin and then call the `__plugin_create()` function. We also need to make sure
+the `on_plugin_load()` callback is fired so the plugin has a chance to do any
+necessary initialization.
+
+```rust
+// client/src/plugins.rs
+
+    pub fn load_plugin<P: AsRef<Path>>(&mut self, filename: P) -> Result<()> {
+        type PluginCreate = unsafe fn() -> *mut Plugin;
+
+        let lib = Library::new(filename.as_ref())
+            .chain_err(|| "Unable to load the plugin")?;
+
+        unsafe {
+            let constructor: Symbol<PluginCreate> = lib.get(b"__plugin_create")
+                .chain_err(|| "The `__plugin_create` symbol wasn't found.")?;
+            let boxed_raw = constructor();
+
+            let plugin = Box::from_raw(boxed_raw);
+            debug!("Loaded plugin: {}", plugin.name());
+            plugin.on_plugin_load();
+            self.plugins.push(plugin);
+        }
+
+        Ok(())
+    }
+```
+
+Now that the hard part is out of the way, we just need to make sure our 
+`PluginManager` has methods for firing the various plugin callbacks at the 
+appropriate time.
+
+```rust
+// client/src/plugins.rs
+
+    /// Iterate over the plugins, running their `pre_send()` hook.
+    pub fn pre_send(&mut self, request: &mut Request) {
+        debug!("Firing pre_send hooks");
+
+        for plugin in &mut self.plugins {
+            trace!("Firing pre_send for {:?}", plugin.name());
+            plugin.pre_send(request);
+        }
+    }
+
+    /// Iterate over the plugins, running their `post_receive()` hook.
+    pub fn post_receive(&mut self, response: &mut Response) {
+        debug!("Firing post_receive hooks");
+
+        for plugin in &mut self.plugins {
+            trace!("Firing post_receive for {:?}", plugin.name());
+            plugin.post_receive(response);
+        }
+    }
+
+    /// Unload all plugins, making sure to fire their `on_plugin_unload()` 
+    /// methods so they can do any necessary cleanup.
+    pub fn unload(&mut self) {
+        debug!("Unloading plugins");
+
+        for plugin in self.plugins.drain(..) {
+            trace!("Firing on_plugin_unload for {:?}", plugin.name());
+            plugin.on_plugin_unload();
+        }
+    }
+}
+```
+
+Those last three methods should be fairly self-explanatory.
+
+Something else we may want to do is add a `Drop` impl so that our plugins are
+always unloaded when the `PluginManager` gets dropped. This gives them a chance
+to do any necessary cleanup.
+
+
+```rust
+// client/src/plugins.rs
+
+impl Drop for PluginManager {
+    fn drop(&mut self) {
+        if !self.plugins.is_empty() {
+            self.unload();
+        }
+    }
+}
+```
+
+A thing to keep in mind is something called [panic-on-drop]. Basically, if the
+program is panicking it'll unwind the stack, calling destructors when necessary.
+However, because our `PluginManager` tries to unload plugins if it hasn't 
+already, a `Plugin` who's `unload()` method **also** panics will result in a 
+second panic. This usually results in aborting the entire program (because your 
+program is most probably FUBAR).
+
+To deal with this, we'll want to make sure the C++ code explicitly unloads the
+plugin manager before destroying it.
+
+
+## Writing C++ Bindings
+
+As usual, once we've added a piece of functionality to the core Rust crate we'll
+need to expose it to C++ in our `ffi` module, then add the C++ bindings to 
+`wrappers.cpp`.
+
+---
+
+Useful Links:
+
+- [Plugins in C](https://eli.thegreenplace.net/2012/08/24/plugins-in-c)
+- [Building a Simple C++ Cross-platform Plugin System](https://sourcey.com/building-a-simple-cpp-cross-platform-plugin-system/)
+
+
+> **Note:** This is actually the exact pattern used by the Linux kernel for 
+> loading device drivers. Each driver must expose a function which returns a
+> vtable (struct of function pointers) that define the various commands 
+> necessary for talking with a device (read, write, etc).
+
 
 [dl]: https://michael-f-bryan.github.io/rust-ffi-guide/dynamic_loading/index.html
 [libloading]: https://crates.io/crates/libloading
 [article]: https://en.wikipedia.org/wiki/Dynamic_loading
 [GetProcAddress]: https://msdn.microsoft.com/en-us/library/windows/desktop/ms683212(v=vs.85).aspx
 [dlsym]: https://linux.die.net/man/3/dlsym
+[panic-on-drop]: https://www.reddit.com/r/rust/comments/4a9vu6/what_are_the_semantics_of_panicondrop/

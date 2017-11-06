@@ -1,6 +1,7 @@
 //! The business logic for a REST client.
 
 extern crate chrono;
+extern crate libloading;
 extern crate cookie;
 #[macro_use]
 extern crate error_chain;
@@ -19,7 +20,7 @@ mod response;
 
 pub use request::Request;
 pub use response::Response;
-pub use plugins::Plugin;
+pub use plugins::{PluginManager, Plugin};
 
 use reqwest::Client;
 use errors::*;
