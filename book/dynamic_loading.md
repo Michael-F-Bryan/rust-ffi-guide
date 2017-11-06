@@ -480,8 +480,8 @@ public:
   PluginManager();
   ~PluginManager();
   void unload();
-  void pre_send(Request req);
-  void post_receive(Response res);
+  void pre_send(Request& req);
+  void post_receive(Response& res);
 
 private:
   ffi::PluginManager *raw;
@@ -499,14 +499,87 @@ PluginManager::PluginManager() { raw = ffi::plugin_manager_new(); }
 
 PluginManager::~PluginManager() { ffi::plugin_manager_destroy(raw); }
 
-void PluginManager::pre_send(Request req) {
+void PluginManager::unload() { ffi::plugin_manager_unload(raw); }
+
+void PluginManager::pre_send(Request& req) {
   ffi::plugin_manager_pre_send(raw, req.raw);
 }
 
-void PluginManager::post_receive(Response res) {
+void PluginManager::post_receive(Response& res) {
   ffi::plugin_manager_post_receive(raw, res.raw);
 }
 ```
+
+
+# Hooking Up The Plugin Manager
+
+Now that our `PluginManager` is *finally* accessible from the GUI we can thread 
+it through the request sending process.
+
+First we'll need to add the `PluginManager` to our main window.
+
+```diff
+// gui/main_window.hpp
+
+class MainWindow : public QMainWindow {
+  ...
+
+private:
+  ...
+  PluginManager pm;
+};
+```
+
+And add it to the `MainWindow`'s constructor.
+
+```cpp
+// gui/main_window.cpp
+
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
+  ...
+  pm = PluginManager();
+}
+```
+
+Next we need to make sure that whenever we send a request we also pass it to the
+plugin manager so it can do the appropriate pre/post processing.
+
+```cpp
+...
+
+pm.pre_send(req);
+Response res = req.send();
+pm.post_receive(res);
+
+...
+```
+
+We also want to make sure that plugins are unloaded when the window is closed,
+the easiest way to do this is to override `MainWindow`'s `closeEvent()` method.
+
+To do this we update the `main_window.hpp` header file:
+
+```cpp
+// gui/main_window.hpp
+
+class MainWindow : public QMainWindow {
+  ...
+
+public:
+  ...
+  void closeEvent(QCloseEvent *event);
+  ...
+};
+```
+
+Then add the implementation to `main-window.cpp`.
+
+```cpp
+// gui/main_window.cpp
+
+void MainWindow::closeEvent(QCloseEvent *event) { pm.unload(); }
+```
+
 
 ---
 

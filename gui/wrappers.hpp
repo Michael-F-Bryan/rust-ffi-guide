@@ -1,3 +1,5 @@
+#pragma once
+
 #include "client.hpp"
 #include <exception>
 #include <string>
@@ -16,13 +18,14 @@ private:
 
 class Response {
   friend class PluginManager;
+  friend class Request;
 
 public:
   std::vector<char> read_body();
-  Response(ffi::Response *raw) : raw(raw){};
   ~Response();
 
 private:
+  Response(ffi::Response *raw) : raw(raw){};
   ffi::Response *raw;
 };
 
@@ -43,8 +46,8 @@ public:
   PluginManager();
   ~PluginManager();
   void unload();
-  void pre_send(Request req);
-  void post_receive(Response res);
+  void pre_send(Request& req);
+  void post_receive(Response& res);
 
 private:
   ffi::PluginManager *raw;

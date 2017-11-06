@@ -10,6 +10,7 @@ extern crate libloading;
 #[macro_use]
 extern crate log;
 extern crate reqwest;
+extern crate env_logger;
 
 mod plugins;
 pub mod errors;

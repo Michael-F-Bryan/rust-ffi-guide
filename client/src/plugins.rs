@@ -1,4 +1,5 @@
 use std::ffi::OsStr;
+use std::fmt::{self, Formatter, Debug};
 use std::any::Any;
 use libloading::{Library, Symbol};
 
@@ -89,6 +90,7 @@ impl PluginManager {
     /// Iterate over the plugins, running their `pre_send()` hook.
     pub fn pre_send(&mut self, request: &mut Request) {
         debug!("Firing pre_send hooks");
+        debug!("{:?}", self);
 
         for plugin in &mut self.plugins {
             trace!("Firing pre_send for {:?}", plugin.name());
@@ -123,5 +125,15 @@ impl Drop for PluginManager {
         if !self.plugins.is_empty() {
             self.unload();
         }
+    }
+}
+
+impl Debug for PluginManager {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        let plugins: Vec<_> = self.plugins.iter().map(|p| p.name()).collect();
+
+        f.debug_struct("PluginManager")
+            .field("plugins", &plugins)
+            .finish()
     }
 }

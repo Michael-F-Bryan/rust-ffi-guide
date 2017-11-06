@@ -6,8 +6,15 @@ use std::ptr;
 use std::slice;
 use libc::{c_char, c_int, size_t};
 use reqwest::{Method, Url};
+use env_logger;
 
 use {send_request, PluginManager, Request, Response};
+
+#[no_mangle]
+pub extern "C" fn init_logging() {
+    env_logger::init().ok();
+}
+
 
 
 /// Construct a new `Request` which will target the provided URL and fill out
@@ -42,6 +49,7 @@ pub unsafe extern "C" fn request_create(url: *const c_char) -> *mut Request {
     };
 
     let req = Request::new(parsed_url, Method::Get);
+    trace!("Created Request, {:?}", req);
     Box::into_raw(Box::new(req))
 }
 
@@ -49,7 +57,9 @@ pub unsafe extern "C" fn request_create(url: *const c_char) -> *mut Request {
 #[no_mangle]
 pub unsafe extern "C" fn request_destroy(req: *mut Request) {
     if !req.is_null() {
-        drop(Box::from_raw(req));
+        let req = Box::from_raw(req);
+        trace!("Destroying Request, {:?}", req);
+        drop(req);
     }
 }
 
@@ -64,10 +74,14 @@ pub unsafe extern "C" fn request_send(req: *const Request) -> *mut Response {
         return ptr::null_mut();
     }
 
-    let response = match send_request(&*req) {
+    let req = &*req;
+
+    let response = match send_request(req) {
         Ok(r) => r,
         Err(_) => return ptr::null_mut(),
     };
+    debug!("Received Response");
+    trace!("{:?}", response);
 
     Box::into_raw(Box::new(response))
 }
