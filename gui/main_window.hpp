@@ -2,6 +2,8 @@
 
 #include "wrappers.hpp"
 #include <QCloseEvent>
+#include <QtWidgets/QGridLayout>
+#include <QtWidgets/QGroupBox>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QPushButton>
 
@@ -14,8 +16,12 @@ public:
   void closeEvent(QCloseEvent *event);
 private slots:
   void onClick();
+  void loadPlugin();
 
 private:
-  QPushButton *button;
   PluginManager pm;
+  QPushButton *btn_click;
+  QPushButton *btn_plugin;
+  QGroupBox *formGroupBox;
+  QWidget *main_widget;
 };

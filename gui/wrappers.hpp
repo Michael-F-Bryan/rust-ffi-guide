@@ -46,8 +46,9 @@ public:
   PluginManager();
   ~PluginManager();
   void unload();
-  void pre_send(Request& req);
-  void post_receive(Response& res);
+  void load_plugin(const std::string& filename);
+  void pre_send(Request &req);
+  void post_receive(Response &res);
 
 private:
   ffi::PluginManager *raw;

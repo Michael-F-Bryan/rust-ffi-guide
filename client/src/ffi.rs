@@ -160,6 +160,8 @@ pub unsafe extern "C" fn plugin_manager_load_plugin(
         }
     };
 
+    debug!("Loading plugin, {:?}", filename_as_str);
+
     // TODO: proper error handling and catch_unwind
     match pm.load_plugin(filename_as_str) {
         Ok(_) => 0,

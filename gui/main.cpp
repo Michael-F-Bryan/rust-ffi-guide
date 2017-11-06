@@ -2,7 +2,7 @@
 #include <QtWidgets/QApplication>
 
 extern "C" {
-  void init_logging();
+void init_logging();
 }
 
 int main(int argc, char **argv) {

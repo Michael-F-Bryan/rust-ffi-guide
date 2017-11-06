@@ -580,6 +580,9 @@ Then add the implementation to `main-window.cpp`.
 void MainWindow::closeEvent(QCloseEvent *event) { pm.unload(); }
 ```
 
+Now the plugin manager is plumbed into the existing request pipeline, we need a
+way of actually loading plugins at runtime. We'll use a simple [file dialog] and
+button for this.
 
 ---
 
@@ -601,3 +604,4 @@ Useful Links:
 [GetProcAddress]: https://msdn.microsoft.com/en-us/library/windows/desktop/ms683212(v=vs.85).aspx
 [dlsym]: https://linux.die.net/man/3/dlsym
 [panic-on-drop]: https://www.reddit.com/r/rust/comments/4a9vu6/what_are_the_semantics_of_panicondrop/
+[file dialog]: http://doc.qt.io/qt-5/qfiledialog.html
