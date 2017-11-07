@@ -1,3 +1,5 @@
+//! Extra utility functions.
+
 use std::sync::{Once, ONCE_INIT};
 use fern;
 use log::LogLevelFilter;

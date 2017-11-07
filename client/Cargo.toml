@@ -12,12 +12,14 @@ cbindgen = "0.1.29"
 [dependencies]
 chrono = "0.4.0"
 cookie = "0.10.1"
+env_logger = "0.4.3"
 error-chain = "0.11.0"
 fern = "0.4.3"
 http = "0.1.1"
 libc = "0.2"
+libloading = "0.4.2"
 log = "0.3.8"
 reqwest = "0.8.0"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]

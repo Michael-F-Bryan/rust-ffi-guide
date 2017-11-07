@@ -6,8 +6,15 @@ use std::ptr;
 use std::slice;
 use libc::{c_char, c_int, size_t};
 use reqwest::{Method, Url};
+use env_logger;
 
-use {send_request, Request, Response};
+use {send_request, PluginManager, Request, Response};
+
+#[no_mangle]
+pub extern "C" fn init_logging() {
+    env_logger::init().ok();
+}
+
 
 
 /// Construct a new `Request` which will target the provided URL and fill out
@@ -42,6 +49,7 @@ pub unsafe extern "C" fn request_create(url: *const c_char) -> *mut Request {
     };
 
     let req = Request::new(parsed_url, Method::Get);
+    trace!("Created Request, {:?}", req);
     Box::into_raw(Box::new(req))
 }
 
@@ -49,7 +57,9 @@ pub unsafe extern "C" fn request_create(url: *const c_char) -> *mut Request {
 #[no_mangle]
 pub unsafe extern "C" fn request_destroy(req: *mut Request) {
     if !req.is_null() {
-        drop(Box::from_raw(req));
+        let req = Box::from_raw(req);
+        trace!("Destroying Request, {:?}", req);
+        drop(req);
     }
 }
 
@@ -64,10 +74,14 @@ pub unsafe extern "C" fn request_send(req: *const Request) -> *mut Response {
         return ptr::null_mut();
     }
 
-    let response = match send_request(&*req) {
+    let req = &*req;
+
+    let response = match send_request(req) {
         Ok(r) => r,
         Err(_) => return ptr::null_mut(),
     };
+    debug!("Received Response");
+    trace!("{:?}", response);
 
     Box::into_raw(Box::new(response))
 }
@@ -114,4 +128,69 @@ pub unsafe extern "C" fn response_body(
     ptr::copy_nonoverlapping(res.body.as_ptr(), buffer.as_mut_ptr(), res.body.len());
 
     res.body.len() as c_int
+}
+
+/// Create a new `PluginManager`.
+#[no_mangle]
+pub extern "C" fn plugin_manager_new() -> *mut PluginManager {
+    Box::into_raw(Box::new(PluginManager::new()))
+}
+
+/// Destroy a `PluginManager` once you are done with it.
+#[no_mangle]
+pub unsafe extern "C" fn plugin_manager_destroy(pm: *mut PluginManager) {
+    if !pm.is_null() {
+        let pm = Box::from_raw(pm);
+        drop(pm);
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn plugin_manager_load_plugin(
+    pm: *mut PluginManager,
+    filename: *const c_char,
+) -> c_int {
+    let pm = &mut *pm;
+    let filename = CStr::from_ptr(filename);
+    let filename_as_str = match filename.to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            // TODO: proper error handling
+            return -1;
+        }
+    };
+
+    debug!("Loading plugin, {:?}", filename_as_str);
+
+    // TODO: proper error handling and catch_unwind
+    match pm.load_plugin(filename_as_str) {
+        Ok(_) => 0,
+        Err(_) => -1,
+    }
+}
+
+/// Unload all loaded plugins.
+#[no_mangle]
+pub unsafe extern "C" fn plugin_manager_unload(pm: *mut PluginManager) {
+    let pm = &mut *pm;
+    pm.unload();
+}
+
+/// Fire the `pre_send` plugin hooks.
+#[no_mangle]
+pub unsafe extern "C" fn plugin_manager_pre_send(pm: *mut PluginManager, request: *mut Request) {
+    let pm = &mut *pm;
+    let request = &mut *request;
+    pm.pre_send(request);
+}
+
+/// Fire the `post_receive` plugin hooks.
+#[no_mangle]
+pub unsafe extern "C" fn plugin_manager_post_receive(
+    pm: *mut PluginManager,
+    response: *mut Response,
+) {
+    let pm = &mut *pm;
+    let response = &mut *response;
+    pm.post_receive(response);
 }

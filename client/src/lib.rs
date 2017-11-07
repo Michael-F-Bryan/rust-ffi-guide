@@ -6,10 +6,13 @@ extern crate cookie;
 extern crate error_chain;
 extern crate fern;
 extern crate libc;
+extern crate libloading;
 #[macro_use]
 extern crate log;
 extern crate reqwest;
+extern crate env_logger;
 
+mod plugins;
 pub mod errors;
 pub mod utils;
 pub mod ffi;
@@ -18,6 +21,7 @@ mod response;
 
 pub use request::Request;
 pub use response::Response;
+pub use plugins::{Plugin, PluginManager};
 
 use reqwest::Client;
 use errors::*;
