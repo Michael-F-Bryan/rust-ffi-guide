@@ -1,12 +1,1 @@
-set(CLIENT_SO "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_DIR}/libclient.so")
-
-add_custom_target(client
-    COMMENT "Compiling client module"
-    COMMAND CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} cargo build ${CARGO_RELEASE_FLAG} 
-    COMMAND cp ${CLIENT_SO} ${CMAKE_CURRENT_BINARY_DIR}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-set_target_properties(client PROPERTIES LOCATION ${CMAKE_CURRENT_BINARY_DIR})
-
-add_test(NAME client_test 
-    COMMAND cargo test ${CARGO_RELEASE_FLAG}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+cargo_library(client ${CMAKE_CURRENT_SOURCE_DIR})
