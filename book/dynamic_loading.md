@@ -188,8 +188,8 @@ pub trait Plugin: Any + Send + Sync {
 This is all pretty standard. Notice that the `Plugin` *must* be sendable between
 threads and that all callbacks take `&self` instead of `&mut self`. This means
 that any mutation must be done using interior mutability. the `Send + Sync` 
-bound also means that this mutation must be done using the appropriate 
-synchronisation mechanisms (e.g. a `Mutex`).
+bound also means you need to use the appropriate synchronisation mechanisms 
+(e.g. a `Mutex`).
 
 We also define a convenience macro that users can call to export their `Plugin`
 in a safe manner. This just declares a new `extern "C"` function called 
@@ -228,7 +228,7 @@ are called at the appropriate time. This is usually done with a `PluginManager`.
 Something we need to keep in mind is that any `Library` we load will need to 
 outlive our plugins. This is because they contain the code for executing the 
 various `Plugin` methods, so if the `Library` is dropped too early our plugins'
-[vtable] could end up pointing at garbage... Which would be bad.
+vtable could end up pointing at garbage... Which would be bad.
 
 First lets add the struct definition and a constructor,
 
@@ -251,7 +251,7 @@ impl PluginManager {
 
 Next comes the actual plugin loading part. Make sure to add `libloading` as a 
 dependency to your `Cargo.toml`, then we can use it to dynamically load the 
-plugin and then call the `_plugin_create()` function. We also need to make sure
+plugin and call the `_plugin_create()` function. We also need to make sure
 the `on_plugin_load()` callback is fired so the plugin has a chance to do any
 necessary initialization.
 
@@ -284,9 +284,8 @@ necessary initialization.
     }
 ```
 
-Now that the hard part is out of the way, we just need to make sure our 
-`PluginManager` has methods for firing the various plugin callbacks at the 
-appropriate time.
+Now our `PluginManager` can load plugins, we need to make sure it has methods 
+for firing the various plugin callbacks.
 
 ```rust
 // client/src/plugins.rs
@@ -351,10 +350,10 @@ A thing to keep in mind is something called [panic-on-drop]. Basically, if the
 program is panicking it'll unwind the stack, calling destructors when necessary.
 However, because our `PluginManager` tries to unload plugins if it hasn't 
 already, a `Plugin` who's `unload()` method **also** panics will result in a 
-second panic. This usually results in aborting the entire program (because your 
-program is most probably FUBAR).
+second panic. This usually results in aborting the entire program because your 
+program is most probably FUBAR.
 
-To deal with this, we'll want to make sure the C++ code explicitly unloads the
+To prevent this, we'll want to make sure the C++ code explicitly unloads the
 plugin manager before destroying it.
 
 
@@ -720,7 +719,6 @@ INFO:injector_plugin: Injector loaded
 Creating the request
 Sending Request
 DEBUG:client::plugins: Firing pre_send hooks
-DEBUG:client::plugins: PluginManager { plugins: ["Header Injector"] }
 DEBUG:injector_plugin: Injected header into Request, Request { destination: "http://httpbin.org/get", method: Get, headers: {"some-dodgy-header": "true"}, cookies: CookieJar { original_cookies: {}, delta_cookies: {} }, body: None }
 INFO:client: Sending a GET request to http://httpbin.org/get
 DEBUG:client: Sending 1 Headers
