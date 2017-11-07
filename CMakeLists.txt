@@ -5,7 +5,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CARGO_RELEASE_FLAG "" CACHE INTERNAL "")
     set(TARGET_DIR "debug" CACHE INTERNAL "")
 else ()
-    set(CARGO_RELEASE_FLAG --release CACHE INTERNAL "")
+    set(CARGO_RELEASE_FLAG "--release" CACHE INTERNAL "")
     set(TARGET_DIR "release" CACHE INTERNAL "")
 endif ()
 
@@ -29,8 +29,14 @@ function(cargo_library target_name project_dir)
     set(output_library ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_DIR}/lib${target_name}.so)
     file(GLOB sources ${project_dir}/src/**/*.rs)
 
+    set(compile_message "Compiling ${target_name}")
+
+    if(CARGO_RELEASE_FLAG STREQUAL "--release")
+        set(compile_message "${compile_message} in release mode")
+    endif(CARGO_RELEASE_FLAG)
+
     add_custom_command(OUTPUT ${output_library}
-        COMMENT "Compiling ${target_name}"
+        COMMENT ${compile_message}
         COMMAND env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} cargo build ${CARGO_RELEASE_FLAG}
         COMMAND cp ${output_library} ${CMAKE_CURRENT_BINARY_DIR}
         WORKING_DIRECTORY ${project_dir}
