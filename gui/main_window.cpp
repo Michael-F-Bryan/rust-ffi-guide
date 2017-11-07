@@ -1,6 +1,6 @@
 #include "main_window.hpp"
 #include "wrappers.hpp"
-#include <QCloseEvent>
+#include <QtGui/QCloseEvent>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QFormLayout>
 #include <QtWidgets/QGroupBox>
@@ -10,7 +10,7 @@
 void MainWindow::onClick() {
   std::cout << "Creating the request" << std::endl;
 
-  Request req = Request("https://www.rust-lang.org/");
+  Request req("http://httpbin.org/get");
   std::cout << "Sending Request" << std::endl;
   pm.pre_send(req);
   Response res = req.send();
@@ -36,8 +36,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   layout->addRow(new QLabel(tr("Load a Plugin:")), btn_plugin);
 
   setCentralWidget(main_widget);
-
-  pm = PluginManager();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) { pm.unload(); }

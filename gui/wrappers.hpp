@@ -22,6 +22,11 @@ class Response {
 
 public:
   std::vector<char> read_body();
+  Response(const Response&) = delete;
+  Response(Response&& other) {
+    this->raw = other.raw;
+    other.raw = nullptr;
+  }
   ~Response();
 
 private:
@@ -35,6 +40,11 @@ class Request {
 public:
   Request(const std::string &);
   Response send();
+  Request(const Request&) = delete;
+  Request(Request&& other) {
+    this->raw = other.raw;
+    other.raw = nullptr;
+  }
   ~Request();
 
 private:
@@ -49,6 +59,12 @@ public:
   void load_plugin(const std::string& filename);
   void pre_send(Request &req);
   void post_receive(Response &res);
+
+  PluginManager(const PluginManager&) = delete;
+  PluginManager(PluginManager&& other) {
+    this->raw = other.raw;
+    other.raw = nullptr;
+  }
 
 private:
   ffi::PluginManager *raw;

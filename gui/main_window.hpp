@@ -1,7 +1,7 @@
 #pragma once
 
 #include "wrappers.hpp"
-#include <QCloseEvent>
+#include <QtGui/QCloseEvent>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QMainWindow>
@@ -12,7 +12,7 @@ class MainWindow : public QMainWindow {
 
 public:
   MainWindow(QWidget *parent = 0);
-  virtual ~MainWindow(){};
+  virtual ~MainWindow(){ };
   void closeEvent(QCloseEvent *event);
 private slots:
   void onClick();

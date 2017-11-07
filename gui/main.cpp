@@ -13,4 +13,5 @@ int main(int argc, char **argv) {
   ui->show();
 
   app.exec();
+  delete ui;
 }

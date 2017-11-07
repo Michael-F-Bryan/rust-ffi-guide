@@ -26,7 +26,7 @@ pub trait Plugin {
 ```
 
 The macro would then declare an `extern "C"` constructor which exports a trait 
-object (`Box<Plugin>`) with some pre-defined symbol (e.g. `__plugin_create()`). 
+object (`Box<Plugin>`) with some pre-defined symbol (e.g. `_plugin_create()`). 
 
 Before diving into the complexity of real code, it's probably going to be easier
 if we figure out how dynamic loading works using a contrived example.
@@ -224,7 +224,7 @@ synchronisation mechanisms (e.g. a `Mutex`).
 
 We also define a convenience macro that users can call to export their `Plugin`
 in a safe manner. This just declares a new `extern "C"` function called 
-`__plugin_create()` which will call the constructor and return a new boxed 
+`_plugin_create()` which will call the constructor and return a new boxed 
 `Plugin`.
 
 ```rust
@@ -239,13 +239,13 @@ in a safe manner. This just declares a new `extern "C"` function called
 /// declare one plugin per library.
 #[macro_export]
 macro_rules! declare_plugin {
-    ($plugin_type:ty, $constructor:ident) => {
+    ($plugin_type:ty, $constructor:path) => {
         #[no_mangle]
-        pub extern "C" fn __plugin_create() -> *mut $crate::Plugin {
+        pub extern "C" fn _plugin_create() -> *mut $crate::Plugin {
             // make sure the constructor is the correct type.
             let constructor: fn() -> $plugin_type = $constructor;
 
-            let object = $constructor();
+            let object = constructor();
             let boxed: Box<$crate::Plugin> = Box::new(object);
             Box::into_raw(boxed)
         }
@@ -275,7 +275,7 @@ impl PluginManager {
 
 Next comes the actual plugin loading part. Make sure to add `libloading` as a 
 dependency to your `Cargo.toml`, then we can use it to dynamically load the 
-plugin and then call the `__plugin_create()` function. We also need to make sure
+plugin and then call the `_plugin_create()` function. We also need to make sure
 the `on_plugin_load()` callback is fired so the plugin has a chance to do any
 necessary initialization.
 
@@ -289,8 +289,8 @@ necessary initialization.
             .chain_err(|| "Unable to load the plugin")?;
 
         unsafe {
-            let constructor: Symbol<PluginCreate> = lib.get(b"__plugin_create")
-                .chain_err(|| "The `__plugin_create` symbol wasn't found.")?;
+            let constructor: Symbol<PluginCreate> = lib.get(b"_plugin_create")
+                .chain_err(|| "The `_plugin_create` symbol wasn't found.")?;
             let boxed_raw = constructor();
 
             let plugin = Box::from_raw(boxed_raw);
@@ -530,17 +530,6 @@ private:
 };
 ```
 
-And add it to the `MainWindow`'s constructor.
-
-```cpp
-// gui/main_window.cpp
-
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
-  ...
-  pm = PluginManager();
-}
-```
-
 Next we need to make sure that whenever we send a request we also pass it to the
 plugin manager so it can do the appropriate pre/post processing.
 
@@ -583,6 +572,132 @@ void MainWindow::closeEvent(QCloseEvent *event) { pm.unload(); }
 Now the plugin manager is plumbed into the existing request pipeline, we need a
 way of actually loading plugins at runtime. We'll use a simple [file dialog] and
 button for this.
+
+
+## Lets Make A Plugin
+
+Now we have all the plugin infrastructure set up lets actually make (and load) a
+plugin! This plugin will inject a special header into each request, then if it's
+also present in the response we'll remove it so it's not viewable by the end
+user.
+
+First lets create a new library.
+
+```
+$ cargo new injector-plugin
+```
+
+We also want to update the `Cargo.toml` to depend on the `client` library and 
+generate a `cdylib` so it's loadable by our plugin manager. While we're at it,
+add the `log` crate so we can log what's happening.
+
+```diff
+// injector-plugin/Cargo.toml
+
+[package]
+name = "injector-plugin"
+version = "0.1.0"
+authors = ["Michael Bryan <michaelfbryan@gmail.com>"]
++ description = "A plugin which will stealthily inject a special header into your requests."
+
+[dependencies]
++ log = "0.3.8"
++ client = { path = "../client"}
++
++ [lib]
++ crate-type = ["cdylib", "rlib"]
+```
+
+We also want to add a `cmake` build rule so the `injector-plugin` crate is built
+along with the rest of the project. The `CMakeLists.txt` file for this crate is
+identical to the one we wrote for `client` so just copy that across and change
+the relevant names.
+
+```
+$ cp ./client/CMakeLists.txt ./inject-plugin/CMakeLists.txt
+```
+
+Don't forget make sure `cmake` includes the `inject-plugin` directory!
+
+```diff
+# ./CMakeLists.txt
+
+add_subdirectory(client)
++ add_subdirectory(injector-plugin)
+add_subdirectory(gui)
+```
+
+And then we do a quick build as a sanity check to make sure everything built.
+
+```
+$ mkdir build && cd build
+$ cmake -DCMAKE_BUILD_TYPE=Debug ..
+$ make
+
+...
+```
+
+The plugin body itself isn't overly interesting.
+
+```rust
+// injector-plugin/src/lib.rs
+
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate client;
+
+
+#[derive(Debug, Default)]
+pub struct Injector;
+
+impl Plugin for Injector {
+    fn name(&self) -> &'static str  {
+        "Header Injector"
+    }
+
+    fn on_plugin_load(&self) {
+        info!("Injector loaded");
+    }
+
+    fn on_plugin_unload(&self) {
+        info!("Injector unloaded");
+    }
+
+    fn pre_send(&self, req: &mut Request) {
+        req.headers.set_raw("some-dodgy-header", "true");
+        debug!("Injected header into Request, {:?}", req);
+    }
+
+    fn post_receive(&self, res: &mut Response) {
+        debug!("Received Response, {:?}", res);
+        req.headers.remove_raw("some-dodgy-header");
+    }
+}
+```
+
+Finally, to make this plugin library actually work we need to call the 
+`declare_plugin!()` macro.
+
+
+```rust
+// injector-plugin/src/lib.rs
+
+declare_plugin!(Injector, Injector::default);
+```
+
+If you then compile this and inspect it with our trusty `nm` tool you'll see 
+that the library contains our `_plugin_create` symbol. 
+
+```
+$ cd build
+$ make
+$ nm injector-plugin/libinjector_plugin.so | grep ' T '
+
+...
+0000000000030820 T _plugin_create
+...
+```
 
 ---
 
