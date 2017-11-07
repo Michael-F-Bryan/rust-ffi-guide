@@ -156,42 +156,6 @@ fn main() {
 ```
 
 
-## What Just Happened?
-
-Although the example `main.rs` looks quite simple, there's a surprising amount 
-of complexity going on behind the scenes!
-
-First we're creating a shared object (or DLL, depending on your platform) which
-exposes an `add` function, like we've been doing for the Rust-C++ interop in the
-previous chapters.
-
-Next, at runtime we use the `libloading` crate to load the library. This uses
-whatever mechanism (usually called the `loader`) is exposed by the Operating 
-System to load a library into the address space of the currently running 
-process. It will also make sure to load any dependencies our library may have.
-
-Now that the library is in memory we can call into the various functions it may
-contain, however before you can call a function from the library you need to 
-find its address (otherwise how does the computer know where to jump to?). This
-is where the `Library`'s `get()` method comes in. It takes in byte string and
-will try to find the symbol with that name (typically by calling 
-[GetProcAddress] on Windows or [dlsym] on Linux).
-
-Now that we have an address we can cast it to whatever we want, in this case an
-`unsafe fn(isize, isize) -> isize`. This is quite obviously going to be an 
-extremely `unsafe` operation, because there's nothing stopping us from using the
-function with the wrong signature and invoking UB. 
-
-There are also no guarantees that the address we are given may be valid. If
-the library is later unloaded from memory the address will now be pointing
-into memory we don't own. This means calling a library's function after it is
-unloaded will be the equivalent of a use-after-free. Fortunately,
-`libloading` uses Rust's concept of lifetimes to make sure it's impossible
-for something like that to happen.
-
-For more details, Wikipedia has a very informative [article] on dynamic loading. 
-
-
 ## Setting Up Plugins
 
 Now that we have a better understanding of how dynamically loading a library on
@@ -532,7 +496,7 @@ void PluginManager::post_receive(Response& res) {
 ```
 
 
-# Hooking Up The Plugin Manager
+## Hooking Up The Plugin Manager
 
 Now that our `PluginManager` is *finally* accessible from the GUI we can thread 
 it through the request sending process.
