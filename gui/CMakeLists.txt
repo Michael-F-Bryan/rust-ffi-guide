@@ -13,7 +13,9 @@ set(SOURCE main_window.cpp main_window.hpp wrappers.cpp wrappers.hpp main.cpp)
 
 add_executable(gui ${SOURCE})
 
-get_target_property(CLIENT_DIR client LOCATION)
+get_target_property(CLIENT_SO client LOCATION)
 target_link_libraries(gui Qt5::Widgets)
-target_link_libraries(gui ${CLIENT_DIR}/libclient.so)
+target_link_libraries(gui ${CLIENT_SO})
 add_dependencies(gui client)
+
+install(TARGETS gui DESTINATION bin)
