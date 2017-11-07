@@ -100,7 +100,6 @@ impl PluginManager {
     /// Iterate over the plugins, running their `pre_send()` hook.
     pub fn pre_send(&mut self, request: &mut Request) {
         debug!("Firing pre_send hooks");
-        debug!("{:?}", self);
 
         for plugin in &mut self.plugins {
             trace!("Firing pre_send for {:?}", plugin.name());
@@ -118,8 +117,8 @@ impl PluginManager {
         }
     }
 
-    /// Unload all plugins, making sure to fire their `on_plugin_unload()`
-    /// methods so they can do any necessary cleanup.
+    /// Unload all plugins and loaded plugin libraries, making sure to fire 
+    /// their `on_plugin_unload()` methods so they can do any necessary cleanup.
     pub fn unload(&mut self) {
         debug!("Unloading plugins");
 
@@ -136,7 +135,7 @@ impl PluginManager {
 
 impl Drop for PluginManager {
     fn drop(&mut self) {
-        if !self.plugins.is_empty() {
+        if !self.plugins.is_empty() || !self.loaded_libraries.is_empty() {
             self.unload();
         }
     }

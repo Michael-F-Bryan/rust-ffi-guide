@@ -28,6 +28,11 @@ pub trait Plugin {
 The macro would then declare an `extern "C"` constructor which exports a trait 
 object (`Box<Plugin>`) with some pre-defined symbol (e.g. `_plugin_create()`). 
 
+> **Note:** This is actually the exact pattern used by the Linux kernel for 
+> loading device drivers. Each driver must expose a function which returns a
+> vtable (struct of function pointers) that define the various commands 
+> necessary for talking with a device (read, write, etc).
+
 Before diving into the complexity of real code, it's probably going to be easier
 if we figure out how dynamic loading works using a contrived example.
 
@@ -256,6 +261,11 @@ macro_rules! declare_plugin {
 Another thing we're going to need is a way to manage plugins and make sure they
 are called at the appropriate time. This is usually done with a `PluginManager`.
 
+Something we need to keep in mind is that any `Library` we load will need to 
+outlive our plugins. This is because they contain the code for executing the 
+various `Plugin` methods, so if the `Library` is dropped too early our plugins'
+[vtable] could end up pointing at garbage... Which would be bad.
+
 First lets add the struct definition and a constructor,
 
 ```rust
@@ -263,12 +273,14 @@ First lets add the struct definition and a constructor,
 
 pub struct PluginManager {
     plugins: Vec<Box<Plugin>>,
+    loaded_libraries: Vec<Library>,
 }
 
 impl PluginManager {
     pub fn new() -> PluginManager {
         PluginManager {
             plugins: Vec::new(),
+            loaded_libraries: Vec::new(),
         }
     }
 ```
@@ -282,22 +294,27 @@ necessary initialization.
 ```rust
 // client/src/plugins.rs
 
-    pub fn load_plugin<P: AsRef<Path>>(&mut self, filename: P) -> Result<()> {
+    pub unsafe fn load_plugin<P: AsRef<OsStr>>(&mut self, filename: P) -> Result<()> {
         type PluginCreate = unsafe fn() -> *mut Plugin;
 
-        let lib = Library::new(filename.as_ref())
-            .chain_err(|| "Unable to load the plugin")?;
+        let lib = Library::new(filename.as_ref()).chain_err(|| "Unable to load the plugin")?;
 
-        unsafe {
-            let constructor: Symbol<PluginCreate> = lib.get(b"_plugin_create")
-                .chain_err(|| "The `_plugin_create` symbol wasn't found.")?;
-            let boxed_raw = constructor();
+        // We need to keep the library around otherwise our plugin's vtable will
+        // point to garbage. We do this little dance to make sure the library
+        // doesn't end up getting moved.
+        self.loaded_libraries.push(lib);
 
-            let plugin = Box::from_raw(boxed_raw);
-            debug!("Loaded plugin: {}", plugin.name());
-            plugin.on_plugin_load();
-            self.plugins.push(plugin);
-        }
+        let lib = self.loaded_libraries.last().unwrap();
+
+        let constructor: Symbol<PluginCreate> = lib.get(b"_plugin_create")
+            .chain_err(|| "The `_plugin_create` symbol wasn't found.")?;
+        let boxed_raw = constructor();
+
+        let plugin = Box::from_raw(boxed_raw);
+        debug!("Loaded plugin: {}", plugin.name());
+        plugin.on_plugin_load();
+        self.plugins.push(plugin);
+
 
         Ok(())
     }
@@ -330,14 +347,18 @@ appropriate time.
         }
     }
 
-    /// Unload all plugins, making sure to fire their `on_plugin_unload()` 
-    /// methods so they can do any necessary cleanup.
+    /// Unload all plugins and loaded plugin libraries, making sure to fire 
+    /// their `on_plugin_unload()` methods so they can do any necessary cleanup.
     pub fn unload(&mut self) {
         debug!("Unloading plugins");
 
         for plugin in self.plugins.drain(..) {
             trace!("Firing on_plugin_unload for {:?}", plugin.name());
             plugin.on_plugin_unload();
+        }
+
+        for lib in self.loaded_libraries.drain(..) {
+            drop(lib);
         }
     }
 }
@@ -355,7 +376,7 @@ to do any necessary cleanup.
 
 impl Drop for PluginManager {
     fn drop(&mut self) {
-        if !self.plugins.is_empty() {
+        if !self.plugins.is_empty() || !self.loaded_libraries.is_empty() {
             self.unload();
         }
     }
@@ -573,6 +594,9 @@ Now the plugin manager is plumbed into the existing request pipeline, we need a
 way of actually loading plugins at runtime. We'll use a simple [file dialog] and
 button for this.
 
+> **TODO:** Once the main UI is done, step through adding a "load plugin" button
+> and hooking it up to the plugin manager.
+
 
 ## Lets Make A Plugin
 
@@ -670,8 +694,14 @@ impl Plugin for Injector {
     }
 
     fn post_receive(&self, res: &mut Response) {
-        debug!("Received Response, {:?}", res);
-        req.headers.remove_raw("some-dodgy-header");
+        debug!("Received Response");
+        debug!("Headers: {:?}", res.headers);
+        if res.body.len() < 100 && log_enabled!(log::LogLevel::Debug) {
+            if let Ok(body) = str::from_utf8(&res.body) {
+                debug!("Body: {:?}", body);
+            }
+        }
+        res.headers.remove_raw("some-dodgy-header");
     }
 }
 ```
@@ -699,18 +729,76 @@ $ nm injector-plugin/libinjector_plugin.so | grep ' T '
 ...
 ```
 
----
 
-Useful Links:
+## Running The Plugin
+
+Now that we've got a plugin and everything is hooked up to the GUI, we can try 
+it out and benefit from all the hard work put in so far.
+
+Make sure to do one last compile,
+
+```
+$ cd build
+$ make
+```
+
+Then run the GUI and load the plugin from 
+`build/injector-plugin/libinjector_plugin.so`. To see what headers are sent you
+can send a `GET` request to http://httpbin.org/get. With any luck you should
+see something like this:
+
+```
+$ RUST_LOG=client=debug,injector_plugin=debug ./gui/gui
+
+DEBUG:client::ffi: Loading plugin, "/home/michael/Documents/ffi-guide/build/injector-plugin/libinjector_plugin.so"
+DEBUG:client::plugins: Loaded plugin: Header Injector
+INFO:injector_plugin: Injector loaded
+Creating the request
+Sending Request
+DEBUG:client::plugins: Firing pre_send hooks
+DEBUG:client::plugins: PluginManager { plugins: ["Header Injector"] }
+DEBUG:injector_plugin: Injected header into Request, Request { destination: "http://httpbin.org/get", method: Get, headers: {"some-dodgy-header": "true"}, cookies: CookieJar { original_cookies: {}, delta_cookies: {} }, body: None }
+INFO:client: Sending a GET request to http://httpbin.org/get
+DEBUG:client: Sending 1 Headers
+DEBUG:client: 	some-dodgy-header: true
+DEBUG:client::ffi: Received Response
+DEBUG:client::plugins: Firing post_receive hooks
+DEBUG:injector_plugin: Received Response
+DEBUG:injector_plugin: Headers: {"Connection": "keep-alive", "Server": "meinheld/0.6.1", "Date": "Tue, 07 Nov 2017 14:29:39 GMT", "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Credentials": "true", "X-Powered-By": "Flask", "X-Processed-Time": "0.000864028930664", "Content-Length": "303", "Via": "1.1 vegur"}
+Received Response
+Body:
+{
+  "args": {}, 
+  "headers": {
+    "Accept": "*/*", 
+    "Accept-Encoding": "gzip", 
+    "Connection": "close", 
+    "Cookie": "", 
+    "Host": "httpbin.org", 
+    "Some-Dodgy-Header": "true", 
+    "User-Agent": "reqwest/0.8.0"
+  }, 
+  "origin": "122.151.115.164", 
+  "url": "http://httpbin.org/get"
+}
+
+DEBUG:client::plugins: Unloading plugins
+INFO:injector_plugin: Injector unloaded
+```
+
+Now if you look *very* carefully you'll see that the plugin was indeed fired at
+the correct time, and `httpbin` replied saying we had `Some-Dodgy-Header` in our
+headers. If you've stayed with us up to this point then give yourself a pat on
+the back, you just accomplished one of the most difficult FFI tasks possible!
+
+If dynamic loading is still confusing you, you may want to check out some of 
+these links:
 
 - [Plugins in C](https://eli.thegreenplace.net/2012/08/24/plugins-in-c)
 - [Building a Simple C++ Cross-platform Plugin System](https://sourcey.com/building-a-simple-cpp-cross-platform-plugin-system/)
-
-
-> **Note:** This is actually the exact pattern used by the Linux kernel for 
-> loading device drivers. Each driver must expose a function which returns a
-> vtable (struct of function pointers) that define the various commands 
-> necessary for talking with a device (read, write, etc).
+- [GetProcAddress (for loading DLLs on Windows)][GetProcAddress]
+- [dlsym (the Linux equivalent)][dlsym]
+- [Wikipedia also has a pretty accurate article on the topic][article]
 
 
 [dl]: https://michael-f-bryan.github.io/rust-ffi-guide/dynamic_loading/index.html

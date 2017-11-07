@@ -355,6 +355,7 @@ name = "injector-plugin"
 version = "0.1.0"
 dependencies = [
  "client 0.1.0",
+ "env_logger 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

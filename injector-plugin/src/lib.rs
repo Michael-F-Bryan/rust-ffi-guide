@@ -1,8 +1,10 @@
 #[macro_use]
 extern crate log;
+extern crate env_logger;
 #[macro_use]
 extern crate client;
 
+use std::str;
 use client::{Request, Response, Plugin};
 
 
@@ -15,6 +17,7 @@ impl Plugin for Injector {
     }
 
     fn on_plugin_load(&self) {
+        env_logger::init().ok();
         info!("Injector loaded");
     }
 
@@ -28,7 +31,13 @@ impl Plugin for Injector {
     }
 
     fn post_receive(&self, res: &mut Response) {
-        debug!("Received Response, {:?}", res);
+        debug!("Received Response");
+        debug!("Headers: {:?}", res.headers);
+        if res.body.len() < 100 && log_enabled!(::log::LogLevel::Debug) {
+            if let Ok(body) = str::from_utf8(&res.body) {
+                debug!("Body: {:?}", body);
+            }
+        }
         res.headers.remove_raw("some-dodgy-header");
     }
 }
