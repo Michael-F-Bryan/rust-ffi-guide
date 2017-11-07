@@ -18,7 +18,7 @@ function(rustc_library target_name source_file output_library)
         COMMAND rustc --crate-type cdylib ${source_file} -o ${output_library}
         DEPENDS ${source_file})
     add_custom_target(${target_name} DEPENDS ${output_library})
-endfunction(rustc_library)
+endfunction()
 
 
 # Compile a Rust crate and copy the *.so into the current binary dir. This 
@@ -33,7 +33,7 @@ function(cargo_library target_name project_dir)
 
     if(CARGO_RELEASE_FLAG STREQUAL "--release")
         set(compile_message "${compile_message} in release mode")
-    endif(CARGO_RELEASE_FLAG)
+    endif()
 
     add_custom_command(OUTPUT ${output_library}
         COMMENT ${compile_message}
@@ -48,7 +48,7 @@ function(cargo_library target_name project_dir)
     add_test(NAME ${target_name}_test 
         COMMAND env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} cargo test ${CARGO_RELEASE_FLAG}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-endfunction(cargo_library)
+endfunction()
 
 enable_testing()
 add_subdirectory(client)
