@@ -73,6 +73,7 @@ improved, please [create an issue][issues]. Pull requests are welcome too!
 
 - [Michael-F-Bryan](https://github.com/Michael-F-Bryan)
 - [gurgalex](https://github.com/gurgalex)
+- [adeschamps](https://github.com/adeschamps)
 
 
 [gh-pages]: https://michael-f-bryan.github.io/rust-ffi-guide/
