@@ -284,7 +284,7 @@ contrived example and more like a real-life application?
 The first thing is to pull our main window out into its own header file.
 
 ```cpp
-// gui/main_window.cpp
+// gui/main_window.hpp
 
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QPushButton>

@@ -15,7 +15,7 @@ This chapter will cover:
 
 ## Rust FFI Bindings
 
-The FFI bindings for `send_request()` are dead simple, we do a null pointer 
+The FFI bindings for `send_request()` are dead simple. We do a null pointer
 sanity check, pass the `Request` to our `send_request()` function, then box up
 the response so it can be returned to the caller.
 
@@ -52,7 +52,7 @@ raw pointer into a normal borrow by dereferencing and immediately reborrowing.
 The only reason this function is unsafe is because this dereferencing has the 
 possibility of blowing up if the pointer passed in points to invalid memory.
 
-The destructor for a `Response` is equally as trivial, in fact it's pretty much 
+The destructor for a `Response` is equally as trivial - in fact it's pretty much
 the exact same as our `Request` destructor.
 
 ```rust
@@ -89,7 +89,7 @@ use libc::{c_char, size_t};
 /// Get the length of a `Response`'s body.
 #[no_mangle]
 pub unsafe extern "C" fn response_body_length(res: *const Response) -> size_t {
-    if !res.is_null() {
+    if res.is_null() {
         return 0;
     }
 
@@ -171,7 +171,7 @@ The `Response` class definition isn't overly interesting:
 class Response {
 public:
   std::vector<char> read_body();
-  Response(void *raw) : raw(raw){};
+  Response(void *raw) : raw(raw){}
   ~Response();
 
 private:

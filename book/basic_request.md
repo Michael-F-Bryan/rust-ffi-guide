@@ -30,7 +30,7 @@ destructor for `Request`. The constructor can take in the target URL (as a
 `char *` string) and then fill in all the other fields with their defaults. 
 
 Because our `Request` contains Rust-specific things like generics we need to 
-hide it behind a raw pointer. This is actually pretty easy to do, you move the 
+hide it behind a raw pointer. This is actually pretty easy to do; you move the
 `Request` to the heap with `Box::new()`, then call `Box::into_raw()` to get a 
 raw pointer to the `Request`. The dangerous part here is that the compiler will
 no longer make sure the `Request` is destroyed once it goes out of scope, so 
@@ -260,7 +260,7 @@ pub unsafe extern "C" fn request_destroy(req: *mut Request) {
 ```
 
 If you compile and run the GUI program then click our button you should see 
-somethign like the following printed to stdout.
+something like the following printed to stdout.
 
 ```
 $ cmake .. && make

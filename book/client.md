@@ -9,7 +9,7 @@ This isn't overly specific to doing FFI, in fact we probably won't write any FFI
 bindings or C++ in this chapter. That said, it's still a very important stage
 because poor architecture decisions here can often make life hard for you down 
 the road. In general, making the interface as small and high level as possible 
-will vastly reduce the implementation comlexity.
+will vastly reduce the implementation complexity.
 
 The first thing to do is set up error handling using `error-chain`. I have 
 `cargo-edit` installed (`cargo install cargo-edit`), so adding it to my 
@@ -57,8 +57,8 @@ before we can send it so lets add a helper method for that.
 
 ```rust
 impl Request {
-    pub(crate) fn to_reqwest(self) -> reqwest::Request {
-        let mut r = reqwest::Request::new(self.method, self.destination);
+    pub(crate) fn to_reqwest(&self) -> reqwest::Request {
+        let mut r = reqwest::Request::new(self.method.clone(), self.destination.clone());
 
         r.headers_mut().extend(self.headers.iter());
 
