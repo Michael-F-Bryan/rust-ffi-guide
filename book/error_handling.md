@@ -195,6 +195,148 @@ of it is taken up by checking for errors and edge cases.
 
 ## C++ Error Bindings
 
+We're going to expose this error handling mechanism to C++ in two ways, there 
+will be a low level C++ equivalent to `last_error_message()` which simply calls
+the Rust function and does the necessary work to convert the error message into
+a `std::string`.  
+
+There will also be a more high-level `WrapperException` class which can be thrown
+whenever an operation fails. This should then be caught higher up by the Qt 
+application and an appropriate error message will be displayed to the user.
+
+First we need to add `last_error_message()` to our `wrappers.hpp` header file.
+
+```cpp
+// gui/wrappers.hpp
+
+std::string last_error_message();
+```
+
+Then we need to implement it.
+
+```cpp
+// gui/wrappers.cpp
+
+std::string last_error_message() {
+  int error_length = ffi::last_error_length();
+
+  if (error_length == 0) {
+    return std::string();
+  }
+
+  std::string msg(error_length, '\0');
+  int ret = ffi::last_error_message(&msg[0], msg.length());
+  if (ret != error_length) {
+    // If we ever get here it's a bug
+    throw new WrapperException("Fetching error message failed");
+  }
+
+  return msg;
+}
+```
+
+Notice that if there was no error we return an empty `std::string` instead of 
+blowing up.
+
+We also want to define a `WrapperException` class in the `wrappers.hpp` header 
+file. To make things easier, we're defining a public static helper function 
+which will create a new `WrapperException` from the most recent error.
+
+```cpp
+// gui/wrappers.hpp
+
+class WrapperException : std::exception {
+public:
+  WrapperException(std::string msg) : msg(msg){};
+  static WrapperException last_error();
+  const char * what () const throw () {
+      return msg.c_str();
+   }
+
+private:
+  std::string msg;
+};
+```
+
+The `last_error()` method has a fairly simple definition, it fetches the last 
+error message and creates a new `WrapperException` with it. If the error message
+was empty then we use a default message. 
+
+```cpp
+// gui/wrappers.cpp
+
+WrapperException WrapperException::last_error() {
+  std::string msg = last_error_message();
+
+  if (msg.length == 0) {
+    return WrapperException("(no error available)");
+  } else {
+    return WrapperException(msg);
+  }
+}
+```
+
+
+## Integrating In The Error Handling Mechanism
+
+Now we've got a proper error handling mechanism, we need to go back and make
+sure everything uses it. This is just a case of finding all `throw`
+statements in `wrappers.cpp` (using `grep` or your editor's "find" function)
+and converting them to use `throw WrapperException::last_error()`.
+
+The easiest way to check our error handling mechanism is to edit the click 
+handler we've been using for testing and make it try to send a request to some
+invalid URL.
+
+```cpp
+// gui/main_window.cpp
+
+void MainWindow::onClick() {
+  Request req("this is an invalid URL");
+}
+```
+
+Now run the program and click the button.
+
+```
+$ ./gui/gui
+...
+terminate called after throwing an instance of 'WrapperException'
+[1]    1016 abort (core dumped)  ./gui/gui
+```
+
+It... aborts?
+
+This is because Qt, by default, won't try to catch any thrown exceptions, 
+meaning they'll just bubble up to the top of the program and crash. 
+
+It'd be a much better user experience if the GUI would catch all thrown 
+exceptions and pop up a nice dialog box saying what went wrong.
+
+According to [Qt's documentation on exceptions][qt], it is undefined behaviour
+when a handler throws an exception. In this case it looks like the exception 
+bubbled up the stack, unhandled, until it hit the program's entry point and 
+triggered an abort. This isn't exactly ideal, so how about we wrap the click
+hander's contents in a big try/catch block?
+
+```cpp
+// gui/main_window.cpp
+
+void MainWindow::onClick() {
+  try
+  {
+    Request req("this is an invalid URL");
+  }
+  catch (const WrapperException& e)
+  {
+    QMessageBox::warning(this, "Error", e.what());
+  }
+}
+```
+
+That's much better. Now our application can deal with errors in a sane way, and
+is much more robust.
+
 
 > **TODO:** Add the error handling patterns developed in this chapter to the 
 > [ffi-helpers] crate.
@@ -205,3 +347,5 @@ of it is taken up by checking for errors and edge cases.
 [`thread_local!()`]: https://doc.rust-lang.org/std/macro.thread_local.html
 [utf16]: https://users.rust-lang.org/t/x-post-how-do-i-integrate-rust-into-other-projects/13507/5?u=michael-f-bryan
 [OsStrExt]: https://doc.rust-lang.org/std/os/windows/ffi/trait.OsStrExt.html#tymethod.encode_wide
+[SO]: https://stackoverflow.com/a/4661911/7149940
+[qt]: http://doc.qt.io/qt-5/exceptionsafety.html#signals-and-slots
