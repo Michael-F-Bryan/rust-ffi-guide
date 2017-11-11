@@ -98,7 +98,6 @@ To make it accessible from C++ we need to make sure `cargo` generates a
 dynamically linked library. This is just a case of tweaking our `Cargo.toml` to
 tell `cargo` we're creating a `cdylib` instead of the usual library format. 
 
-
 ```toml
 # client/Cargo.toml
 
@@ -123,6 +122,16 @@ $ cargo build
 $ ls target/debug/
 build  deps  examples  incremental  libclient.d  libclient.so  native
 ```
+
+> **Note:** You don't *technically* need to make a dynamic library (`cdylib`) 
+> for your Rust code to be callable from other languages. You can always use
+> static linking with a `staticlib`, however that can be a bit more annoying to
+> set up because you need to remember to link in a bunch of other things that
+> the Rust standard library uses (mainly `libc` and the C runtime).
+>
+> With a dynamic library all the work for dependency resolution is handled by 
+> the [loader] when your program gets loaded into memory on startup. Meaning 
+> things should *Just Work*.
 
 Now we know the Rust compiles natively with `cargo`, we need to hook it up to
 `cmake`. We do this by writing a `CMakeLists.txt` in the `client/` directory.
@@ -359,3 +368,4 @@ difficult part - getting everything to build!
 [button]: http://doc.qt.io/qt-5/qpushbutton.html
 [mangle]: https://en.wikipedia.org/wiki/Name_mangling
 [calling convention]: https://en.wikipedia.org/wiki/Calling_convention
+[loader]: https://en.wikipedia.org/wiki/Loader_(computing)
