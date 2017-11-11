@@ -24,7 +24,7 @@ void MainWindow::onClick() {
     std::string body(raw_body.begin(), raw_body.end());
     std::cout << "Body:" << std::endl << body << std::endl;
   }
-  catch (const WrapperException& e)
+  catch (const WrapperException e)
   {
     QMessageBox::warning(this, "Error", e.what());
   }

@@ -71,9 +71,9 @@ std::string last_error_message() {
 
   std::string msg(error_length, '\0');
   int ret = ffi::last_error_message(&msg[0], msg.length());
-  if (ret != error_length) {
+  if (ret <= 0) {
     // If we ever get here it's a bug
-    throw new WrapperException("Fetching error message failed");
+    throw WrapperException("Fetching error message failed");
   }
 
   return msg;

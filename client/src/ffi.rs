@@ -4,20 +4,21 @@
 use std::ffi::CStr;
 use std::ptr;
 use std::slice;
-use std::error::Error;
+use std::error::Error as StdError;
 use std::cell::RefCell;
 use libc::{c_char, c_int, size_t};
 use reqwest::{Method, Url};
 
 use {send_request, PluginManager, Request, Response};
+use errors::*;
 
 
 thread_local!{
-    static LAST_ERROR: RefCell<Option<Box<Error>>> = RefCell::new(None);
+    static LAST_ERROR: RefCell<Option<Box<StdError>>> = RefCell::new(None);
 }
 
 /// Update the most recent error, clearing whatever may have been there before.
-pub fn update_last_error<E: Error + 'static>(err: E) {
+pub fn update_last_error<E: StdError + 'static>(err: E) {
     error!("Setting LAST_ERROR: {}", err);
 
     {
@@ -36,7 +37,7 @@ pub fn update_last_error<E: Error + 'static>(err: E) {
 }
 
 /// Retrieve the most recent error, clearing it in the process.
-pub fn take_last_error() -> Option<Box<Error>> {
+pub fn take_last_error() -> Option<Box<StdError>> {
     LAST_ERROR.with(|prev| prev.borrow_mut().take())
 }
 
@@ -45,7 +46,7 @@ pub fn take_last_error() -> Option<Box<Error>> {
 #[no_mangle]
 pub extern "C" fn last_error_length() -> c_int {
     LAST_ERROR.with(|prev| match *prev.borrow() {
-        Some(ref err) => err.to_string().len() as c_int,
+        Some(ref err) => err.to_string().len() as c_int + 1,
         None => 0,
     })
 }
@@ -116,6 +117,8 @@ pub unsafe extern "C" fn last_error_message(buffer: *mut c_char, length: c_int) 
 #[no_mangle]
 pub unsafe extern "C" fn request_create(url: *const c_char) -> *mut Request {
     if url.is_null() {
+        let err = Error::from("No URL provided");
+        update_last_error(err);
         return ptr::null_mut();
     }
 
@@ -123,12 +126,20 @@ pub unsafe extern "C" fn request_create(url: *const c_char) -> *mut Request {
 
     let url_as_str = match raw.to_str() {
         Ok(s) => s,
-        Err(_) => return ptr::null_mut(),
+        Err(e) => {
+            let err = Error::with_chain(e, "Unable to convert URL to a UTF-8 string");
+            update_last_error(err);
+            return ptr::null_mut();
+        }
     };
 
     let parsed_url = match Url::parse(url_as_str) {
         Ok(u) => u,
-        Err(_) => return ptr::null_mut(),
+        Err(e) => {
+            let err = Error::with_chain(e, "Unable to parse the URL");
+            update_last_error(err);
+            return ptr::null_mut();
+        }
     };
 
     let req = Request::new(parsed_url, Method::Get);
@@ -154,6 +165,7 @@ pub unsafe extern "C" fn request_destroy(req: *mut Request) {
 #[no_mangle]
 pub unsafe extern "C" fn request_send(req: *const Request) -> *mut Response {
     if req.is_null() {
+        update_last_error(Error::from("Received null pointer"));
         return ptr::null_mut();
     }
 
@@ -161,8 +173,12 @@ pub unsafe extern "C" fn request_send(req: *const Request) -> *mut Response {
 
     let response = match send_request(req) {
         Ok(r) => r,
-        Err(_) => return ptr::null_mut(),
+        Err(e) => {
+            update_last_error(Error::with_chain(e, "Sending request failed."));
+            return ptr::null_mut();
+        }
     };
+
     debug!("Received Response");
     trace!("{:?}", response);
 
@@ -181,6 +197,7 @@ pub unsafe extern "C" fn response_destroy(res: *mut Response) {
 #[no_mangle]
 pub unsafe extern "C" fn response_body_length(res: *const Response) -> size_t {
     if res.is_null() {
+        update_last_error(Error::from("Null pointer passed to response_body_length()"));
         return 0;
     }
 
@@ -198,6 +215,7 @@ pub unsafe extern "C" fn response_body(
     length: size_t,
 ) -> c_int {
     if res.is_null() || buffer.is_null() {
+        update_last_error(Error::from("Null pointer passed to response_body()"));
         return -1;
     }
 
@@ -205,6 +223,7 @@ pub unsafe extern "C" fn response_body(
     let buffer: &mut [u8] = slice::from_raw_parts_mut(buffer as *mut u8, length as usize);
 
     if buffer.len() < res.body.len() {
+        update_last_error(Error::from("Buffer is an insufficient length"));
         return -1;
     }
 
@@ -237,8 +256,11 @@ pub unsafe extern "C" fn plugin_manager_load_plugin(
     let filename = CStr::from_ptr(filename);
     let filename_as_str = match filename.to_str() {
         Ok(s) => s,
-        Err(_) => {
-            // TODO: proper error handling
+        Err(e) => {
+            update_last_error(Error::with_chain(
+                e,
+                "Unable to convert the plugin filename to UTF-8",
+            ));
             return -1;
         }
     };
@@ -248,7 +270,10 @@ pub unsafe extern "C" fn plugin_manager_load_plugin(
     // TODO: proper error handling and catch_unwind
     match pm.load_plugin(filename_as_str) {
         Ok(_) => 0,
-        Err(_) => -1,
+        Err(e) => {
+            update_last_error(Error::with_chain(e, "Loading plugin failed"));
+            -1
+        }
     }
 }
 

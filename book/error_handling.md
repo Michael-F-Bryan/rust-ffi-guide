@@ -92,7 +92,7 @@ exactly a practical solution, so it'd be nice if we included a mechanism for
 calculating the error message's length without consuming the error message 
 itself.
 
-To deal with this we add an extra `last_error_lengt()` function.
+To deal with this we add an extra `last_error_length()` function.
 
 ```rust
 // client/src/ffi.rs
@@ -102,7 +102,7 @@ To deal with this we add an extra `last_error_lengt()` function.
 #[no_mangle]
 pub extern "C" fn last_error_length() -> c_int {
     LAST_ERROR.with(|prev| match *prev.borrow() {
-        Some(ref err) => err.to_string().len() as c_int,
+        Some(ref err) => err.to_string().len() as c_int + 1,
         None => 0,
     })
 }
@@ -193,6 +193,60 @@ of it is taken up by checking for errors and edge cases.
 > forgetting to call destructors.
 
 
+## Adding `update_last_error()` To The FFI Bindings
+
+Now we've got a shiny new error handling mechanism, we need to go back over the
+FFI bindings in `client/src/ffi.rs` and make sure any fallible operations set
+call `update_last_error()` when they fail.
+
+Because we are using `error-chain` for error handling in Rust, we've got the 
+ability to add extra context to errors before calling `update_last_error()`, 
+automatically updating the error's `cause`.
+
+For example, you may refactor the `request_create()` function to look something
+like this:
+
+```diff
+// client/src/ffi.rs
+
+#[no_mangle]
+ pub unsafe extern "C" fn request_create(url: *const c_char) -> *mut Request {
+     if url.is_null() {
++        let err = Error::from("No URL provided");
++        update_last_error(err);
+         return ptr::null_mut();
+     }
+ 
+     let raw = CStr::from_ptr(url);
+ 
+      let url_as_str = match raw.to_str() {
+          Ok(s) => s,
+-        Err(_) => return ptr::null_mut(),
++        Err(e) => {
++            let err = Error::with_chain(e, "Unable to convert URL to a UTF-8 string");
++            update_last_error(err);
++            return ptr::null_mut();
++        }
+      };
+ 
+      let parsed_url = match Url::parse(url_as_str) {
+          Ok(u) => u,
+-        Err(_) => return ptr::null_mut(),
++        Err(e) => {
++            let err = Error::with_chain(e, "Unable to parse the URL");
++            update_last_error(err);
++            return ptr::null_mut();
++        }
+      };
+
+    ...
+```
+
+For brevity's sake, we won't show how *all* the FFI bindings have been updated
+because it's largely tedious refactoring. However, feel free to inspect the 
+[source code] for this guide if you are curious to see the final version.
+
+
 ## C++ Error Bindings
 
 We're going to expose this error handling mechanism to C++ in two ways, there 
@@ -226,7 +280,7 @@ std::string last_error_message() {
 
   std::string msg(error_length, '\0');
   int ret = ffi::last_error_message(&msg[0], msg.length());
-  if (ret != error_length) {
+  if (ret <= 0) {
     // If we ever get here it's a bug
     throw new WrapperException("Fetching error message failed");
   }
@@ -349,3 +403,4 @@ is much more robust.
 [OsStrExt]: https://doc.rust-lang.org/std/os/windows/ffi/trait.OsStrExt.html#tymethod.encode_wide
 [SO]: https://stackoverflow.com/a/4661911/7149940
 [qt]: http://doc.qt.io/qt-5/exceptionsafety.html#signals-and-slots
+[source code]: TODO-update-me!
