@@ -1,7 +1,7 @@
 # Using `unsafe` for Fun and Profit
 
 [![Build Status](https://travis-ci.org/Michael-F-Bryan/rust-ffi-guide.svg?branch=master)](https://travis-ci.org/Michael-F-Bryan/rust-ffi-guide)
-[![license](https://img.shields.io/github/license/Michael-F-Bryan/rust-ffi-guide.svg)](https://creativecommons.org/publicdomain/zero/1.0/deed.en)
+[![Creative Commons Zero License](https://img.shields.io/github/license/Michael-F-Bryan/rust-ffi-guide.svg)](https://creativecommons.org/publicdomain/zero/1.0/deed.en)
 
 
 A guide to traversing the FFI boundary between Rust and other languages. A
