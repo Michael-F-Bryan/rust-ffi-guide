@@ -333,7 +333,6 @@ void MainWindow::onClick() {
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   button = new QPushButton("Click Me", this);
-  button->show();
   
   // Connect the button's `released` signal to `this->onClick()`
   connect(button, SIGNAL(released()), this, SLOT(onClick()));
