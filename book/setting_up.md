@@ -45,14 +45,14 @@ Our `main.cpp` is still empty, lets rectify that by adding in a [button].
 ```cpp
 // gui/main.cpp
 
-#include <QtWidgets/QApplication>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QApplication>
 
 int main(int argc, char **argv) {
   QApplication app(argc, argv);
 
-  QPushButton button("Hello World");
-  button.show();
+  QPushButton *button = new QPushButton("Hello World");
+  button->show();
 
   app.exec();
 }
@@ -65,15 +65,15 @@ how to build our GUI.
 # gui/CMakeLists.txt
 
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 find_package(Qt5Widgets)
 
-add_executable(gui 
-    main_window.cpp main_window.hpp main.cpp)
+set(SOURCE main.cpp)
+add_executable(gui ${SOURCE})
 target_link_libraries(gui Qt5::Widgets)
 add_dependencies(gui client)
 ```
@@ -81,8 +81,8 @@ add_dependencies(gui client)
 This is mostly concerned with adding the correct options so Qt's meta-object 
 compiler can do its thing and we can locate the correct Qt libraries, however 
 right down the bottom you'll notice that we create a new executable with 
-`add_executable()`. This says our `gui` target has 3 source files. It also needs 
-to link to `Qt5::Widgets` and depends on our `client` (the Rust library), which 
+`add_executable()`. This says our `gui` target has right now one source file, `main.cpp`. 
+It also needs to link to `Qt5::Widgets` and depends on our `client` (the Rust library), which 
 hasn't yet been configured.
 
 
@@ -196,9 +196,8 @@ link to it.
 
 ...
 
-set(SOURCE main_window.cpp main_window.hpp wrappers.cpp wrappers.hpp main.cpp)
+set(SOURCE main.cpp)
 add_executable(gui ${SOURCE})
-
 + get_target_property(CLIENT_DIR client LOCATION)
 target_link_libraries(gui Qt5::Widgets)
 + target_link_libraries(gui ${CLIENT_DIR}/libclient.so)
@@ -290,7 +289,21 @@ only the exported functions.
 Now we have a working library, why don't we make the GUI program less like a 
 contrived example and more like a real-life application?
 
-The first thing is to pull our main window out into its own header file.
+The first thing is to pull our main window out into its own source files.
+
+```bash
+$ touch gui/main_window.hpp gui/main_window.cpp
+```
+
+```diff
+# gui/CMakeLists.txt
+
+...
+
+- set(SOURCE main.cpp)
++ set(SOURCE main_window.cpp main_window.hpp main.cpp)
+add_executable(gui ${SOURCE})
+```
 
 ```cpp
 // gui/main_window.hpp
