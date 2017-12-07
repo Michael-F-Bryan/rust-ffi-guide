@@ -9,9 +9,8 @@ int main(int argc, char **argv) {
   init_logging();
   QApplication app(argc, argv);
 
-  MainWindow *ui = new MainWindow();
-  ui->show();
+  MainWindow mainWindow;
+  mainWindow.show();
 
   app.exec();
-  delete ui;
 }

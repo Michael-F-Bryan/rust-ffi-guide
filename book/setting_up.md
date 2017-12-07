@@ -51,8 +51,8 @@ Our `main.cpp` is still empty, lets rectify that by adding in a [button].
 int main(int argc, char **argv) {
   QApplication app(argc, argv);
 
-  QPushButton *button = new QPushButton("Hello World");
-  button->show();
+  QPushButton button("Hello World");
+  button.show();
 
   app.exec();
 }
@@ -364,8 +364,8 @@ Don't forget to update `main.cpp` to use the new `MainWindow`.
 int main(int argc, char **argv) {
   QApplication app(argc, argv);
 
-  MainWindow *ui = new MainWindow();
-  ui->show();
+  MainWindow mainWindow;
+  mainWindow.show();
 
   app.exec();
 }
