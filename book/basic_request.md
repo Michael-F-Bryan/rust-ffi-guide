@@ -127,6 +127,13 @@ You will notice that both functions were prefixed with `request_`. This is a
 common convention used to indicate that the function "belongs" to some type,
 conceptual the equivalent of a normal method.
 
+Note the new module as a public one in `lib.rs`.
+
+```rust
+// client/src/lib.rs
+
+pub mod ffi;
+```
 
 ## The C++ Wrapper
 
@@ -165,20 +172,20 @@ resolve them for us at link time.
 // gui/wrappers.cpp
 
 #include "wrappers.hpp"
-#include <string>
 
 extern "C" {
 void *request_create(const char *);
 void request_destroy(void *);
 }
 
-Request::~Request() { request_destroy(raw); }
-
 Request::Request(const std::string url) {
   raw = request_create(url.c_str());
   if (raw == nullptr) {
     throw "Invalid URL";
   }
+}
+
+Request::~Request() { request_destroy(raw); }
 ```
 
 > **Note:** You may have noticed that even though `request_create()` accepts a
@@ -208,9 +215,10 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 find_package(Qt5Widgets)
 
 set(SOURCE main_window.cpp main_window.hpp wrappers.cpp wrappers.hpp main.cpp)
-
 add_executable(gui ${SOURCE})
-target_link_libraries(gui Qt5::Widgets ${CMAKE_BINARY_DIR}/libclient.so)
+get_target_property(CLIENT_DIR client LOCATION)
+target_link_libraries(gui Qt5::Widgets)
+target_link_libraries(gui ${CLIENT_DIR}/libclient.so)
 add_dependencies(gui client)
 ```
 

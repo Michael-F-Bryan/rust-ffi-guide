@@ -21,13 +21,13 @@ class Response {
   friend class Request;
 
 public:
-  std::vector<char> read_body();
   Response(const Response&) = delete;
   Response(Response&& other) {
     this->raw = other.raw;
     other.raw = nullptr;
   }
   ~Response();
+  std::vector<char> read_body();
 
 private:
   Response(ffi::Response *raw) : raw(raw){};
@@ -39,13 +39,13 @@ class Request {
 
 public:
   Request(const std::string &);
-  Response send();
   Request(const Request&) = delete;
   Request(Request&& other) {
     this->raw = other.raw;
     other.raw = nullptr;
   }
   ~Request();
+  Response send();
 
 private:
   ffi::Request *raw;
