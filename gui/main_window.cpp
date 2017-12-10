@@ -28,7 +28,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 
   btn_click = new QPushButton("Click Me", main_widget);
   connect(btn_click, SIGNAL(released()), this, SLOT(onClick()));
-  btn_click->show();
   layout->addRow(new QLabel(tr("Line 1:")), btn_click);
 
   btn_plugin = new QPushButton("Load Plugin", main_widget);

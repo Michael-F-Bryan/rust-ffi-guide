@@ -19,11 +19,30 @@ The first thing to do is set up error handling using `error-chain`. I have
 $ cargo add error-chain
 ```
 
-You'll then need to add the corresponding `extern crate` statement to `lib.rs` 
-and create an `errors.rs` module. While you're at it, you may also want to add 
-the `reqwest` and `cookie` crates.
+You'll then need to add the corresponding `extern crate` statement to `lib.rs`. 
+While you're at it, add also the `reqwest`, `cookie`, `chrono`, `fern`, `log` 
+and `libc` crates both to `Cargo.toml` and `lib.rs`, as we are going to use 
+them as well afterwards.
 
 ```rust
+// client/src/lib.rs
+
+extern crate chrono;
+extern crate cookie;
+#[macro_use]
+extern crate error_chain;
+extern crate fern;
+extern crate libc;
+#[macro_use]
+extern crate log;
+extern crate reqwest;
+```
+
+Now create an `errors.rs` module.
+
+```rust
+// client/src/errors.rs
+
 error_chain!{
     foreign_links {
         Reqwest(::reqwest::Error);
@@ -49,6 +68,26 @@ pub struct Request {
     pub headers: Headers,
     pub cookies: CookieJar,
     pub body: Option<Vec<u8>>,
+}
+```
+
+Add a constructor method as used by `request_create()`.
+
+```rust
+impl Request {
+    pub fn new(destination: Url, method: Method) -> Request {
+        let headers = Headers::default();
+        let cookies = CookieJar::default();
+        let body = None;
+
+        Request {
+            destination,
+            method,
+            headers,
+            cookies,
+            body,
+        }
+    }
 }
 ```
 
@@ -132,6 +171,7 @@ use fern;
 use log::LogLevelFilter;
 use chrono::Local;
 
+use errors::*;
 
 /// Initialize the global logger and log to `rest_client.log`.
 ///
@@ -202,7 +242,7 @@ use errors::*;
 
 
 /// Send a `Request`.
-pub fn send_request(req: Request) -> Result<Response> {
+pub fn send_request(req: &Request) -> Result<Response> {
     info!("Sending a GET request to {}", req.destination);
     if log_enabled!(::log::LogLevel::Debug) {
         debug!("Sending {} Headers", req.headers.len());
@@ -236,6 +276,18 @@ want to drill down and find out *exactly* what went wrong.
 This method of error handling ties in quite nicely with the `backtrace()` helper
 defined earlier. As you'll see later on, they can prove invaluable for 
 debugging issues when passing things between languages.
+
+
+Register the four new modules in `lib.rs`.
+
+```rust
+// client/src/lib.rs
+
+pub mod errors;
+pub mod utils;
+mod request;
+mod response;
+```
 
 Now we've got something to work with, we can start writing some FFI bindings.
 

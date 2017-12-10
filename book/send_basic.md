@@ -56,6 +56,8 @@ The destructor for a `Response` is equally as trivial - in fact it's pretty much
 the exact same as our `Request` destructor.
 
 ```rust
+// client/src/ffi.rs
+
 /// Destroy a `Response` once you are done with it.
 #[no_mangle]
 pub unsafe extern "C" fn response_destroy(res: *mut Response) {
@@ -106,6 +108,7 @@ buffer contents across.
 ```rust
 // client/src/ffi.rs
 
+use libc::{c_char, c_int, size_t};
 use std::slice;
 
 ...
@@ -168,11 +171,15 @@ The `Response` class definition isn't overly interesting:
 
 ...
 
+#include <vector>
+
+...
+
 class Response {
 public:
-  std::vector<char> read_body();
   Response(void *raw) : raw(raw){}
   ~Response();
+  std::vector<char> read_body();
 
 private:
   void *raw;
@@ -202,6 +209,10 @@ later).
 ```cpp
 // gui/wrappers.cpp
 
+#include <cassert>
+
+...
+
 Response::~Response() { response_destroy(raw); }
 
 std::vector<char> Response::read_body() {
@@ -230,8 +241,8 @@ this point so `Request` can use it.
 class Request {
 public:
   Request(const std::string);
-  Response send();
   ~Request();
+  Response send();
 
 private:
   void *raw;
