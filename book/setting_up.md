@@ -151,7 +151,7 @@ endif ()
 
 set(CLIENT_SO "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_DIR}/libclient.so")
 
-add_custom_target(client
+add_custom_target(client ALL
     COMMENT "Compiling client module"
     COMMAND CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} ${CARGO_CMD} 
     COMMAND cp ${CLIENT_SO} ${CMAKE_CURRENT_BINARY_DIR}

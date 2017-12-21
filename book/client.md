@@ -236,8 +236,8 @@ stuff).
 // client/src/lib.rs
 
 use reqwest::Client;
-use request::Request;
-use response::Response;
+pub use request::Request;
+pub use response::Response;
 use errors::*;
 
 

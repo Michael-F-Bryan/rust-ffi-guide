@@ -167,6 +167,14 @@ been copied pretty much verbatim from the beginning of the chapter.
 ```rust
 // client/src/plugins.rs
 
+use std::ffi::OsStr;
+use std::any::Any;
+use libloading::{Library, Symbol};
+
+use errors::*;
+use {Request, Response};
+
+
 /// A plugin which allows you to add extra functionality to the REST client.
 pub trait Plugin: Any + Send + Sync {
     /// Get a name describing the `Plugin`.
@@ -369,6 +377,10 @@ converting raw pointers into references, then calling a method.
 ```rust
 // client/src/ffi.rs
 
+use PluginManager;
+
+...
+
 /// Create a new `PluginManager`.
 #[no_mangle]
 pub extern "C" fn plugin_manager_new() -> *mut PluginManager {
@@ -505,6 +517,10 @@ First we'll need to add the `PluginManager` to our main window.
 ```diff
 // gui/main_window.hpp
 
+#include "wrappers.hpp"
+
+...
+
 class MainWindow : public QMainWindow {
   ...
 
@@ -538,9 +554,9 @@ To do this we update the `main_window.hpp` header file:
 class MainWindow : public QMainWindow {
   ...
 
-public:
-  ...
-  void closeEvent(QCloseEvent *event);
+protected:
+  void closeEvent(QCloseEvent *event) override;
+
   ...
 };
 ```
@@ -550,7 +566,10 @@ Then add the implementation to `main-window.cpp`.
 ```cpp
 // gui/main_window.cpp
 
-void MainWindow::closeEvent(QCloseEvent *event) { pm.unload(); }
+void MainWindow::closeEvent(QCloseEvent *event) {
+  pm.unload();
+  QMainWindow::closeEvent(event);
+}
 ```
 
 Now the plugin manager is plumbed into the existing request pipeline, we need a
@@ -601,10 +620,10 @@ identical to the one we wrote for `client` so just copy that across and change
 the relevant names.
 
 ```
-$ cp ./client/CMakeLists.txt ./inject-plugin/CMakeLists.txt
+$ cp ./client/CMakeLists.txt ./injector-plugin/CMakeLists.txt
 ```
 
-Don't forget make sure `cmake` includes the `inject-plugin` directory!
+Don't forget to make sure `cmake` includes the `injector-plugin` directory!
 
 ```diff
 # ./CMakeLists.txt
@@ -613,6 +632,19 @@ add_subdirectory(client)
 + add_subdirectory(injector-plugin)
 add_subdirectory(gui)
 ```
+
+As we link the plugin to the `client` library the Rust way, we need adjust its
+`Cargo.toml` to generate it also as `rlib`.
+
+```toml
+# client/Cargo.toml
+
+...
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+```
+
 
 And then we do a quick build as a sanity check to make sure everything built.
 
@@ -633,6 +665,9 @@ The plugin body itself isn't overly interesting.
 extern crate log;
 #[macro_use]
 extern crate client;
+
+use std::str;
+use client::{Request, Response, Plugin};
 
 
 #[derive(Debug, Default)]
