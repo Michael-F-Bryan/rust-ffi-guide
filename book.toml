@@ -1,8 +1,11 @@
+[book]
 title = "The (unofficial) Rust FFI Guide"
 author = "Michael-F-Bryan"
 description = "Using unsafe for fun and profit!"
-source = "book"
+src = "book"
 
 [output.html]
 google-analytics = "UA-78714693-2"
-destination = "build/book"
+
+[build]
+build-dir = "build/book"
