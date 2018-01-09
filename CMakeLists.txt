@@ -35,14 +35,11 @@ function(cargo_library target_name project_dir)
         set(compile_message "${compile_message} in release mode")
     endif()
 
-    add_custom_command(OUTPUT ${output_library}
+    add_custom_target(${target_name} ALL 
         COMMENT ${compile_message}
         COMMAND env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} cargo build ${CARGO_RELEASE_FLAG}
         COMMAND cp ${output_library} ${CMAKE_CURRENT_BINARY_DIR}
-        WORKING_DIRECTORY ${project_dir}
-        DEPENDS ${sources})
-
-    add_custom_target(${target_name} ALL DEPENDS ${output_library})
+        WORKING_DIRECTORY ${project_dir})
     set_target_properties(${target_name} PROPERTIES LOCATION ${output_library})
 
     add_test(NAME ${target_name}_test 

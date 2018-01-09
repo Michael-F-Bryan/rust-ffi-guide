@@ -7,10 +7,15 @@
 
 class PluginManager;
 
+std::string last_error_message();
+
 class WrapperException : std::exception {
 public:
   WrapperException(std::string msg) : msg(msg){};
-  const std::string &message() { return msg; };
+  const char * what () const throw () {
+      return msg.c_str();
+   }
+  static WrapperException last_error();
 
 private:
   std::string msg;

@@ -1,12 +1,9 @@
 #include "main_window.hpp"
+#include "client.hpp"
 #include <QtWidgets/QApplication>
 
-extern "C" {
-void init_logging();
-}
-
 int main(int argc, char **argv) {
-  init_logging();
+  ffi::initialize_logging();
   QApplication app(argc, argv);
 
   MainWindow mainWindow;

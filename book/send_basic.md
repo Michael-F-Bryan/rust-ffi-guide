@@ -202,9 +202,9 @@ int response_body(void *, char *, int);
 
 As was mentioned earlier when writing the Rust bindings, in order to read the
 response body callers will need to create their own buffer and pass it to Rust.
-We've chosen to use a `std::vector<char>` as the buffer and added a couple 
-`assert()` statements to check for errors (we'll do proper error handling 
-later).
+We've chosen to use a `std::vector<char>` as the buffer, throwing an exception
+with a semi-useful message if something fails (don't worry, we'll be doing
+proper error handling later).
 
 ```cpp
 // gui/wrappers.cpp
@@ -217,12 +217,16 @@ Response::~Response() { response_destroy(raw); }
 
 std::vector<char> Response::read_body() {
   int length = response_body_length(raw);
-  assert(length >= 0);
+  if (length < 0) {
+    throw "Response body's length was less than zero";
+  }
 
   std::vector<char> buffer(length);
 
   int bytes_written = response_body(raw, buffer.data(), buffer.size());
-  assert(bytes_written == length);
+  if (bytes_written != length) {
+    throw "Response body was a different size than what we expected";
+  }
 
   return buffer;
 }

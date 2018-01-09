@@ -3,23 +3,31 @@
 #include <QtGui/QCloseEvent>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QFormLayout>
+#include <QtWidgets/QMessageBox>
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/QLabel>
 #include <iostream>
 
 void MainWindow::onClick() {
-  std::cout << "Creating the request" << std::endl;
+  try
+  {
+    std::cout << "Creating the request" << std::endl;
 
-  Request req("http://httpbin.org/get");
-  std::cout << "Sending Request" << std::endl;
-  pm.pre_send(req);
-  Response res = req.send();
-  pm.post_receive(res);
-  std::cout << "Received Response" << std::endl;
+    Request req("http://httpbin.orgsdasd/get");
+    std::cout << "Sending Request" << std::endl;
+    pm.pre_send(req);
+    Response res = req.send();
+    pm.post_receive(res);
+    std::cout << "Received Response" << std::endl;
 
-  std::vector<char> raw_body = res.read_body();
-  std::string body(raw_body.begin(), raw_body.end());
-  std::cout << "Body:" << std::endl << body << std::endl;
+    std::vector<char> raw_body = res.read_body();
+    std::string body(raw_body.begin(), raw_body.end());
+    std::cout << "Body:" << std::endl << body << std::endl;
+  }
+  catch (const WrapperException e)
+  {
+    QMessageBox::warning(this, "Error", e.what());
+  }
 }
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
