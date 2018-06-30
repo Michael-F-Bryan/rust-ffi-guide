@@ -1,1 +1,3 @@
-fn main() { println!("rustc-link-lib=magic"); }
+fn main() {
+    println!("cargo:rustc-link-lib=magic");
+}
