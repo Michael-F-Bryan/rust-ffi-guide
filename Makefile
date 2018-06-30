@@ -1,3 +1,4 @@
+bucket := s3://temp.michaelfbryan.com/
 chapters := "src/the-basics" "src/wrap-libmagic"
 
 build: book
@@ -18,5 +19,8 @@ clean:
 
 book:
 	mdbook build
+
+upload: clean book
+	aws s3 sync book $(bucket) --size-only --exclude target
 
 .PHONY: book build test
