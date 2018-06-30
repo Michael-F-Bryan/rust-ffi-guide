@@ -1,4 +1,0 @@
-add_subdirectory(problem_1)
-add_subdirectory(problem_2)
-add_subdirectory(problem_3)
-add_subdirectory(problem_4)

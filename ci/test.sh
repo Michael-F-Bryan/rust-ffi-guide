@@ -2,9 +2,9 @@
 
 set -ex
 
-export CTEST_OUTPUT_ON_FAILURE=1 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_DIR=$(dirname "$SCRIPT_DIR")
 
-mkdir -p build && cd build
-cmake -DCMAKE_BUILD_TYPE=Debug ..
-make
+cd $PROJECT_DIR
+make build
 make test
