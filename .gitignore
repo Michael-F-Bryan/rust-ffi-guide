@@ -23,3 +23,5 @@ build
 
 # Rust
 target/
+
+book/
