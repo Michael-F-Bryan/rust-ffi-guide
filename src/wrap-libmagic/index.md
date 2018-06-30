@@ -302,3 +302,4 @@ For the sake of completeness, here's the full source code for our bindings:
 [build script]: https://doc.rust-lang.org/cargo/reference/build-scripts.html
 [example]: https://gist.github.com/vivithemage/9489378
 [strings]: https://github.com/file/file/blob/d14511987263ae3c6f5ad28ed7b81c26afdb422c/src/apprentice.c#L113-L116
+[bindgen]: https://github.com/rust-lang-nursery/rust-bindgen
