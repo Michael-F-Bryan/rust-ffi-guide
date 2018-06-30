@@ -1,4 +1,4 @@
-chapters := "src/the-basics"
+chapters := "src/the-basics" "src/wrap-libmagic"
 
 build: book
 	for dir in $(chapters); do \

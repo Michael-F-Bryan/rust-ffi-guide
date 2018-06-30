@@ -44,12 +44,12 @@ $ cat wrapper.h
 #include <magic.h>
 ```
 
-And finally we can tell `bindgen` to create bindings for all functions in
-`libmagic` (matching the regex, `magic_.*`), as well as any types they depend
-on.
+And finally we can tell `bindgen` to create bindings for all functions and 
+constants in `libmagic` (matching the regex `magic_.*` and `MAGIC_.*`, 
+respectively), as well as anything they depend on.
 
 ```console
-$ bindgen wrapper.h --whitelist-function 'magic_.*' > src/lib.rs
+$ bindgen wrapper.h --whitelist-function 'magic_.*' --whitelist-var 'MAGIC_.*' > src/lib.rs
 ```
 
 To make sure `rustc` links in `libmagic` we'll need to create a [build script].
@@ -89,5 +89,58 @@ $ cargo build
 $ cargo doc --open
 ```
 
+## Creating a Rust Interface
+
+Now we have bindings to the `libmagic` system library, lets create a more
+idiomatic (and *safe*!) wrapper for it.
+
+The first thing to do is get a feel for the library itself. By far the easiest
+way to do this is by looking at an example (taken from 
+[vivithemage/libmagic_example.c][example]).
+
+```c
+// libmagic_example.c
+
+{{#include libmagic_example.c}}
+```
+
+The main things to take away from this are that:
+
+- All state is encapsulated in some `magic_cookie` object (created with 
+  `magic_open()`)
+- You need to load a database with `magic_load()`, where passing in `NULL` will 
+  use the default database
+- Querying a file's type is done using `magic_file()` which returns a pointer
+  to a string (owned by the `magic_cookie`)
+- When you're done, clean up everything with `magic_close()`
+
+> **Note:** More detailed information on each of these functions can be found by
+> inspecting the *man* page (`man libmagic`). 
+
+One really important piece of information to know is that internally `libmagic` 
+uses a [global string array][strings] that keeps track of all allocated
+strings so they can be deallocated in `magic_close()`. This means all strings
+given to us by `libmagic` are borrowed and **you can only have one active
+magic cookie at a time**.
+
+Now we have a better understanding of things, lets get started with the code!
+
+```console
+$ cargo new --lib magic
+     Created library `magic` project
+$ cd magic
+$ echo 'magic-sys = { path = "../magic-sys" }' >> Cargo.toml
+```
+
+And here's the full source code for our bindings:
+
+```rust
+// magic/src/lib.rs
+
+{{#include magic/src/lib.rs}}
+```
+
 [bg-tut]: https://rust-lang-nursery.github.io/rust-bindgen/introduction.html
 [build script]: https://doc.rust-lang.org/cargo/reference/build-scripts.html
+[example]: https://gist.github.com/vivithemage/9489378
+[strings]: https://github.com/file/file/blob/d14511987263ae3c6f5ad28ed7b81c26afdb422c/src/apprentice.c#L113-L116
