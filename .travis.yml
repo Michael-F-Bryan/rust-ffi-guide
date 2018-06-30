@@ -3,16 +3,13 @@ cache: cargo
 addons:
   apt:
     packages:
-      - libmagic1
+      - libmagic-dev
 env:
   global:
   - secure: a2K6Q+A+kiGkXhuz9FjHfANvCtCRkDLgW7Z44HJPvoyDCCb3CBiMiIOnXzdB9T8N/TsU9bAttWywZ+3WMId/xil8lXI7t2cObns+ecfgNhJ+GWFzG3NYJSEAYYt98sgj07r7FDLP5LeknsYjFUy+FVVVhaKOH4izvITw+uNsb9oDvoNkIb1uSghkhn9igDxfLjSQij6aqQXOoPjpUgMwmP0pkWZtXmFXULHrvFVgTOzJ75W2WnqdkO6dk6g4R7H0VZDASAScOIFlUFdRABPNckSirv6d372gxUWZ40teG7PadFnwQlkIqCUUAdvfPy7c4zxf3KhtjLfnWNhuIZcBytzpz0tsqpVUT04CPUvQXhXGN1lU+RPHdvKJS54G6eoTJ9R1s3RdIL2u3hVvVQEDOzvFGEzr+awFkwh+jtO9Xr5aib2aj5Ii2qT1Pw1Xo5M8Ftpg+OKBYL+sHU8upe+oIYduMWZ2iPDjcAPHz12wf11zITgvi1voQSNtzYJNmCVVSGsM0UiYx4a/+P7fTZCaEhk5oPsSqjETiOTKirTFxjA+CS4/6GZo42ErKveMIfVTP/xjRSsVmSkuS49U0ULYT/VEssEj7vjzlA1hRQ3P2NP4zfZIyay8P8XBh2ms/JItFxmEa0xcw8LvbKIPuYgE+xkHxLLfRpeDxlYt2YE6tJs=
 
 before_script:
   - command -v mdbook >/dev/null 2>&1 || cargo install --debug mdbook
-  - updatedb
-  - locate magic.h
-  - locate libmagic
 
 script:
   - ci/test.sh
