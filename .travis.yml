@@ -10,6 +10,7 @@ env:
 
 before_script:
   - command -v mdbook >/dev/null 2>&1 || cargo install --debug mdbook
+  - updatedb
   - locate magic.h
   - locate libmagic
 
