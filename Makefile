@@ -1,5 +1,5 @@
 bucket := s3://temp.michaelfbryan.com/
-chapters := "src/the-basics" "src/wrap-libmagic"
+chapters := "src/getting-started" "src/wrap-libmagic"
 
 build: book
 	for dir in $(chapters); do \

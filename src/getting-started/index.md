@@ -1,4 +1,4 @@
-# The Basics
+# Getting Started
 
 About the simplest thing you can do when working with FFI code is to call a
 function. To start off, we'll write a simple Rust program that calls the

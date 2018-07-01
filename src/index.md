@@ -3,6 +3,28 @@
 Given Rust's popularity and position as a systems programming language, there's
 a good chance you'll want to use it with other languages at some point.
 
+## Overall Structure
+
+This guide is broken up into roughly three sections. The first section shows you
+the nuts and bolts of doing FFI in Rust. These are the everyday tasks like 
+
+- calling a C function from Rust (and vice versa)
+- passing around references
+- exposing an object (be it a Rust struct, a C++ class, or whatever) to other 
+  languages, or
+- techniques which are necessary for interoperating between languages
+
+The second section gives you a more high-level overview of FFI. This helps when
+designing larger systems and helps you answer more esoteric questions like:
+
+- "*How should I structure my API?*" 
+- "*What is an ergonomic way to do error handling?*", and
+- "*What are some potential footguns to look out for?*"
+
+The third section consists of several worked examples which show how to apply
+the knowledge gained in the previous two sections, and the thinking which often
+goes on behind the scenes.
+
 ## Useful Links and Resources
 
 Here are a couple links and resources which you may find useful along the way.
