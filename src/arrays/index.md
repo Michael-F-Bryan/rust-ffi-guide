@@ -88,6 +88,64 @@ $ ./arrays
 The total is 36
 ```
 
+## Receiving an Array from C
+
+The same thing can be written where C is calling into a Rust library.
+
+As usual, our `main.c` program is nothing special:
+
+```c
+// main.c
+
+{{#include main.c}}
+```
+
+If you'll recall the note at the very beginning of this page, a slice is roughly
+equivalent to a pointer and a length. There's a convenient function in the
+standard library for reconstituting a slice from its raw parts,
+`std::slice::from_raw_parts()`. Note that it's `unsafe` to use because there's
+absolutely no way to guarantee the pointer passed in is actually valid.
+
+```rust
+// rusty_array_utils.rs
+
+{{#include rusty_array_utils.rs}}
+```
+
+One thing to notice is that we've explicitly added a null check to the start of
+`sum()`. When writing FFI code it's a good idea to program defensively and plan
+for invalid input. In this case we're `assert!()`-ing that the `array` pointer
+is not `null`, which will tear down the process loudly in the case of a
+programming error.
+
+To compile and run the two previous programs:
+
+```console
+$ rustc rusty_array_utils.rs --crate-type cdylib
+$ cc -o more_arrays main.c -L. -lrusty_array_utils
+$ ./more_arrays
+The total is 36
+```
+
+> **Note:** The astute among you may have noticed that we compiled
+> `rusty_array_utils.rs` with the `cdylib` crate type. This instructs `rustc` to
+> generate a dynamic library which can be called from C (or any other language).
+> Because the Rust standard library isn't guaranteed to be available on all
+> machines, a `cdylib` will also contain bits of the standard library which are
+> required to run.
+>
+> This is particularly evident when you look at the size of the two libraries.
+> 
+> ```console
+> $ du -h *.so
+> 8.0K	libarray_utils.so
+> 2.6M	librusty_array_utils.so
+> ```
+>
+> In this case, `libarray_utils.so` will dynamically link to a copy of the C
+> standard library (all machines will have a copy of `libc` installed) and can 
+> get away with significantly smaller binary sizes.
+
 ## Exercises for the Reader
 
 To get a better feel for arrays, see what happens when you:
@@ -95,6 +153,7 @@ To get a better feel for arrays, see what happens when you:
 - Pass in an incorrect array length
 - "Accidentally" mix up the type of an array (e.g. use an array of `f64`s when
   an array of `i32` is expected)
+- Pass in `null` to the Rust `sum()` function
 - Read the [relevant page] from *The Rust FFI Omnibus* to see how the examples
   from this page can be written in different languages
 
