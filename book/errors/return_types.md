@@ -296,7 +296,7 @@ which will create a new `WrapperException` from the most recent error.
 
 class WrapperException : std::exception {
 public:
-  WrapperException(std::string msg) : msg(msg){};
+  WrapperException(const std::string& msg) : msg(msg){};
   static WrapperException last_error();
   const char * what () const throw () {
       return msg.c_str();
