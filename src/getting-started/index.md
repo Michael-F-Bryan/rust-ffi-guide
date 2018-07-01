@@ -16,11 +16,13 @@ While it's not a lot of code there are a couple tricky concepts in that program,
 so lets step through it section by section.
 
 First we write an `extern` block to declare that there is some function called
-`puts` that takes a `*const c_char` (the equivalent of `char*` in C), and will
-return a `c_int`. 
+`puts` that takes a pointer to a string (`*const c_char`, the equivalent of
+`char*` in C), and will return the number of characters printed as a `c_int`.
 
 > For convenience, the Rust standard library declares `c_char` and `c_int`  as 
-> type aliases for the corresponding C types, `char` and `int` respectively.
+> type aliases for the corresponding C types, `char` and `int` respectively. 
+> This is especially useful seeing as C's integer types can have different 
+> binary representations depending on the platform.
 
 Next we have the `main()` function. This creates a `CString` (essentially just
 a boxed `char*` C-style string with trailing null character) from the string,
@@ -79,7 +81,10 @@ Lets break that function signature down a little:
   sure LLVM doesn't accidentally optimise it away
 - `unsafe` means this function is `unsafe` to call because we're dereferencing
   a pointer which might point to *anything* (e.g. garbage, something that isn't
-  a string, or even memory that doesn't exist on the machine)
+  a string, or even memory that doesn't exist on the machine). This isn't 
+  strictly necessary because C doesn't know (or care) that our function is 
+  `unsafe`, however it helps to document that the entire function may need a
+  little extra attention when auditing or debugging.
 - `extern "C"` tells the compiler to use the C [calling convention] when 
   generating code for this function
 - `msg: *const c_char` means we're expecting to receive a constant raw pointer 
@@ -122,6 +127,12 @@ $ clang main.c libprint.a -lpthread -ldl
 > note: native-static-libs: -ldl -lrt -lpthread -lgcc_s -lc -lm -lrt -lpthread 
 >   -lutil -lutil
 > ```
+> 
+> We could get away with only specifying `-lpthread` and `-ldl` earlier because
+> no other calls to system libraries were used, and linkers are nice in that 
+> they'll do the equivalent of [dead code elimination][dce] and you won't need
+> to link to that library. If you encounter any linker errors, you may want to
+> double check that all necessary libraries are specified with the `-l` flag.
 
 And finally we can run our program!
 
@@ -143,3 +154,4 @@ of the following:
 [name mangling]: https://en.wikipedia.org/wiki/Name_mangling
 [calling convention]: https://en.wikipedia.org/wiki/Calling_convention
 [static library]: https://en.wikipedia.org/wiki/Static_library
+[dce]: https://en.wikipedia.org/wiki/Dead_code_elimination
