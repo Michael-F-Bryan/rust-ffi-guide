@@ -95,5 +95,8 @@ To get a better feel for arrays, see what happens when you:
 - Pass in an incorrect array length
 - "Accidentally" mix up the type of an array (e.g. use an array of `f64`s when
   an array of `i32` is expected)
+- Read the [relevant page] from *The Rust FFI Omnibus* to see how the examples
+  from this page can be written in different languages
 
 [so]: https://en.wikipedia.org/wiki/Library_(computing)#Shared_libraries
+[relevant page]: http://jakegoulding.com/rust-ffi-omnibus/slice_arguments/

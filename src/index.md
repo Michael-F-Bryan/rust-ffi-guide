@@ -1,7 +1,10 @@
 # Using Unsafe for Fun and Profit
 
 Given Rust's popularity and position as a systems programming language, there's
-a good chance you'll want to use it with other languages at some point.
+a good chance you'll want to use it with other languages at some point. Whether
+you want to leverage an existing C++ library or write a Rust DLL to help speed
+up some Python code, you'll find an understanding of Rust's *Foreign Function 
+Interface* (FFI) invaluable.
 
 ## Overall Structure
 
