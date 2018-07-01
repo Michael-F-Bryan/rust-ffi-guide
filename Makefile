@@ -1,20 +1,20 @@
 bucket := s3://temp.michaelfbryan.com/
-chapters := "src/getting-started" "src/wrap-libmagic"
+chapters := getting-started arrays wrap-libmagic
 
 build: book
 	for dir in $(chapters); do \
-		$(MAKE) build -C $$dir; \
+		$(MAKE) build -C src/$$dir; \
 	done
 
 test: build
 	for dir in $(chapters); do \
-		$(MAKE) test -C $$dir; \
+		$(MAKE) test -C src/$$dir; \
 	done
 
 clean: 
 	mdbook clean
 	for dir in $(chapters); do \
-		$(MAKE) clean -C $$dir; \
+		$(MAKE) clean -C src/$$dir; \
 	done
 
 book:
