@@ -9,6 +9,11 @@ like types and inheritance are completely erased during compilation. Therefore,
 as long as both parties agree to use the same way of laying out structs,
 passing *simple* data types between languages should *Just Work*.
 
+> **Note:** The term *POD type* is often used in C++ to refer to a type which
+> is trivially copyable (`Copy` in Rust lingo), short for "*Plain Old Data*".
+> This is something which has no constructors, no destructors and is composed
+> completely of other POD types.
+
 This is probably easiest explained with an example:
 
 ```c
@@ -47,3 +52,5 @@ the layout is unspecified and the compiler is free to do whatever it wants.
 For example, it could insert space between items (often called *padding*)
 to provide the correct alignment or it may rearrange items so they pack
 together more efficiently.
+
+[pod]: https://stackoverflow.com/a/146454
