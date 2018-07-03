@@ -1,7 +1,7 @@
 bucket := s3://temp.michaelfbryan.com/
-chapters := getting-started arrays wrap-libmagic
+chapters := getting-started arrays wrap-libmagic pod
 
-build: book
+build: 
 	for dir in $(chapters); do \
 		$(MAKE) build -C src/$$dir; \
 	done
@@ -12,7 +12,7 @@ test: build
 	done
 
 clean: 
-	mdbook clean
+	$(RM) -r book
 	for dir in $(chapters); do \
 		$(MAKE) clean -C src/$$dir; \
 	done
