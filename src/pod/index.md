@@ -42,8 +42,8 @@ Sum is Point {x: -1.940000, y: 45.400000}
 ```
 
 Something important to notice is the `#[repr(C)]` attribute added to the Rust
-struct. This essentially tells the compiler "*lay this out just like C would*",
-and is essential for making Rust and C (or any other language) represent things
+struct. This tells the compiler "*lay this out just like C would*", and is
+essential for making Rust and C (or any other language) represent things
 identically in memory. 
 
 Without the attribute specifying how things are laid out, `rustc` is free to
