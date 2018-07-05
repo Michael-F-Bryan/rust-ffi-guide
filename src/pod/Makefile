@@ -4,10 +4,10 @@ test: build
 build: points
 
 libadd_points.so: add_points.rs
-	rustc add_points.rs --crate-type cdylib
+	rustc $(RUST_FLAGS) add_points.rs --crate-type cdylib
 
 points: main.c libadd_points.so
-	$(CC)  main.c -L. -ladd_points -o points
+	$(CC) $(CFLAGS) main.c -L. -ladd_points -o points
 
 clean:
 	$(RM) points

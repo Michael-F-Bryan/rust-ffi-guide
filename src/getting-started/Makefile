@@ -1,4 +1,4 @@
-CFLAGS := -ldl -lrt -lpthread -lgcc_s -lc -lm -lrt -lpthread -lutil -lutil
+CFLAGS := $(CFLAGS) -ldl -lrt -lpthread -lgcc_s -lc -lm -lrt -lpthread -lutil -lutil
 
 test: build
 	./hello_world
@@ -10,10 +10,10 @@ print: libprint.a main.c
 	$(CC) -o print main.c libprint.a $(CFLAGS)
 
 libprint.a: print.rs
-	rustc print.rs --crate-type staticlib
+	rustc $(RUST_FLAGS) print.rs --crate-type staticlib
 
 hello_world: hello_world.rs
-	rustc hello_world.rs -o hello_world
+	rustc $(RUST_FLAGS) hello_world.rs -o hello_world
 
 clean:
 	$(RM) hello_world

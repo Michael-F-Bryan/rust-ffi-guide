@@ -1,6 +1,10 @@
 bucket := s3://temp.michaelfbryan.com/
 chapters := getting-started arrays wrap-libmagic pod
 
+export LD_LIBRARY_PATH := .
+export CFLAGS := -g
+export RUST_FLAGS := -g
+
 build: 
 	for dir in $(chapters); do \
 		$(MAKE) build -C src/$$dir; \
