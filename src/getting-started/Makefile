@@ -7,7 +7,7 @@ test: build
 build: hello_world print
 
 print: libprint.a main.c 
-	$(CC) -o print main.c libprint.a $(CFLAGS)
+	$(CC) $(CFLAGS) -o print main.c libprint.a 
 
 libprint.a: print.rs
 	rustc $(RUST_FLAGS) print.rs --crate-type staticlib
