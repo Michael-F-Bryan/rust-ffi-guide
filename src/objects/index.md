@@ -139,6 +139,26 @@ closer to `unwrap()`.
 
 ## A Note On Destructors
 
+Something to be wary about is the use of destructors. Many types use `Drop` 
+(or their language's equivalent) in order to clean up resources. As a rule of
+thumb, each complex type `foo` should have a `foo_free()` function which is
+used to destroy the object and call this destructor.
+
+There is no guarantee that a library will use the same memory allocator as the
+rest of the application. For example, what happens if C (using the system
+`malloc`) tries to free memory allocated by Rust (which might link to 
+`jemalloc`)? 
+
+In the best case scenario, `malloc` may be smart enough to notice it doesn't
+own the memory and silently ignore it (leaking memory). The next best scenario
+is to get some sort of segfault or abort, otherwise we risk messing up the
+allocator's internal bookkeeping or leaving the application in an inconsistent
+state (i.e. FUBAR).
+
+The practice of always defining a `*_free()` function fixes both of these
+problems by ensuring an object is always freed by the language which created
+it.
+
 ## Exercises for the Reader
 
 To get a better understanding of what's happening, you may want to do the 
