@@ -1,5 +1,5 @@
 bucket := s3://temp.michaelfbryan.com/
-chapters := getting-started arrays wrap-libmagic pod
+chapters := getting-started arrays wrap-libmagic pod objects
 
 export LD_LIBRARY_PATH := .
 export CFLAGS := -g

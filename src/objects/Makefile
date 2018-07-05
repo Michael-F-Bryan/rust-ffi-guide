@@ -1,3 +1,6 @@
+RUST_FLAGS := -O
+CFLAGS := -O2
+
 test: build
 	./main
 
