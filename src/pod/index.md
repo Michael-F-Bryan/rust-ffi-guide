@@ -36,8 +36,8 @@ We can then compile and run this to get the expected output:
 
 ```console
 $ rustc add_points.rs --crate-type cdylib
-$ clang  main.c -L. -ladd_points -o points
-$ ./points
+$ clang  main.c -L. -ladd_points -o main
+$ ./main
 Sum is Point {x: -1.940000, y: 45.400000}
 ```
 

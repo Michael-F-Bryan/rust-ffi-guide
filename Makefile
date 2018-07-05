@@ -1,7 +1,7 @@
 bucket := s3://temp.michaelfbryan.com/
 chapters := getting-started arrays wrap-libmagic pod objects
 
-export LD_LIBRARY_PATH := .
+export LD_LIBRARY_PATH := .:$(shell rustc --print sysroot)
 export CFLAGS := -g
 export RUST_FLAGS := -g
 
