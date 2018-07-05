@@ -159,6 +159,17 @@ The practice of always defining a `*_free()` function fixes both of these
 problems by ensuring an object is always freed by the language which created
 it.
 
+## Generics
+
+> **TODO:** Talk about how you can "use" generics behind an opaque pointer
+> 
+> Mention:
+> 
+> - Each instantiation of a generic is a unique type
+> - You need to declare copies of each method for each concrete type `T`
+> - abstract the API with macros?
+> - Write an example using `std::map<int, std::string>` from C++
+
 ## Exercises for the Reader
 
 To get a better understanding of what's happening, you may want to do the 
