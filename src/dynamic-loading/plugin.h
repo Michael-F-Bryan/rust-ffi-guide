@@ -1,3 +1,6 @@
+#ifndef PLUGIN_H
+#define PLUGIN_H
+
 typedef void (*PluginCallback)(void* data);
 typedef const char* (*PluginName)(void* data);
 typedef void (*PluginFileSave)(void* data, const char* filename, const char* contents);
@@ -20,3 +23,5 @@ typedef struct Plugin {
 // The signature of a plugin registration function (with the symbol name,
 // `plugin_register`).
 typedef Plugin (*PluginRegister)();
+
+#endif // PLUGIN_H
