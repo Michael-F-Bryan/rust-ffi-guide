@@ -2,7 +2,8 @@ bucket := s3://temp.michaelfbryan.com/
 chapters := getting-started arrays wrap-libmagic pod objects dynamic-loading
 
 export LD_LIBRARY_PATH := .:$(shell rustc --print sysroot)
-export CFLAGS := -std=c11
+export CFLAGS := -std=c11 -Wall
+export CXX_FLAGS := -std=c++11 -Wall
 export RUST_FLAGS := 
 
 build: 
