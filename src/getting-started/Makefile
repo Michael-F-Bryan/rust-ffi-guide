@@ -1,4 +1,4 @@
-CFLAGS := $(CFLAGS) -ldl -lrt -lpthread -lgcc_s -lc -lm -lrt -lpthread -lutil -lutil
+LIBRARIES := -ldl -lrt -lpthread -lgcc_s -lc -lm -lrt -lpthread -lutil -lutil
 
 test: build
 	./hello_world
@@ -7,7 +7,7 @@ test: build
 build: hello_world print
 
 print: libprint.a main.c 
-	$(CC) -o print main.c libprint.a $(CFLAGS)
+	$(CC) $(CFLAGS) -o print main.c libprint.a $(LIBRARIES)
 
 libprint.a: print.rs
 	rustc $(RUST_FLAGS) print.rs --crate-type staticlib

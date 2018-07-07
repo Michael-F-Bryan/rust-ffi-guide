@@ -2,7 +2,7 @@
 
 [Overview](index.md)
 
-- [The Nuts and Bolts of FFI](nuts-and-bolts.md)
+- [The Nuts and Bolts of FFI](./nuts-and-bolts.md)
   - [Getting Started](./getting-started/index.md)
   - [Arrays](./arrays/index.md)
   - [Strings](./strings/index.md)
