@@ -6,14 +6,14 @@ export CFLAGS := -std=c11 -Wall
 export CXX_FLAGS := -std=c++11 -Wall
 export RUST_FLAGS := 
 
-build: 
-	for dir in $(chapters); do \
-		$(MAKE) build -C src/$$dir; \
-	done
-
 test: build
 	for dir in $(chapters); do \
 		$(MAKE) test -C src/$$dir; \
+	done
+
+build: 
+	for dir in $(chapters); do \
+		$(MAKE) build -C src/$$dir; \
 	done
 
 clean: 

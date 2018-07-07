@@ -13,7 +13,9 @@ impl WordCount {
 
     pub fn count_file(&mut self, filename: PathBuf, contents: &str) {
         let count = contents.split(" ").count();
-        self.counts.entry(filename).or_default().push(count);
+        self.counts.entry(filename)
+            .or_insert_with(Default::default)
+            .push(count);
     }
 
     pub fn report(&self) {
