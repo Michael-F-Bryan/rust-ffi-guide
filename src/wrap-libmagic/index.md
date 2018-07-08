@@ -160,54 +160,7 @@ our `Magic` is created and `false` when it gets destroyed (our `Drop` impl will
 need updating).
 
 ```rust
-use std::sync::atomic::{AtomicBool, Ordering, ATOMIC_BOOL_INIT};
-
-/// A flag indicating that an instance of `Magic` is alive.
-static MAGIC_CREATED: AtomicBool = ATOMIC_BOOL_INIT;
-
-impl Magic {
-    pub fn new() -> Result<Magic, CreationError> {
-        // Try to set MAGIC_CREATED to true if it's currently false
-        match MAGIC_CREATED.compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed) {
-            Ok(_) => {
-                // We were successful. Now we can create a magic cookie
-                let cookie = unsafe { magic_sys::magic_open(MAGIC_MIME) };
-                let magic = Magic { cookie };
-
-                if magic.cookie.is_null() {
-                    // creation failed. Release MAGIC_CREATED (in drop) and
-                    // return an error
-                    drop(magic);
-                    Err(CreationError::CreationFailed)
-                } else {
-                    Ok(magic)
-                }
-            }
-            // MAGIC_CREATED was already true, return an error because a Magic
-            // instance already exists 
-            Err(_) => Err(Error::DuplicateInstances),
-        }
-    }
-}
-
-impl Drop for Magic {
-    fn drop(&mut self) {
-        unsafe {
-            magic_sys::magic_close(self.inner);
-        }
-
-        // Unset the MAGIC_CREATED flag because we are no longer using the 
-        // library
-        MAGIC_CREATED.store(false, Ordering::Relaxed);
-    }
-}
-
-
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum CreationError {
-    CreationFailed,
-    DuplicateInstances,
-}
+{{#include magic/src/lib.rs:36:60}}
 ```
 
 Now we can create a `Magic` object, we need to give it some methods so it can
@@ -215,51 +168,13 @@ actually do something. We'll also want a helper method for retrieving the most
 recent error from `libmagic`, if there is one.
 
 ```rust
-impl Magic {
-    pub fn load_default_database(&mut self) -> Result<(), MagicError> {
-        let outcome = unsafe { magic_sys::magic_load(self.cookie, ptr::null()) };
+{{#include magic/src/lib.rs:62:104}}
+```
 
-        if outcome == 0 {
-            Ok(())
-        } else {
-            Err(self.last_error().unwrap_or_default())
-        }
-    }
+We also need to create a couple error types.
 
-    pub fn query_mimetype<P: AsRef<Path>>(&mut self, filename: P) -> Result<String, MagicError> {
-        // Getting a CString from a Path is actually non-trivial due to
-        // OS-specific details. Libmagic is only really available for *nix, so
-        // we can get away with extracting the underlying bytes from an OS
-        // string (a *nix path is just a bunch of non-null bytes) and passing
-        // that in.
-        let filename = CString::new(filename.as_ref().as_os_str().to_owned().into_vec())
-            .expect("Paths never have null bytes");
-
-        let mimetype = unsafe { magic_sys::magic_file(self.cookie, filename.as_ptr()) };
-
-        if mimetype.is_null() {
-            Err(self.last_error().unwrap_or_default())
-        } else {
-            let mimetype = unsafe { CStr::from_ptr(mimetype) };
-            Ok(mimetype.to_string_lossy().to_string())
-        }
-    }
-
-    /// Get the most recent `libmagic` error message, if there is one.
-    fn last_error(&self) -> Option<MagicError> {
-        // Get the last error message, if there was one
-        let err = unsafe { magic_sys::magic_error(self.cookie) };
-
-        if err.is_null() {
-            None
-        } else {
-            let msg = unsafe { CStr::from_ptr(err) };
-            Some(MagicError {
-                msg: msg.to_string_lossy().to_string(),
-            })
-        }
-    }
-}
+```rust
+{{#include magic/src/lib.rs:119:}}
 ```
 
 Now we've got a decent chunk of the crate's functionality established, it's a
@@ -267,25 +182,7 @@ good idea to give it some documentation. As a bonus, the examples can double
 as sanity checks to ensure the bindings work correctly.
 
 ```rust
-//! An interface to `libmagic`, a tool for file type recognition.
-//!
-//! # Examples
-//!
-//! You'll typically interact with `libmagic` by creating a `Magic` object and
-//! using that to query a file's type.
-//!
-//! ```rust
-//! # extern crate magic;
-//! # use magic::Magic;
-//! # use std::path::Path;
-//!
-//! let cargo_toml = Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml");
-//!
-//! let mut m = Magic::new().unwrap();
-//! let mimetype = m.query_mimetype(&cargo_toml).unwrap();
-//!
-//! assert_eq!(mimetype, "text/plain; charset=us-ascii");
-//! ```
+{{#include magic/src/lib.rs::19}}
 ```
 
 ## Full Source Code

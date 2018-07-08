@@ -23,16 +23,18 @@ use magic_sys::{magic_t, MAGIC_MIME};
 use std::ffi::{CStr, CString};
 use std::os::unix::ffi::OsStringExt;
 use std::path::Path;
+use std::fmt::{self, Formatter, Display};
+use std::error::Error;
 use std::ptr;
 use std::sync::atomic::{AtomicBool, Ordering, ATOMIC_BOOL_INIT};
-
-/// A flag indicating that an instance of `Magic` is alive.
-static MAGIC_CREATED: AtomicBool = ATOMIC_BOOL_INIT;
 
 #[derive(Debug)]
 pub struct Magic {
     cookie: magic_t,
 }
+
+/// A flag indicating that an instance of `Magic` is alive.
+static MAGIC_CREATED: AtomicBool = ATOMIC_BOOL_INIT;
 
 impl Magic {
     pub fn new() -> Result<Magic, CreationError> {
@@ -41,16 +43,14 @@ impl Magic {
             Ok(_) => {
                 // We were successful. Now we can create a magic cookie
                 let cookie = unsafe { magic_sys::magic_open(MAGIC_MIME) };
-                let mut magic = Magic { cookie };
 
                 if magic.cookie.is_null() {
-                    // creation failed. Release MAGIC_CREATED (in drop) and
-                    // return an error
-                    drop(magic);
+                    // creation failed. Release MAGIC_CREATED and return an error
+                    MAGIC_CREATED.store(false, Ordering::Relaxed);
                     Err(CreationError::CreationFailed)
                 } else {
                     magic.load_default_database()?;
-                    Ok(magic)
+                    Ok(Magic { cookie })
                 }
             }
             // MAGIC_CREATED was already true, return an error because a Magic
@@ -129,6 +129,12 @@ impl Default for MagicError {
     }
 }
 
+impl Display for MagicError {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}", self.msg)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum CreationError {
     CreationFailed,
@@ -139,5 +145,15 @@ pub enum CreationError {
 impl From<MagicError> for CreationError {
     fn from(other: MagicError) -> CreationError {
         CreationError::MagicError(other)
+    }
+}
+
+impl Display for CreationError {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match *self {
+            CreationError::CreationFailed => write!(f, "Creation Failed"),
+            CreationError::DuplicateInstances write!(f, "Only one instance of Magic may exist at a time"),
+            CreationError::MagicError(ref inner) => write!(f, "{}", inner.msg),
+        }
     }
 }
