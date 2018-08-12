@@ -7,21 +7,14 @@ export CFLAGS := -std=c11 -Wall -fPIC
 export CXX_FLAGS := -std=c++11 -Wall
 export RUST_FLAGS := 
 
-test: build
-	for dir in $(chapters); do \
-		$(MAKE) test -C src/$$dir; \
-	done
+test build clean: $(chapters)
 
-build: 
-	for dir in $(chapters); do \
-		$(MAKE) build -C src/$$dir; \
-	done
+test: TARGET=test
+build: TARGET=build
+clean: TARGET=clean
 
-clean: 
-	$(RM) -r book
-	for dir in $(chapters); do \
-		$(MAKE) clean -C src/$$dir; \
-	done
+$(chapters): _force
+	@ $(MAKE) -s -C src/$@ $(TARGET)
 
 book:
 	mdbook build
@@ -32,4 +25,6 @@ upload: clean book
 open:
 	xdg-open https://s3.amazonaws.com/temp.michaelfbryan.com/getting-started/index.html >/dev/null 2>&1
 
-.PHONY: book build test
+_force:
+
+.PHONY: book build test _force
