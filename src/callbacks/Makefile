@@ -1,9 +1,13 @@
 
+build: basic stateful closures
+
 test: build
 	./basic
 	./stateful
+	./closures
 
-build: basic stateful
+closures: closures_main.rs libstateful.so
+	rustc $(RUST_FLAGS) $< -o $@ -L. -lstateful
 
 stateful: stateful_main.c libstateful.so
 	$(CC) $(CFLAGS) $< -L. -lstateful -o stateful
@@ -19,7 +23,6 @@ libbasic.so: basic.c
 
 clean:
 	$(RM) *.so
-	$(RM) basic
-	$(RM) stateful
+	$(RM) basic stateful closures
 
 .PHONY: clean

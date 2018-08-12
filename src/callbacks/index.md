@@ -1,5 +1,12 @@
 # Callbacks
 
+Libraries often use callbacks to notify the caller about something or as a
+means of dependency injection (e.g. instead of hard-coding how to do something,
+get the user to pass in a function to do the operation). We're already quite
+familiar with doing this in Rust, with methods named `map`, `and_then`, or
+`filter` being used all over the standard library, but callbacks are used
+throughout FFI as well.
+
 ## Basic Callbacks
 
 Imagine you're doing a long computation and want to be periodically notified
@@ -7,7 +14,7 @@ about the operation's progress, the easiest way to do this is by passing the
 operation some `progress` callback.
 
 For this first example we'll create a Rust program that calls an "expensive"
-function from a C library. To simulate an expensive computation we'll just 
+function from a C library. To simulate an expensive computation we'll just
 sleep for a couple milliseconds in a loop, reporting progress on each iteration.
 
 ```c
@@ -45,13 +52,13 @@ Progress: 83.33%
 Computation finished, returning 36
 ```
 
-> **Note:** For simplicity, we're going to ignore things like error handling 
+> **Note:** For simplicity, we're going to ignore things like error handling
 > and panics for now. *Exception Safety* is a fairly advanced topic and has its
 > own dedicated chapter.
 
 ## Stateful Callbacks
 
-Printing the progress to the screen is all well and good, but at some point 
+Printing the progress to the screen is all well and good, but at some point
 you're going to want to do more complex operations, this is where our previous
 approach quickly shows its limitations.
 
@@ -110,3 +117,44 @@ types. It just requires writing a small shim function which takes a pointer to
 a Rust object as its first argument, converts the pointer to a reference, and
 then invokes the object's method just like normal.
 
+If the function being called doesn't accept a data pointer then you'll need to
+pass in the information via other channels (e.g. global variables).
+
+## Rust Closures
+
+A Rust closure isn't *just* a function pointer, meaning it's not possible to
+directly pass one to C. It's also not possible to get a reference to the `Fn*()`
+impl `rustc` creates for a closure, meaning we can't use it as our callback's
+function pointer (and it wouldn't help us anyway due to using the wrong calling
+convention).
+
+Passing Rust closures to FFI code requires a more "creative" solution.
+
+One solution is to write a generic function that accepts a reference to our
+closure, returning a `void *` pointer to the closure's data and a special
+"trampoline" function which can be used to invoke the closure.
+
+```rust
+// closures_main.rs
+
+{{#include closures_main.rs}}
+```
+
+This works because `rustc` will *monomorphise* generics, generating a new
+instance of the `trampoline` function for every different closure
+`unpack_closure()` is called with.
+
+## Exercises for the Reader
+
+- Insert a `panic!()` call in your Rust callback and see what happens when you
+  run it
+- Write a Rust version of the *Stateful Callbacks* example, where your
+  `Statistics` is a Rust `struct` and an update method is called for every
+  incoming value
+- What happens when you:
+  - Use the wrong calling convention for your callback?
+  (e.g. `extern "stdcall" fn progress(percent: f32)`)
+  - Declare the wrong number/type of parameters in the callback function's
+    signature?
+  - Do something which would deallocate the state object from within its
+    callback?
