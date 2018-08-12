@@ -44,13 +44,14 @@ impl Magic {
                 // We were successful. Now we can create a magic cookie
                 let cookie = unsafe { magic_sys::magic_open(MAGIC_MIME) };
 
-                if magic.cookie.is_null() {
+                if cookie.is_null() {
                     // creation failed. Release MAGIC_CREATED and return an error
                     MAGIC_CREATED.store(false, Ordering::Relaxed);
                     Err(CreationError::CreationFailed)
                 } else {
+                    let mut magic = Magic { cookie };
                     magic.load_default_database()?;
-                    Ok(Magic { cookie })
+                    Ok(magic)
                 }
             }
             // MAGIC_CREATED was already true, return an error because a Magic
@@ -152,8 +153,18 @@ impl Display for CreationError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match *self {
             CreationError::CreationFailed => write!(f, "Creation Failed"),
-            CreationError::DuplicateInstances write!(f, "Only one instance of Magic may exist at a time"),
+            CreationError::DuplicateInstances => write!(f, "Only one instance of Magic may exist at a time"),
             CreationError::MagicError(ref inner) => write!(f, "{}", inner.msg),
+        }
+    }
+}
+
+impl Error for CreationError {
+    fn description(&self) -> &'static str {
+        match *self {
+            CreationError::CreationFailed => "Creation Failed",
+            CreationError::DuplicateInstances => "Only one instance of Magic may exist at a time",
+            CreationError::MagicError(_) => "libmagic error",
         }
     }
 }
