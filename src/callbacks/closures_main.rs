@@ -29,7 +29,7 @@ fn main() {
 ///
 /// Calling the trampoline function with anything except the `void*` pointer
 /// will result in *Undefined Behaviour*.
-fn unsafe unpack_closure<F>(closure: &mut F) -> (*mut c_void, Progress)
+unsafe fn unpack_closure<F>(closure: &mut F) -> (*mut c_void, Progress)
 where
     F: FnMut(c_int),
 {

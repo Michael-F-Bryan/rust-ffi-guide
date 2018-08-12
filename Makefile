@@ -3,7 +3,7 @@ chapters := getting-started arrays wrap-libmagic pod objects dynamic-loading \
 	        callbacks
 
 export LD_LIBRARY_PATH := .:$(shell rustc --print sysroot)
-export CFLAGS := -std=c11 -Wall
+export CFLAGS := -std=c11 -Wall -fPIC
 export CXX_FLAGS := -std=c++11 -Wall
 export RUST_FLAGS := 
 
