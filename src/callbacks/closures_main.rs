@@ -29,6 +29,10 @@ fn main() {
 ///
 /// Calling the trampoline function with anything except the `void*` pointer
 /// will result in *Undefined Behaviour*.
+///
+/// The closure should guarantee that it never panics, seeing as panicking 
+/// across the FFI barrier is *Undefined Behaviour*. You may find 
+/// `std::panic::catch_unwind()` useful.
 unsafe fn unpack_closure<F>(closure: &mut F) -> (*mut c_void, Progress)
 where
     F: FnMut(c_int),
