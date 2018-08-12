@@ -1,5 +1,5 @@
 test: build
-	./points
+	./main
 
 build: main
 
