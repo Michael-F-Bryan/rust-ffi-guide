@@ -158,3 +158,10 @@ instance of the `trampoline` function for every different closure
     signature?
   - Do something which would deallocate the state object from within its
     callback?
+- Read [Unboxed Closures and FFI Callbacks] for more information on using Rust
+  closures with FFI
+- Have a look at this [answer on StackOverflow] for an alternate way to pass
+  Rust closures to C
+
+[Unboxed Closures and FFI Callbacks]: http://aatch.github.io/blog/2015/01/17/unboxed-closures-and-ffi-callbacks/
+[answer on StackOverflow]: https://stackoverflow.com/a/32270215
