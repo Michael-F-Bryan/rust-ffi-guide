@@ -71,7 +71,9 @@ calculations?
 The solution is to update our previous reporting method to accept a `void *data`
 pointer which will then be passed to the progress callback on every iteration.
 
-On the Rust side, this doesn't look too different from our previous example.
+To see how it's done in the other direction, let's write a C program that calls
+into a Rust library. On the Rust side, this doesn't look too different from our
+previous example.
 
 ```rust
 // stateful.rs
@@ -143,6 +145,11 @@ closure, returning a `void *` pointer to the closure's data and a special
 This works because `rustc` will *monomorphise* generics, generating a new
 instance of the `trampoline` function for every different closure
 `unpack_closure()` is called with.
+
+> **Note:** C++ lambdas have a similar problem in that a lambda is more than
+> just a function pointer. In order to pass C++ lambdas into something that's
+> expecting a function pointer and `void*` data pointer you'll need to employ
+> a similar "trampoline" trick. 
 
 ## Exercises for the Reader
 
