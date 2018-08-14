@@ -3,10 +3,10 @@
 At some point you're almost certainly going to want to pass an array from Rust
 to another language, or vice versa. The convention used when working with
 arrays is to provide a pointer to the start of the array and the total number
-of elements (so the receiver can do any necessary bounds checks). 
+of elements (so the receiver can do any necessary bounds checks).
 
-> **Note:** Perhaps unsurprisingly, under the hood a slice (`&[T]`) is 
-> essentially a two-element struct containing a pointer and a length. 
+> **Note:** Perhaps unsurprisingly, under the hood a slice (`&[T]`) is
+> essentially a two-element struct containing a pointer and a length.
 >
 > You can think of `&[T]` as being syntactic sugar for:
 >
@@ -38,8 +38,8 @@ $ clang  -shared array_utils.c -o libarray_utils.so
 $ ls
 array_utils.c  index.md  libarray_utils.so  main.rs Makefile
 $ file libarray_utils.so
-libarray_utils.so: ELF 64-bit LSB pie executable x86-64, version 1 (SYSV), 
-    dynamically linked, BuildID[sha1]=8893b08fed2e87e300e52a629e5d6fa1895ca4c2, 
+libarray_utils.so: ELF 64-bit LSB pie executable x86-64, version 1 (SYSV),
+    dynamically linked, BuildID[sha1]=8893b08fed2e87e300e52a629e5d6fa1895ca4c2,
     not stripped
 ```
 
@@ -61,8 +61,8 @@ on the stack. We then pass it to the `sum()` function and print out the result.
 
 > **Note:** Notice that we need an `unsafe` block here. This is because even
 > though we said `sum` accepts a `*const c_int`, there's absolutely nothing
-> stopping `libarray_utils.so` from doing whatever it wants to the array 
-> contents, making it almost trivial to undermine Rust's assumptions and 
+> stopping `libarray_utils.so` from doing whatever it wants to the array
+> contents, making it almost trivial to undermine Rust's assumptions and
 > invariants.
 >
 > This is a very common theme you'll see when doing FFI. The compiler can't
@@ -87,6 +87,15 @@ The `arrays` program can then be executed using:
 $ ./arrays
 The total is 36
 ```
+
+> **Note:** On \*nix machines you may need to set the `LD_LIBRARY_PATH`
+> environment variable to `"."`. This tell the OS to check the current
+> directory when looking for a dynamic library.
+>
+> ```console
+> $ LD_LIBRARY_PATH=. ./arrays
+> The total is 36
+> ```
 
 ## Receiving an Array from C
 
@@ -135,7 +144,7 @@ The total is 36
 > required to run.
 >
 > This is particularly evident when you look at the size of the two libraries.
-> 
+>
 > ```console
 > $ du -h *.so
 > 8.0K	libarray_utils.so
@@ -143,7 +152,7 @@ The total is 36
 > ```
 >
 > In this case, `libarray_utils.so` will dynamically link to a copy of the C
-> standard library (all machines will have a copy of `libc` installed) and can 
+> standard library (all machines will have a copy of `libc` installed) and can
 > get away with significantly smaller binary sizes.
 
 ## Exercises for the Reader

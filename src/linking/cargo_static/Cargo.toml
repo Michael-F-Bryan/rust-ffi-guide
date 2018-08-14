@@ -1,0 +1,12 @@
+[package]
+name = "cargo_static"
+version = "0.1.0"
+authors = ["Michael Bryan <michaelfbryan@gmail.com>"]
+build = "build.rs"
+links = "static"
+
+[dependencies]
+
+[[bin]]
+path = "../main.rs"
+name = "cargo_static"
