@@ -95,9 +95,9 @@ It's easy enough to write a program that calls into `libadd.a` and compile
 everything using `rustc` directly.
 
 ```rust
-// main.rs
+// basic_add.rs
 
-{{#include main.rs}}
+{{#include basic_add.rs}}
 ```
 
 When compiling, we use the `-L` flag to append the current directory to
@@ -108,6 +108,44 @@ library.
 $ rustc basic_add.rs -L. -ladd
 $ ./basic_add
 1 + 2 = 3
+```
+
+Omitting the `-L` and `-l` flags will result in an ugly linker error (the
+useful bit is `undefined reference to 'add'`).
+
+```console
+$ rustc basic_add.rs
+
+error: linking with `cc` failed: exit code: 1
+  |
+    = note: "cc" "-Wl,--as-needed" "-Wl,-z,noexecstack" "-m64" "-L"
+    "/home/michael/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib"
+    "basic_add.basic_add0.rcgu.o" "basic_add.basic_add1.rcgu.o"
+    "basic_add.basic_add2.rcgu.o" "basic_add.basic_add3.rcgu.o"
+    "basic_add.basic_add4.rcgu.o" "basic_add.basic_add5.rcgu.o" "-o"
+    "basic_add" "basic_add.crate.allocator.rcgu.o" "-Wl,--gc-sections" "-pie"
+    "-Wl,-zrelro" "-Wl,-znow" "-nodefaultlibs" "-L"
+    "/home/michael/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib"
+    "-Wl,--start-group" "-Wl,-Bstatic"
+    "/home/michael/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd-0f63cb46932eaff0.rlib"
+    "/home/michael/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libpanic_unwind-1fc163395be28b55.rlib"
+    "/home/michael/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/liballoc_jemalloc-beaa60c3ca4c0fc5.rlib"
+    "/home/michael/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libunwind-0ce0fe5d55de4087.rlib"
+    "/home/michael/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/liballoc_system-88f5405db39d2e0a.rlib"
+    "/home/michael/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/liblibc-55ce729794715ca0.rlib"
+    "/home/michael/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/liballoc-6be05a5d46417ac1.rlib"
+    "/home/michael/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libcore-bf36d45fdfb39034.rlib"
+    "-Wl,--end-group"
+    "/home/michael/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libcompiler_builtins-e38bf62845ca7048.rlib"
+    "-Wl,-Bdynamic" "-ldl" "-lrt" "-lpthread" "-lpthread" "-lgcc_s" "-lc" "-lm"
+    "-lrt" "-lpthread" "-lutil" "-lutil"
+      = note: /usr/sbin/ld: basic_add.basic_add1.rcgu.o: in function `basic_add::main':
+                basic_add1-317d481089b8c8fe83113de504472633.rs:(.text._ZN9basic_add4main17h985357baa4d78357E+0xf):
+                undefined reference to `add'
+                          collect2: error: ld returned 1 exit status
+
+
+                                    error: aborting due to previous error
 ```
 
 But when was the last time you used `rustc` to build a real project?
@@ -152,15 +190,49 @@ $ cargo run
 As a bonus, on \*nix machines this setup will work for shared libraries (i.e.
 dynamically linked libraries) without any changes.
 
----
+## Locating Artefacts and Libraries
 
-> **TODO:** Mention the following:
+Now we've got a mechanism for telling `cargo`/`rustc` which libraries a crate
+links to, we need to actually find *where* those libraries are and make sure
+they're available at compile-time. This is one of the biggest reasons build
+scripts exist.
+
+There are a variety of ways for making sure a library is available for linking
+to, for example we could
+
+- Embed a copy of its source code in the crate (e.g. as a `git` submodule) and
+  then use the local compiler to compile it from source
+- Rely on the user having already installed the library and placed it in a
+  well-known location (e.g. a system library installed with `apt-get`)
+- Ask the user to install the library and pass its location to the build script
+  via an environment variable (see [KyleMayes/llvm-sys][llvm-sys])
+- Use pre-compiled binaries either distributed with a crate or downloaded on
+  the fly
+
+> **Note:** It is strongly frowned upon for a build script to affect the local
+> system outside of Cargo's dedicated output directory (`OUT_DIR`) or to make
+> network calls. Installing anything on the system is also a big no-no!
 >
-> - Static linking vs dynamic linking
-> - *Import libraries* on Windows
-> - Cargo build scripts
-> - Linking to system libraries
-> - Using pre-compiled artefacts instead of compiling from source
+> The build process is supposed to be entirely self-contained and work
+> off-line. If you can't locate an artefact then report an error or fall back
+> to something else.
+
+Which path you take will largely depend on the target platform and the library
+being linked to.
+
+Here are a few Rust crates in the wild which have already had to deal with this
+problem:
+
+- [retep998/winapi-rs](https://github.com/retep998/winapi-rs)
+- [KyleMayes/llvm-sys][llvm-sys]
+- [alexcrichton/git2-rs](https://github.com/alexcrichton/git2-rs)
+
+## Import Libraries (Windows-only)
+
+> **TODO:** Talk about this!
+>
+> - What even are import libraries, and how can we use them from Rust?!
+> - May need to ask the guys from `retep998/winapi-rs`...
 
 ## See Also
 
@@ -169,5 +241,7 @@ dynamically linked libraries) without any changes.
 - [Where should I place a static library so I can link it with a Rust program?](https://stackoverflow.com/questions/43826572/where-should-i-place-a-static-library-so-i-can-link-it-with-a-rust-program)
 
 
+
 [*The Classical Model for Linking*]: https://blogs.msdn.microsoft.com/oldnewthing/20091012-00/?p=16413/
 [bs]: https://doc.rust-lang.org/cargo/reference/build-scripts.html
+[llvm-sys]: https://github.com/KyleMayes/clang-sys#environment-variables
