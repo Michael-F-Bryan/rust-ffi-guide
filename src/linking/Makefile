@@ -1,24 +1,25 @@
 
 test: build
-	./basic_static
-	./cargo_static/target/debug/cargo_static
+	./basic_add
+	cd my_real_project && cargo run
 
-build: basic_static cargo_static
+build: basic_add my_real_project
 
-basic_static: basic_static.rs libstatic.a 
-	rustc $(RUST_FLAGS) $< -L. -lstatic
+basic_add: basic_add.rs libadd.a 
+	rustc $(RUST_FLAGS) $< -L. -ladd
 
-libstatic.a: static.c
+libadd.a: add.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-cargo_static: main.rs cargo_static/* libstatic.a
-	cp libstatic.a cargo_static/libstatic.a
-	cargo build --manifest-path cargo_static/Cargo.toml
+my_real_project: basic_add.rs my_real_project/* libadd.a
+	cp libadd.a my_real_project/libadd.a
+	cargo build --manifest-path my_real_project/Cargo.toml
 
 clean:
-	$(RM) *.a
-	$(RM) basic_static
-	cd cargo_static && cargo clean
+	$(RM) *.so *.a
+	$(RM) my_real_project/*.a my_real_project/*.so
+	$(RM) basic_add
+	cd my_real_project && cargo clean
 
-.PHONY: clean cargo_static
+.PHONY: clean my_real_project
 

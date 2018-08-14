@@ -67,35 +67,31 @@ smaller. This also means multiple programs can use the same library, avoiding
 unnecessary duplication and allowing all programs to benefit from a library
 upgrade without recompilation.
 
-## Basic Static Linking
-
-A static library is essentially just a collection of object files. The `foo`
-library will typically be called `libfoo.a` on Unix derivatives (Linux, Mac,
-BSD, etc.), or `foo.lib` on Windows.
-
-For this section we'll be using the following C library:
-
-```c
-// static.c
-
-{{#include static.c}}
-```
-
-It can be compiled with:
-
-```console
-$ clang -c static.c -o libstatic.a
-$ ls
-libstatic.a  static.c
-$ file libstatic.a
-libstatic.a: ELF 64-bit LSB relocatable, x86-64, version 1 (SYSV), not stripped
-```
+## Basic Linking and Build Scripts
 
 The general idea behind linking is that you'll tell the compiler which library
 you need to link against and provide a list of directories it can check when
 looking for the library.
 
-It's easy enough to write a program that calls into `libstatic.a` and compile
+For this section we'll be using the following C library:
+
+```c
+// add.c
+
+{{#include add.c}}
+```
+
+It can be compiled with:
+
+```console
+$ clang -c add.c -o libadd.a
+$ ls
+libadd.a  add.c
+$ file libadd.a
+libadd.a: ELF 64-bit LSB relocatable, x86-64, version 1 (SYSV), not stripped
+```
+
+It's easy enough to write a program that calls into `libadd.a` and compile
 everything using `rustc` directly.
 
 ```rust
@@ -105,12 +101,12 @@ everything using `rustc` directly.
 ```
 
 When compiling, we use the `-L` flag to append the current directory to
-`rustc`'s library search path and the `-l` flag to link to the `static`
+`rustc`'s library search path and the `-l` flag to link to the `add`
 library.
 
 ```console
-$ rustc basic_static.rs -L. -lstatic
-$ ./basic_static
+$ rustc basic_add.rs -L. -ladd
+$ ./basic_add
 1 + 2 = 3
 ```
 
@@ -122,26 +118,26 @@ and executed immediately before compiling the main crate, allowing you to
 execute arbitrary pre-build operations. Build scripts are named `build.rs` by
 convention.
 
-This is the bare minimum build script you'll need for linking to a static
-library:
+This is the bare minimum build script you'll need for linking to a native
+(i.e. non-Rust) library:
 
 ```rust
 // build.rs
 
-{{#include cargo_static/build.rs}}
+{{#include my_real_project/build.rs}}
 ```
 
 > **Note:** You'll probably want to [read the docs][bs] to find out what else
 > a build script can do.
 
 To tell `cargo` about the build script, add a `build = "build.rs"` line to your
-`Cargo.toml`. It's also a good idea to add a `links = "static"` line as well,
+`Cargo.toml`. It's also a good idea to add a `links = "add"` line as well,
 this lets `cargo` ensure at most one crate can link to a native library.
 
 ```toml
 # Cargo.toml
 
-{{#include cargo_static/Cargo.toml::9}}
+{{#include my_real_project/Cargo.toml::9}}
 ```
 
 From here you can compile and run just like any other Rust program.
@@ -152,6 +148,9 @@ $ cargo build
 $ cargo run
 1 + 2 = 3
 ```
+
+As a bonus, on \*nix machines this setup will work for shared libraries (i.e.
+dynamically linked libraries) without any changes.
 
 ---
 

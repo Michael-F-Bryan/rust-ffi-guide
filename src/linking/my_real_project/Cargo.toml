@@ -1,12 +1,12 @@
 [package]
-name = "cargo_static"
+name = "my_real_project"
 version = "0.1.0"
 authors = ["Michael Bryan <michaelfbryan@gmail.com>"]
 build = "build.rs"
-links = "static"
+links = "add"
 
 [dependencies]
 
 [[bin]]
-path = "../main.rs"
-name = "cargo_static"
+path = "../basic_add.rs"
+name = "my_real_project"
