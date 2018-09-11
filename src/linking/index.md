@@ -212,10 +212,12 @@ to, for example we could
 > **Note:** It is strongly frowned upon for a build script to affect the local
 > system outside of Cargo's dedicated output directory (`OUT_DIR`) or to make
 > network calls. Installing anything on the system is also a big no-no!
->
+
 > The build process is supposed to be entirely self-contained and work
 > off-line. If you can't locate an artefact then report an error or fall back
-> to something else.
+> to something else. Cargo and crates.io are also not suitable for
+> distributing binaries, so if your crate will be published you should require
+> the library to be already installed.
 
 Which path you take will largely depend on the target platform and the library
 being linked to.
