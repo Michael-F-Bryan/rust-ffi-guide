@@ -11,6 +11,7 @@
   - [Callbacks](./callbacks/index.md)
 
 - [Advanced Concepts](./advanced.md)
+  - [Linking and Building](./linking/index.md)
   - [Debugging](./debugging/index.md)
   - [Error Handling](./errors/index.md)
   - [Exception Safety](./exceptions/index.md)

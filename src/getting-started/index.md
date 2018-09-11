@@ -19,10 +19,14 @@ First we write an `extern` block to declare that there is some function called
 `puts` that takes a pointer to a string (`*const c_char`, the equivalent of
 `char*` in C), and will return the number of characters printed as a `c_int`.
 
-> For convenience, the Rust standard library declares `c_char` and `c_int`  as 
-> type aliases for the corresponding C types, `char` and `int` respectively. 
-> This is especially useful seeing as C's integer types can have different 
+> For convenience, the Rust standard library declares `c_char` and `c_int`  as
+> type aliases for the corresponding C types, `char` and `int` respectively.
+> This is especially useful seeing as C's integer types can have different
 > binary representations depending on the platform.
+>
+> We're also taking advantage of the fact that the system `libc` will be linked
+> into every binary, meaning we don't need to provide `rustc` with linker
+> arguments (see [Linking and Building](./linking/) for more on linking).
 
 Next we have the `main()` function. This creates a `CString` (essentially just
 a boxed `char*` C-style string with trailing null character) from the string,
@@ -63,7 +67,7 @@ This is almost line-for-line identical to the Rust code from the previous
 example. First we declare the external `print()` function, then we create our
 string, and finally we pass it to `print()` to print it to the screen.
 
-Unfortunately the Rust code exporting our `print()` function is more 
+Unfortunately the Rust code exporting our `print()` function is more
 complicated and may contain some unfamiliar code.
 
 ```rust
@@ -75,19 +79,19 @@ complicated and may contain some unfamiliar code.
 Lets break that function signature down a little:
 
 - `#[no_mangle]` tells `rustc` not to do [name mangling] for the `print` symbol.
-  This lets the linker figure out which symbol to use for `print` when 
+  This lets the linker figure out which symbol to use for `print` when
   generating the final executable.
 - `pub` is used to declare `print()` as part of the crate's public API, making
   sure LLVM doesn't accidentally optimise it away
 - `unsafe` means this function is `unsafe` to call because we're dereferencing
   a pointer which might point to *anything* (e.g. garbage, something that isn't
-  a string, or even memory that doesn't exist on the machine). This isn't 
-  strictly necessary because C doesn't know (or care) that our function is 
+  a string, or even memory that doesn't exist on the machine). This isn't
+  strictly necessary because C doesn't know (or care) that our function is
   `unsafe`, however it helps to document that the entire function may need a
   little extra attention when auditing or debugging.
-- `extern "C"` tells the compiler to use the C [calling convention] when 
+- `extern "C"` tells the compiler to use the C [calling convention] when
   generating code for this function
-- `msg: *const c_char` means we're expecting to receive a constant raw pointer 
+- `msg: *const c_char` means we're expecting to receive a constant raw pointer
   to a `c_char` (C's way of representing a string)
 
 The first two lines of our `print()` function are dedicated to converting the
@@ -102,8 +106,8 @@ Compiling this example is also more complicated than before.
 First we need to compile `print.rs` as a [static library].
 
 ```console
-$ rustc print.rs --crate-type staticlib                            
-$ ls 
+$ rustc print.rs --crate-type staticlib
+$ ls
 libprint.a  main.c  print.rs
 ```
 
@@ -115,7 +119,7 @@ $ clang main.c libprint.a -lpthread -ldl
 ```
 
 > **Note:** Compiling `print.rs` with the `--print native-static-libs` flag will
-> tell `rustc` to also print out the system libraries we need to link to when 
+> tell `rustc` to also print out the system libraries we need to link to when
 > linking the final executable.
 >
 > ```console
@@ -123,13 +127,13 @@ $ clang main.c libprint.a -lpthread -ldl
 > note: Link against the following native artifacts when linking against this
 >   static library. The order and any duplication can be significant on some
 >   platforms.
-> 
-> note: native-static-libs: -ldl -lrt -lpthread -lgcc_s -lc -lm -lrt -lpthread 
+>
+> note: native-static-libs: -ldl -lrt -lpthread -lgcc_s -lc -lm -lrt -lpthread
 >   -lutil -lutil
 > ```
-> 
+>
 > We could get away with only specifying `-lpthread` and `-ldl` earlier because
-> no other calls to system libraries were used, and linkers are nice in that 
+> no other calls to system libraries were used, and linkers are nice in that
 > they'll do the equivalent of [dead code elimination][dce] and you won't need
 > to link to that library. If you encounter any linker errors, you may want to
 > double check that all necessary libraries are specified with the `-l` flag.

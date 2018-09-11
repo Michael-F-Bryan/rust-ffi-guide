@@ -1,0 +1,12 @@
+[package]
+name = "my_real_project"
+version = "0.1.0"
+authors = ["Michael Bryan <michaelfbryan@gmail.com>"]
+build = "build.rs"
+links = "add"
+
+[dependencies]
+
+[[bin]]
+path = "../basic_add.rs"
+name = "my_real_project"

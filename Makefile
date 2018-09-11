@@ -1,6 +1,6 @@
 bucket := s3://temp.michaelfbryan.com/
 chapters := getting-started arrays wrap-libmagic pod objects dynamic-loading \
-	        callbacks
+	        callbacks linking
 
 export LD_LIBRARY_PATH := .:$(shell rustc --print sysroot)
 export CFLAGS := -std=c11 -Wall -fPIC
@@ -14,7 +14,7 @@ build: TARGET=build
 clean: TARGET=clean
 
 $(chapters): _force
-	@ $(MAKE) -s -C src/$@ $(TARGET)
+	@ $(MAKE) -C src/$@ $(TARGET)
 
 book:
 	mdbook build
