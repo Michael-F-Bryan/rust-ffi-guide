@@ -12,6 +12,7 @@ pub const ERROR_UTF8: u32 = 1;
 pub const ERROR_NOT_FOUND: u32 = 2;
 pub const ERROR_PERMISSION_DENIED: u32 = 3;
 pub const ERROR_PARSE: u32 = 4;
+pub const ERROR_BUFFER_TOO_SMALL: u32 = 5;
 
 /// Get a short description of an error's category.
 #[no_mangle]
@@ -23,6 +24,7 @@ pub extern "C" fn category_name(category: u32) -> *const c_char {
         ERROR_NOT_FOUND => b"Not Found\0",
         ERROR_PERMISSION_DENIED => b"Permission Denied\0",
         ERROR_PARSE => b"Parse Error\0",
+        ERROR_BUFFER_TOO_SMALL => b"Buffer is too small\0",
         _ => b"Unknown\0",
     };
 
