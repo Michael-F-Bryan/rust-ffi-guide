@@ -41,6 +41,11 @@ possible helps out with this too.
 To practice our error handling, lets create a simple Rust library for parsing a
 TOML file and inspecting it.
 
+For this application we'll be inspecting a Rust enum (`toml::Value`) which may
+be one of multiple types under the hood, therefore it will be quite natural to
+accept [*output parameters*] and return a *success* flag for a lot of our
+bindings.
+
 First we'll create a new crate and update `Cargo.toml` to pull in the `toml`
 library.
 
@@ -65,10 +70,11 @@ The header file we'll be generating should look something like this:
 {{#include tomlreader/tomlreader.h}}
 ```
 
-We'll also need a C program to call our TOML reading library. Its length may
-seem a little intimidating at first, but the vast majority of code is due to
-explicitly checking for errors and C not having an equivalent of Rust's `?`
-operator.
+We'll also need a C program to call our TOML reading library.
+
+Its length may seem a little intimidating at first, but the vast majority of
+code is due to explicitly checking for errors and C not having an equivalent of
+Rust's `?` operator.
 
 ```c
 // main.c
@@ -76,13 +82,31 @@ operator.
 {{#include main.c}}
 ```
 
+Next we'll want to write some helper functions to manage our `LAST_ERROR`
+variable. This mainly consists of creating constant definitions for each error
+category, as well as a mechanism for storing errors in a way which can easily
+be exposed to C.
+
 ```rust
 // errors.rs
 
 {{#include tomlreader/src/errors.rs}}
 ```
 
-To check for leaks, we can also run the program through valgrind:
+Fortunately, while there was a fair amount of code required for the `LAST_ERROR`
+helpers, it's something which can easily be extracted out into a library and
+reused.
+
+Now we can start writing out the actual FFI bindings for allowing C to use the
+`toml` crate.
+
+```rust
+// errors.rs
+
+{{#include tomlreader/src/lib.rs}}
+```
+
+Finally, to check for leaks we can run the program through valgrind.
 
 ```console
 $ valgrind ./main
@@ -110,3 +134,4 @@ Package: tomlreader
 [Error reporting in libgit2]: https://github.com/libgit2/libgit2/blob/master/docs/error-handling.md
 [winapi]: https://docs.microsoft.com/en-au/windows/desktop/Debug/last-error-code
 [Binding Generators]: ../binding-generators/index.md
+[*output parameters*]: https://en.wikipedia.org/wiki/Parameter_(computer_programming)#Output_parameters

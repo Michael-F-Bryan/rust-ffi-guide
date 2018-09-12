@@ -66,8 +66,21 @@ Error last_error(void);
 const Value *parse_file(const char *filename);
 
 /*
+ * Extract the inner value if this TOML node is a float.
+ */
+bool value_as_float(const Value *value, double *out);
+
+/*
+ * If the TOML node is an integer, extract its value.
+ */
+bool value_as_integer(const Value *value, int64_t *out);
+
+/*
  * If the TOML node is a string, write it to the provided buffer as a
  * null-terminated UTF-8 string, returning the number of bytes written.
+ *
+ * A return value of `-1` means the buffer wasn't large enough. If the TOML
+ * node isn't a string, no bytes will be written.
  *
  * # Note
  *

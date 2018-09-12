@@ -78,38 +78,6 @@ pub unsafe extern "C" fn value_destroy(value: *const Value) {
     drop(value);
 }
 
-/// If the TOML node is an integer, extract its value.
-pub unsafe extern "C" fn value_as_integer(
-    value: *const Value,
-    out: *mut i64,
-) -> bool {
-    let value = &(*value).0;
-
-    match value.as_integer() {
-        Some(i) => {
-            *out = i;
-            true
-        }
-        _ => false,
-    }
-}
-
-/// Extract the inner value if this TOML node is a float.
-pub unsafe extern "C" fn value_as_float(
-    value: *const Value,
-    out: *mut f64,
-) -> bool {
-    let value = &(*value).0;
-
-    match value.as_float() {
-        Some(f) => {
-            *out = f;
-            true
-        }
-        _ => false,
-    }
-}
-
 /// Get the `element` item out of a `Value`.
 #[no_mangle]
 pub unsafe extern "C" fn value_get(
@@ -131,8 +99,41 @@ pub unsafe extern "C" fn value_get(
     }
 }
 
+/// If the TOML node is an integer, extract its value.
+#[no_mangle]
+pub unsafe extern "C" fn value_as_integer(
+    value: *const Value,
+    out: *mut i64,
+) -> bool {
+    match (*value).0.as_integer() {
+        Some(i) => {
+            *out = i;
+            true
+        }
+        _ => false,
+    }
+}
+
+/// Extract the inner value if this TOML node is a float.
+#[no_mangle]
+pub unsafe extern "C" fn value_as_float(
+    value: *const Value,
+    out: *mut f64,
+) -> bool {
+    match (*value).0.as_float() {
+        Some(f) => {
+            *out = f;
+            true
+        }
+        _ => false,
+    }
+}
+
 /// If the TOML node is a string, write it to the provided buffer as a
 /// null-terminated UTF-8 string, returning the number of bytes written.
+///
+/// A return value of `-1` means the buffer wasn't large enough. If the TOML
+/// node isn't a string, no bytes will be written.
 ///
 /// # Note
 ///
