@@ -11,6 +11,8 @@ use std::os::raw::c_char;
 use std::ptr;
 use std::slice;
 
+/// A newtype wrapper around a `toml::Value` so `cbindgen` will declare it as
+/// an opaque type in the generated header file.
 pub struct Value(pub toml::Value);
 
 /// A helper macro for converting a C-style string (`*const c_char`) into a
@@ -76,6 +78,7 @@ pub unsafe extern "C" fn value_destroy(value: *const Value) {
     drop(value);
 }
 
+/// If the TOML node is an integer, extract its value.
 pub unsafe extern "C" fn value_as_integer(
     value: *const Value,
     out: *mut i64,
@@ -91,6 +94,7 @@ pub unsafe extern "C" fn value_as_integer(
     }
 }
 
+/// Extract the inner value if this TOML node is a float.
 pub unsafe extern "C" fn value_as_float(
     value: *const Value,
     out: *mut f64,
@@ -127,6 +131,14 @@ pub unsafe extern "C" fn value_get(
     }
 }
 
+/// If the TOML node is a string, write it to the provided buffer as a
+/// null-terminated UTF-8 string, returning the number of bytes written.
+///
+/// # Note
+///
+/// To help determine an appropriate buffer size, calling `value_as_str()` with
+/// a `null` buffer will return the number of bytes required without writing
+/// anything.
 #[no_mangle]
 pub unsafe extern "C" fn value_as_str(
     value: *const Value,

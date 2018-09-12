@@ -14,6 +14,10 @@
 
 #define ERROR_UTF8 1
 
+/*
+ * A newtype wrapper around a `toml::Value` so `cbindgen` will declare it as
+ * an opaque type in the generated header file.
+ */
 typedef struct Value Value;
 
 /*
@@ -61,6 +65,16 @@ Error last_error(void);
  */
 const Value *parse_file(const char *filename);
 
+/*
+ * If the TOML node is a string, write it to the provided buffer as a
+ * null-terminated UTF-8 string, returning the number of bytes written.
+ *
+ * # Note
+ *
+ * To help determine an appropriate buffer size, calling `value_as_str()` with
+ * a `null` buffer will return the number of bytes required without writing
+ * anything.
+ */
 int32_t value_as_str(const Value *value, char *buffer, int32_t len);
 
 /*

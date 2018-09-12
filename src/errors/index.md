@@ -65,7 +65,10 @@ The header file we'll be generating should look something like this:
 {{#include tomlreader/tomlreader.h}}
 ```
 
-We'll also need a C program to call our TOML reading library.
+We'll also need a C program to call our TOML reading library. Its length may
+seem a little intimidating at first, but the vast majority of code is due to
+explicitly checking for errors and C not having an equivalent of Rust's `?`
+operator.
 
 ```c
 // main.c
@@ -79,6 +82,28 @@ We'll also need a C program to call our TOML reading library.
 {{#include tomlreader/src/errors.rs}}
 ```
 
+To check for leaks, we can also run the program through valgrind:
+
+```console
+$ valgrind ./main
+
+==25625== Memcheck, a memory error detector
+==25625== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==25625== Using Valgrind-3.14.0.GIT and LibVEX; rerun with -h for copyright info
+==25625== Command: ./main
+==25625==
+Reading tomlreader/Cargo.toml
+Package: tomlreader
+==25625==
+==25625== HEAP SUMMARY:
+==25625==     in use at exit: 0 bytes in 0 blocks
+==25625==   total heap usage: 50 allocs, 50 frees, 6,532 bytes allocated
+==25625==
+==25625== All heap blocks were freed -- no leaks are possible
+==25625==
+==25625== For counts of detected and suppressed errors, rerun with: -v
+==25625== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+```
 
 [ffi_helpers]: https://crates.io/crates/ffi_helpers
 [libgit2]: https://github.com/libgit2/libgit2/blob/master/docs/error-handling.md

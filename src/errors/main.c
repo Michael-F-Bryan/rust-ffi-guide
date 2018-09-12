@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    // Try to read out the package name
+    // Try to read the package name and print it to the screen
     char *name = package_name(toml);
     if (name == NULL) {
         print_error("Couldn't find the package name");
