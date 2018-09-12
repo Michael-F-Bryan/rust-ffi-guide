@@ -41,8 +41,41 @@ possible helps out with this too.
 To practice our error handling, lets create a simple Rust library for parsing a
 TOML file and inspecting it.
 
+First we'll create a new crate and update `Cargo.toml` to pull in the `toml`
+library.
+
+```console
+$ cargo new --lib tomlreader
+$ cd tomlreader && cat Cargo.toml
+
+{{#include tomlreader/Cargo.toml}}
+```
+
+Because most of the code for parsing TOML is already done, we just need to focus
+on writing FFI bindings to expose the `toml` crate to C. To make things easier
+we'll use `cbindgen` to generate a `tomlreader.h` header file. The instructions
+for setting up `cbindgen` are identical to the [Binding Generators] chapter and
+can be copied straight from their README.
+
+The header file we'll be generating should look something like this:
+
+```c
+// tomlreader.h
+
+{{#include tomlreader/tomlreader.h}}
+```
+
+We'll also need a C program to call our TOML reading library.
+
+```c
+// main.c
+
+{{#include main.c}}
+```
+
 
 [ffi_helpers]: https://crates.io/crates/ffi_helpers
 [libgit2]: https://github.com/libgit2/libgit2/blob/master/docs/error-handling.md
 [Error reporting in libgit2]: https://github.com/libgit2/libgit2/blob/master/docs/error-handling.md
 [winapi]: https://docs.microsoft.com/en-au/windows/desktop/Debug/last-error-code
+[Binding Generators]: ../binding-generators/index.md

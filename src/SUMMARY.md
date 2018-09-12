@@ -12,11 +12,11 @@
 
 - [Advanced Concepts](./advanced.md)
   - [Linking and Building](./linking/index.md)
+  - [Binding Generators](./binding-generators/index.md)
   - [Debugging](./debugging/index.md)
   - [Error Handling](./errors/index.md)
   - [Exception Safety](./exceptions/index.md)
   - [Background Tasks](./background/index.md)
-  - [Binding Generators](./binding-generators/index.md)
   - [Dynamic Loading and Plugins](./dynamic-loading/index.md)
   - [Miscellaneous Footguns](./footguns/index.md)
 
