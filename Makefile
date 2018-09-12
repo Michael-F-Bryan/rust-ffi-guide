@@ -13,6 +13,9 @@ test: TARGET=test
 build: TARGET=build
 clean: TARGET=clean
 
+clean:
+	$(RM) -r book
+
 $(chapters): _force
 	@ $(MAKE) -C src/$@ $(TARGET)
 
@@ -20,7 +23,7 @@ book:
 	mdbook build
 
 upload: clean book
-	aws s3 sync book $(bucket) --size-only --exclude target
+	aws s3 sync book/html $(bucket) --size-only --exclude target
 
 open:
 	xdg-open https://s3.amazonaws.com/temp.michaelfbryan.com/getting-started/index.html >/dev/null 2>&1

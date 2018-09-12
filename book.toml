@@ -5,3 +5,6 @@ description = "Using unsafe for fun and profit!"
 
 [output.html]
 google-analytics = "UA-78714693-2"
+
+[output.linkcheck]
+#follow-web-links = true
