@@ -1,13 +1,33 @@
 # Error Handling
 
 When designing error handling in FFI code it's a good idea to follow the ancient
-wisdom, "*when in Rome, do as the Romans do*".
+wisdom, "*when in Rome, do as the Romans do*". People have been programming in C
+for several decades now, and over time several sets of conventions for error
+handling have evolved, each with their own advantages and disadvantages.
 
-For decades, C programmers have been using *Posix-style* error handling with
-great success. Similar to error handling in Rust, this is a convention based
-around error code rather than exceptions.
+The most basic of these is to return a boolean flag which lets the caller know
+whether a function call was successful. This makes following the "*happy path*"
+very easy, each fallible function just gets called as the condition of an if
+statement and any errors will short-circuit to the end. The downsides of this
+method are rightward drift (every fallible operation adds another nested `if`)
+and you don't get any more information than a simple "*an error occurred*".
 
-A rough summary of Posix-style error handling can be found towards the top of
+```c
+FILE *f;
+
+if (f = open("foo.txt", "r")) {
+    struct Foo foo;
+    if (parse_file(f, &foo)) {
+        if (frobnicate(&foo)) {
+            printf("The Foo was frobnicated\n");
+        }
+    }
+    close(f);
+}
+```
+
+Alternatively, a lot of Linux code uses something referred to as *Posix-style*.
+A rough summary of Posix-style error handling can be found in
 [Error reporting in libgit2]:
 
 > Functions return an `int` value with `0` (zero) indicating success and
