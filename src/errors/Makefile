@@ -10,7 +10,7 @@ build: main
 main: main.c $(LIB) $(HEADER)
 	$(CC) -o main main.c $(LIB) -I $(CRATE)
 
-$(LIB):
+$(LIB): $(HEADER)
 	cd $(CRATE) && cargo build $(RUST_FLAGS) && cp target/debug/$(LIB) ..
 
 clean:

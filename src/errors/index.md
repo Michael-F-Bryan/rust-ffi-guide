@@ -73,6 +73,12 @@ We'll also need a C program to call our TOML reading library.
 {{#include main.c}}
 ```
 
+```rust
+// errors.rs
+
+{{#include tomlreader/src/errors.rs}}
+```
+
 
 [ffi_helpers]: https://crates.io/crates/ffi_helpers
 [libgit2]: https://github.com/libgit2/libgit2/blob/master/docs/error-handling.md
