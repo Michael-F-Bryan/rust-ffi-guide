@@ -1,12 +1,161 @@
 # Error Handling
 
-> **TODO:** Write This! Mention:
->
-> - Use POSIX-style error handling, inspired by [libgit2]'s error reporting 
->   guidelines
-> - Return an error code where possible
-> - Return `null` or "obviously invalid" values in the case of error
-> - The [ffi_helpers] crate handles a lot of this for you
+When designing error handling in FFI code it's a good idea to follow the ancient
+wisdom, "*when in Rome, do as the Romans do*". People have been programming in C
+for several decades now, and over time several sets of conventions for error
+handling have evolved, each with their own advantages and disadvantages.
+
+The most basic of these is to return a boolean flag which lets the caller know
+whether a function call was successful. This makes following the "*happy path*"
+very easy, each fallible function just gets called as the condition of an if
+statement and any errors will short-circuit to the end. The downsides of this
+method are rightward drift (every fallible operation adds another nested `if`)
+and you don't get any more information than a simple "*an error occurred*".
+
+```c
+FILE *f;
+
+if (f = open("foo.txt", "r")) {
+    struct Foo foo;
+    if (parse_file(f, &foo)) {
+        if (frobnicate(&foo)) {
+            printf("The Foo was frobnicated\n");
+        }
+    }
+    close(f);
+}
+```
+
+Alternatively, a lot of Linux code uses something referred to as *Posix-style*.
+A rough summary of Posix-style error handling can be found in
+[Error reporting in libgit2]:
+
+> Functions return an `int` value with `0` (zero) indicating success and
+> negative values indicating an error. There are specific negative error codes
+> for each "expected failure" (e.g. `GIT_ENOTFOUND` for files that take a path
+> which might be missing) and a generic error code (`-1`) for all critical or
+> non-specific failures (e.g. running out of memory or system corruption).
+
+Error handling in the Windows API is done in [a very similar way][winapi] to
+`libgit2`. If something fails it returns an "*obviously invalid*" value (e.g.
+`0`, `-1`, or `NULL`) and sets a thread-local *last-error code*. It is then the
+caller's duty to check the return code of each function and handle the error
+appropriately.
+
+When planning error handling for a library or application which needs to
+interoperate with other languages, there are a couple rules of thumb you should
+follow:
+
+1. Keep it consistent
+2. Keep it simple
+3. Try to follow the same conventions as other code around you
+
+Rust has an advantage over many other languages in that it's error handling is
+already based around some form of return value. This makes writing FFI code
+considerably easier than a language based around exceptions, because it's
+obvious which parts may fail. Keeping FFI bindings as small and boring as
+possible helps out with this too.
+
+## Worked Example
+
+To practice our error handling, lets create a simple Rust library for parsing a
+TOML file and inspecting it.
+
+For this application we'll be inspecting a Rust enum (`toml::Value`) which may
+be one of multiple types under the hood, therefore it will be quite natural to
+accept [*output parameters*] and return a *success* flag for a lot of our
+bindings.
+
+First we'll create a new crate and update `Cargo.toml` to pull in the `toml`
+library.
+
+```console
+$ cargo new --lib tomlreader
+$ cd tomlreader && cat Cargo.toml
+
+{{#include tomlreader/Cargo.toml}}
+```
+
+Because most of the code for parsing TOML is already done, we just need to focus
+on writing FFI bindings to expose the `toml` crate to C. To make things easier
+we'll use `cbindgen` to generate a `tomlreader.h` header file. The instructions
+for setting up `cbindgen` are identical to the [Binding Generators] chapter and
+can be copied straight from their README.
+
+The header file we'll be generating should look something like this:
+
+<details>
+<summary>**(lots of C function declarations)**</summary>
+
+```c
+// tomlreader.h
+
+{{#include tomlreader/tomlreader.h}}
+```
+</details>
+
+We'll also need a C program to call our TOML reading library.
+
+Its length may seem a little intimidating at first, but the vast majority of
+code is due to explicitly checking for errors and C not having an equivalent of
+Rust's `?` operator (i.e. `if (x == NULL) return NULL`).
+
+```c
+// main.c
+
+{{#include main.c}}
+```
+
+Next we'll want to write some helper functions to manage our `LAST_ERROR`
+variable. This mainly consists of creating constant definitions for each error
+category, as well as a mechanism for storing errors in a way which can easily
+be exposed to C.
+
+```rust
+// errors.rs
+
+{{#include tomlreader/src/errors.rs}}
+```
+
+Fortunately, while there was a fair amount of code required for the `LAST_ERROR`
+helpers, it's something which can easily be extracted out into a library and
+reused.
+
+Now we can start writing out the actual FFI bindings for allowing C to use the
+`toml` crate.
+
+```rust
+// errors.rs
+
+{{#include tomlreader/src/lib.rs}}
+```
+
+Finally, to check for leaks we can run the program through valgrind.
+
+```console
+$ valgrind ./main
+
+==25625== Memcheck, a memory error detector
+==25625== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==25625== Using Valgrind-3.14.0.GIT and LibVEX; rerun with -h for copyright info
+==25625== Command: ./main
+==25625==
+Reading tomlreader/Cargo.toml
+Package: tomlreader
+==25625==
+==25625== HEAP SUMMARY:
+==25625==     in use at exit: 0 bytes in 0 blocks
+==25625==   total heap usage: 50 allocs, 50 frees, 6,532 bytes allocated
+==25625==
+==25625== All heap blocks were freed -- no leaks are possible
+==25625==
+==25625== For counts of detected and suppressed errors, rerun with: -v
+==25625== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+```
 
 [ffi_helpers]: https://crates.io/crates/ffi_helpers
 [libgit2]: https://github.com/libgit2/libgit2/blob/master/docs/error-handling.md
+[Error reporting in libgit2]: https://github.com/libgit2/libgit2/blob/master/docs/error-handling.md
+[winapi]: https://docs.microsoft.com/en-au/windows/desktop/Debug/last-error-code
+[Binding Generators]: ../binding-generators/index.md
+[*output parameters*]: https://en.wikipedia.org/wiki/Parameter_(computer_programming)#Output_parameters

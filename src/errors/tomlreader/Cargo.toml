@@ -1,0 +1,13 @@
+[package]
+name = "tomlreader"
+version = "0.1.0"
+authors = ["Michael Bryan <michaelfbryan@gmail.com>"]
+
+[dependencies]
+toml = "0.4.6"
+
+[lib]
+crate-type = ["rlib", "cdylib", "staticlib"]
+
+[build-dependencies]
+cbindgen = "0.6.3"

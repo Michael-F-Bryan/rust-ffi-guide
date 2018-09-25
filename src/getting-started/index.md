@@ -26,7 +26,7 @@ First we write an `extern` block to declare that there is some function called
 >
 > We're also taking advantage of the fact that the system `libc` will be linked
 > into every binary, meaning we don't need to provide `rustc` with linker
-> arguments (see [Linking and Building](./linking/) for more on linking).
+> arguments (see [Linking and Building](../linking/index.md) for more on linking).
 
 Next we have the `main()` function. This creates a `CString` (essentially just
 a boxed `char*` C-style string with trailing null character) from the string,
