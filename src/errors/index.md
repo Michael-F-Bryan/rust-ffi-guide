@@ -84,17 +84,21 @@ can be copied straight from their README.
 
 The header file we'll be generating should look something like this:
 
+<details>
+<summary>**(lots of C function declarations)**</summary>
+
 ```c
 // tomlreader.h
 
 {{#include tomlreader/tomlreader.h}}
 ```
+</details>
 
 We'll also need a C program to call our TOML reading library.
 
 Its length may seem a little intimidating at first, but the vast majority of
 code is due to explicitly checking for errors and C not having an equivalent of
-Rust's `?` operator.
+Rust's `?` operator (i.e. `if (x == NULL) return NULL`).
 
 ```c
 // main.c
