@@ -30,13 +30,15 @@ goes on behind the scenes.
 
 ## Useful Links and Resources
 
-Here are a couple links and resources which you may find useful along the way.
+Here's a collection of links and resources which you may find useful along the
+way.
 
 - [Rendered Guide](https://michael-f-bryan.github.io/rust-ffi-guide/)
 - [The GitHub Repo](https://github.com/Michael-F-Bryan/rust-ffi-guide)
 - [Beginner's Guide to Linkers](http://www.lurklurk.org/linkers/linkers.html)
 - [Foreign Function Interfaces for Fun & Industry](https://spin.atomicobject.com/2013/02/15/ffi-foreign-function-interfaces/)
 - [The Rust FFI Omnibus](http://jakegoulding.com/rust-ffi-omnibus/)
+- [How we integrate Rust with C#](https://blog.getseq.net/rust-at-datalust-how-we-integrate-rust-with-csharp/)
 - ["Unsafe Rust" chapter from *The Book*](https://doc.rust-lang.org/book/second-edition/ch19-01-unsafe-rust.html)
 - [Calling Rust from C and Java](https://speakerdeck.com/dbrgn/calling-rust-from-c-and-java)
 - [From Rust To Beyond: The C Galaxy](https://mnt.io/2018/09/11/from-rust-to-beyond-the-c-galaxy/)
