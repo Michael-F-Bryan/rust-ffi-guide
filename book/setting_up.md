@@ -91,7 +91,7 @@ hasn't yet been configured.
 Next we need to create the Rust project.
 
 ```
-$ cargo new client
+$ cargo new --lib client
 ```
 
 To make it accessible from C++ we need to make sure `cargo` generates a 
