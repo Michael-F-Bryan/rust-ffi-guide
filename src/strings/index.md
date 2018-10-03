@@ -78,6 +78,25 @@ $ ./dummy_c
 Printing "Hello, World!" from Rust
 ```
 
+From the previous two examples you can see that Rust is doing all the heavy
+lifting. To pass a null-terminated string to C we first create a copy of the
+message with the trailing null byte (`CString`). We also make sure the message
+received from C is valid UTF-8.
+
+While the examples may seem rather contrived, it's often all the effort that's
+needed for most use cases. In particular, other than the slightly annoying
+requirement for null-terminated strings (requiring us to use `&CStr` or
+`CString`), it has several things going for it:
+
+- We're only passing a reference to the string across the FFI boundary so
+  ownership isn't an issue
+- There aren't any encoding issues because the default locale modern \*nix
+  machines use (which affects how `printf` and friends work) will be based on
+  UTF-8.
+
+As long as there aren't any ownership or encoding issues then you know more than
+enough to use strings in an FFI context.
+
 > **Note:** In the `main.rs` application you might be tempted to condense things
 > down by skipping the intermediate `c_style_msg` variable, replacing it with
 > the more direct `print(CString::new(msg).unwrap().as_ptr())`.
@@ -99,16 +118,6 @@ Printing "Hello, World!" from Rust
 > Luckily this footgun will be detected by `clippy` as part of the
 > [temporary_cstring_as_ptr] lint. Another subtle take on this bug was mentioned
 > by `@kornel` on [the user forums].
-
----
-
-> **TODO:** Write This. Mention:
->
-> - strings are hard
-> - UTF-8 vs WTF-16 (windows) is annoying
-> - converting to a `CStr` and using `CString`
-> - Returning strings (requires a destructor function, especially for
->   `CString`)
 
 ## Further Reading
 
