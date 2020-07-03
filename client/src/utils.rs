@@ -1,12 +1,11 @@
 //! Extra utility functions.
 
-use std::sync::{Once, ONCE_INIT};
-use fern;
-use log::LogLevelFilter;
 use chrono::Local;
+use fern;
+use log::LevelFilter;
+use std::sync::{Once, ONCE_INIT};
 
 use errors::*;
-
 
 /// Initialize the global logger and log to `rest_client.log`.
 ///
@@ -14,23 +13,21 @@ use errors::*;
 /// times as you want and logging will only be initialized the first time.
 #[no_mangle]
 pub extern "C" fn initialize_logging() {
-    static INITIALIZE: Once = ONCE_INIT;
+    static INITIALIZE: Once = Once::new();
     INITIALIZE.call_once(|| {
         fern::Dispatch::new()
             .format(|out, message, record| {
-                let loc = record.location();
-
                 out.finish(format_args!(
-                    "{} {:7} ({}#{}): {}{}",
+                    "{} {:7} ({:?}#{:?}): {}{}",
                     Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
                     record.level(),
-                    loc.module_path(),
-                    loc.line(),
+                    record.module_path(),
+                    record.line(),
                     message,
                     if cfg!(windows) { "\r" } else { "" }
                 ))
             })
-            .level(LogLevelFilter::Debug)
+            .level(LevelFilter::Debug)
             .chain(fern::log_file("rest_client.log").unwrap())
             .apply()
             .unwrap();

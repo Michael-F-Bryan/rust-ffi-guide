@@ -1,27 +1,27 @@
 # The Core Client Library
 
 Before we can do anything else we'll need to create the core client library that
-the GUI calls into. To reduce the amount of state being maintained, each request 
-will create a new [`reqwest::Client`] and accept a `Request` object, returning 
-some generic `Response`. 
+the GUI calls into. To reduce the amount of state being maintained, each request
+will create a new [`reqwest::Client`] and accept a `Request` object, returning
+some generic `Response`.
 
 This isn't overly specific to doing FFI, in fact we probably won't write any FFI
 bindings or C++ in this chapter. That said, it's still a very important stage
-because poor architecture decisions here can often make life hard for you down 
-the road. In general, making the interface as small and high level as possible 
+because poor architecture decisions here can often make life hard for you down
+the road. In general, making the interface as small and high level as possible
 will vastly reduce the implementation complexity.
 
-The first thing to do is set up error handling using `error-chain`. I have 
-`cargo-edit` installed (`cargo install cargo-edit`), so adding it to my 
+The first thing to do is set up error handling using `error-chain`. I have
+`cargo-edit` installed (`cargo install cargo-edit`), so adding it to my
 `Cargo.toml` is as simple as running
 
 ```
 $ cargo add error-chain
 ```
 
-You'll then need to add the corresponding `extern crate` statement to `lib.rs`. 
-While you're at it, add also the `reqwest`, `cookie`, `chrono`, `fern`, `log` 
-and `libc` crates both to `Cargo.toml` and `lib.rs`, as we are going to use 
+You'll then need to add the corresponding `extern crate` statement to `lib.rs`.
+While you're at it, add also the `reqwest`, `cookie`, `chrono`, `fern`, `log`
+and `libc` crates both to `Cargo.toml` and `lib.rs`, as we are going to use
 them as well afterwards.
 
 ```rust
@@ -91,7 +91,7 @@ impl Request {
 }
 ```
 
-We'll also need to be able to convert our `Request` into a `reqwest::Reqwest` 
+We'll also need to be able to convert our `Request` into a `reqwest::Reqwest`
 before we can send it so lets add a helper method for that.
 
 ```rust
@@ -113,7 +113,7 @@ impl Request {
 }
 ```
 
-We also want to create our own vastly simplified `Response` so it can be 
+We also want to create our own vastly simplified `Response` so it can be
 accessed by the C++ GUI, it gets a helper method too.
 
 ```rust
@@ -157,18 +157,18 @@ impl Response {
 > public because it's designed to be a dumb container of everything necessary
 > to build a request.
 
-To help out with debugging the FFI bindings later on we'll add in logging via 
+To help out with debugging the FFI bindings later on we'll add in logging via
 the `log` and `fern` crates. In a GUI program it's often not feasible to add in
 `println!()` statements and logging is a great substitute. Having a log file is
-also quite useful if you want to look back over a session to see what requests 
+also quite useful if you want to look back over a session to see what requests
 were sent and what the server responded with.
 
 ```rust
 // client/src/utils.rs
 
-use std::sync::{Once, ONCE_INIT};
+use std::sync::Once;
 use fern;
-use log::LogLevelFilter;
+use log::LevelFilter;
 use chrono::Local;
 
 use errors::*;
@@ -179,23 +179,21 @@ use errors::*;
 /// times as you want and logging will only be initialized the first time.
 #[no_mangle]
 pub extern "C" fn initialize_logging() {
-    static INITIALIZE: Once = ONCE_INIT;
+    static INITIALIZE: Once = Once::new();
     INITIALIZE.call_once(|| {
         fern::Dispatch::new()
             .format(|out, message, record| {
-                let loc = record.location();
-
                 out.finish(format_args!(
-                    "{} {:7} ({}#{}): {}{}",
+                    "{} {:7} ({:?}#{:?}): {}{}",
                     Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
                     record.level(),
-                    loc.module_path(),
-                    loc.line(),
+                    record.module_path(),
+                    record.line(),
                     message,
                     if cfg!(windows) { "\r" } else { "" }
                 ))
             })
-            .level(LogLevelFilter::Debug)
+            .level(LevelFilter::Debug)
             .chain(fern::log_file("rest_client.log").unwrap())
             .apply()
             .unwrap();
@@ -205,9 +203,9 @@ pub extern "C" fn initialize_logging() {
 
 Initializing logging will usually panic if you call it multiple times, therefore
 we're using `std::sync::Once` so that `initialize_logging()` will only ever set
-up `fern` once. 
+up `fern` once.
 
-The logging initializing itself looks pretty gnarly, although that's mainly 
+The logging initializing itself looks pretty gnarly, although that's mainly
 because of the large `format_args!()` statement and having to make sure we add
 in line endings appropriately.
 
@@ -227,8 +225,8 @@ pub fn backtrace(e: &Error) {
 }
 ```
 
-We'll also create a generic `send_request()` function which takes a `Request` 
-object and sends it, retrieving the resulting `Response`. Thanks to our two 
+We'll also create a generic `send_request()` function which takes a `Request`
+object and sends it, retrieving the resulting `Response`. Thanks to our two
 helper functions the implementation is essentially trivial (modulo some logging
 stuff).
 
@@ -268,15 +266,14 @@ pub fn send_request(req: &Request) -> Result<Response> {
 ```
 
 You'll notice that `chain_err()` has been used whenever anything may fail. This
-allows us to give the user some sort of stack trace of errors and what caused 
-them, providing a single high level error message (i.e. "The native TLS backend 
-couldn't be initialized"), while still retaining the low level context if they 
-want to drill down and find out *exactly* what went wrong.
+allows us to give the user some sort of stack trace of errors and what caused
+them, providing a single high level error message (i.e. "The native TLS backend
+couldn't be initialized"), while still retaining the low level context if they
+want to drill down and find out _exactly_ what went wrong.
 
 This method of error handling ties in quite nicely with the `backtrace()` helper
-defined earlier. As you'll see later on, they can prove invaluable for 
+defined earlier. As you'll see later on, they can prove invaluable for
 debugging issues when passing things between languages.
-
 
 Register the four new modules in `lib.rs`.
 
@@ -291,7 +288,6 @@ mod response;
 
 Now we've got something to work with, we can start writing some FFI bindings.
 
-
-[`reqwest::Client`]: https://docs.rs/reqwest/0.8.0/reqwest/struct.Client.html
-[`HeaderMap`]: https://docs.rs/reqwest/0.8.0/reqwest/struct.Client.html
-[`CookieJar`]: https://docs.rs/cookie/0.10.1/cookie/
+[`reqwest::client`]: https://docs.rs/reqwest/0.8.0/reqwest/struct.Client.html
+[`headermap`]: https://docs.rs/reqwest/0.8.0/reqwest/struct.Client.html
+[`cookiejar`]: https://docs.rs/cookie/0.10.1/cookie/
