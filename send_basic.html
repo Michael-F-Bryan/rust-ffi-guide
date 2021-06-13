@@ -1,0 +1,458 @@
+<!DOCTYPE HTML>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Sending the Request - The (unofficial) Rust FFI Guide</title>
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="Using unsafe for fun and profit!">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <base href="">
+
+        <link rel="stylesheet" href="book.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <link rel="shortcut icon" href="favicon.png">
+
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme -->
+        
+
+        
+
+        <!-- Fetch Clipboard.js from CDN but have a local fallback -->
+        <script src="https://cdn.jsdelivr.net/clipboard.js/1.6.1/clipboard.min.js"></script>
+        <script>
+            if (typeof Clipboard == 'undefined') {
+                document.write(unescape("%3Cscript src='clipboard.min.js'%3E%3C/script%3E"));
+            }
+        </script>
+
+        <!-- Fetch JQuery from CDN but have a local fallback -->
+        <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+        <script>
+            if (typeof jQuery == 'undefined') {
+                document.write(unescape("%3Cscript src='jquery.js'%3E%3C/script%3E"));
+            }
+        </script>
+
+        <!-- Fetch store.js from local - TODO add CDN when 2.x.x is available on cdnjs -->
+        <script src="store.js"></script>
+
+    </head>
+    <body class="light">
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme = store.get('mdbook-theme');
+            if (theme === null || theme === undefined) { theme = 'light'; }
+            $('body').removeClass().addClass(theme);
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var sidebar = store.get('mdbook-sidebar');
+            if (sidebar === "hidden") { $("html").addClass("sidebar-hidden") }
+            else if (sidebar === "visible") { $("html").addClass("sidebar-visible") }
+        </script>
+
+        <div id="sidebar" class="sidebar">
+            <ul class="chapter"><li><a href="./overview.html"><strong>1.</strong> Overview</a></li><li><a href="./setting_up.html"><strong>2.</strong> Setting Up</a></li><li><a href="./client.html"><strong>3.</strong> Core Client Library</a></li><li><a href="./basic_request.html"><strong>4.</strong> Constructing a Basic Request</a></li><li><a href="./send_basic.html" class="active"><strong>5.</strong> Sending the Request</a></li><li><a href="./cbindgen.html"><strong>6.</strong> Generating a Header File</a></li><li><a href="./errors/index.html"><strong>7.</strong> Better Error Handling</a></li><li><ul class="section"><li><a href="./errors/return_types.html"><strong>7.1.</strong> Return Types</a></li><li><a href="./errors/logging.html"><strong>7.2.</strong> Logging</a></li><li><a href="./errors/exception_safety.html"><strong>7.3.</strong> Exception Safety</a></li></ul></li><li><a href="./async.html"><strong>8.</strong> Asynchronous Operations</a></li><li><a href="./complex_request.html"><strong>9.</strong> More Complex Requests</a></li><li><a href="./testing.html"><strong>10.</strong> Testing</a></li><li><a href="./dynamic_loading.html"><strong>11.</strong> Dynamic Loading &amp; Plugins</a></li><li class="spacer"></li><li><a href="./fun/index.html"><strong>12.</strong> Break All The Things!!1!</a></li><li><ul class="section"><li><a href="./fun/problems.html"><strong>12.1.</strong> Problems</a></li><li><a href="./fun/solutions.html"><strong>12.2.</strong> Solutions</a></li></ul></li></ul>
+        </div>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page" tabindex="-1">
+                
+                <div id="menu-bar" class="menu-bar">
+                    <div class="left-buttons">
+                        <i id="sidebar-toggle" class="fa fa-bars" title="Toggle sidebar"></i>
+                        <i id="theme-toggle" class="fa fa-paint-brush" title="Change theme"></i>
+                    </div>
+
+                    <h1 class="menu-title">The (unofficial) Rust FFI Guide</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html">
+                            <i id="print-button" class="fa fa-print" title="Print this book"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="content" class="content">
+                    <a class="header" href="./send_basic.html#sending-the-request" id="sending-the-request"><h1>Sending the Request</h1></a>
+<p>Now we can create a <code>Request</code> it'd be nice if we could actually send it and get
+back a response that can be displayed to the user. This will require bindings to
+the <code>send_request()</code> function in our Rust <code>client</code> module. While we're at it we
+also need a wrapper which lets us access the response body (as a bunch of bytes)
+and destroy it when we're done.</p>
+<p>This chapter will cover:</p>
+<ul>
+<li>Passing arrays between languages (our response is a byte buffer)</li>
+<li>MOAR wrappers</li>
+<li>Fleshing out the Qt GUI</li>
+</ul>
+<a class="header" href="./send_basic.html#rust-ffi-bindings" id="rust-ffi-bindings"><h2>Rust FFI Bindings</h2></a>
+<p>The FFI bindings for <code>send_request()</code> are dead simple. We do a null pointer
+sanity check, pass the <code>Request</code> to our <code>send_request()</code> function, then box up
+the response so it can be returned to the caller.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/ffi.rs
+
+use {Response, Request, send_request};
+
+...
+
+/// Take a reference to a `Request` and execute it, getting back the server's 
+/// response.
+/// 
+/// If something goes wrong, this will return a null pointer. Don't forget to 
+/// destroy the `Response` once you are done with it!
+#[no_mangle]
+pub unsafe extern &quot;C&quot; fn request_send(req: *const Request) -&gt; *mut Response {
+    if req.is_null() {
+        return ptr::null_mut();
+    }
+
+    let response = match send_request(&amp;*req){
+        Ok(r) =&gt; r,
+        Err(_) =&gt; return ptr::null_mut(),
+    };
+
+    Box::into_raw(Box::new(response))
+}
+#}</code></pre></pre>
+<p>You'll notice the funny <code>&amp;*req</code> when calling <code>send_request()</code>. This converts a
+raw pointer into a normal borrow by dereferencing and immediately reborrowing.
+The only reason this function is unsafe is because this dereferencing has the
+possibility of blowing up if the pointer passed in points to invalid memory.</p>
+<p>The destructor for a <code>Response</code> is equally as trivial - in fact it's pretty much
+the exact same as our <code>Request</code> destructor.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/ffi.rs
+
+/// Destroy a `Response` once you are done with it.
+#[no_mangle]
+pub unsafe extern &quot;C&quot; fn response_destroy(res: *mut Response) {
+    if !res.is_null() {
+        drop(Box::from_raw(res));
+    }
+}
+#}</code></pre></pre>
+<p>Getting the body response is a little trickier. We <em>could</em> give C++ a pointer
+to the body and tell it how long the body is, however that introduces the
+possibility that C++ will keep a reference to it after the <code>Response</code> is
+destroyed. Further attempts to read the body will be a use-after-free and cause
+the entire application to crash.</p>
+<p>Instead, it'd be better to give C++ its own <em>copy</em> of the response body so it
+can be destroyed whenever it wants to. This involves a two-stage process where
+we first ask how long the body is so we can allocate a large enough buffer, then
+we'll give Rust a pointer to that buffer (and its length) so the body can be
+copied across.</p>
+<p>The length function is easiest, so lets create that one first.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/ffi.rs
+
+use libc::{c_char, size_t};
+
+...
+
+/// Get the length of a `Response`'s body.
+#[no_mangle]
+pub unsafe extern &quot;C&quot; fn response_body_length(res: *const Response) -&gt; size_t {
+    if res.is_null() {
+        return 0;
+    }
+
+    (&amp;*res).body.len() as size_t
+}
+#}</code></pre></pre>
+<p>To copy the response body to some buffer supplied by C++ we'll want to first
+turn it from a pointer and a length into a more Rust-ic <code>&amp;mut [u8]</code>. Luckily the
+<a href="https://doc.rust-lang.org/std/slice/fn.from_raw_parts_mut.html"><code>slice::from_raw_parts_mut()</code></a> exists for just this purpose. We can then do the
+usual length checks before using <a href="https://doc.rust-lang.org/std/ptr/fn.copy_nonoverlapping.html"><code>ptr::copy_nonoverlapping()</code></a> to copy the
+buffer contents across.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/ffi.rs
+
+use libc::{c_char, c_int, size_t};
+use std::slice;
+
+...
+
+/// Copy the response body into a user-provided buffer, returning the number of
+/// bytes copied.
+///
+/// If an error is encountered, this returns `-1`.
+#[no_mangle]
+pub unsafe extern &quot;C&quot; fn response_body(
+    res: *const Response,
+    buffer: *mut c_char,
+    length: size_t,
+) -&gt; c_int {
+    if res.is_null() || buffer.is_null() {
+        return -1;
+    }
+
+    let res = &amp;*res;
+    let buffer: &amp;mut [u8] = slice::from_raw_parts_mut(buffer as *mut u8, 
+                                                      length as usize);
+
+    if buffer.len() &lt; res.body.len() {
+        return -1;
+    }
+
+    ptr::copy_nonoverlapping(res.body.as_ptr(), 
+                             buffer.as_mut_ptr(), 
+                             res.body.len());
+
+    res.body.len() as c_int
+}
+#}</code></pre></pre>
+<p>In general, whenever you are wanting to pass data in the form of arrays from one
+language to another, it's easiest to ask the caller to provide some buffer the
+data can be written into. If you were to instead return a <code>Vec&lt;u8&gt;</code> or similar
+dynamically allocated type native to a particular language, that means the
+caller <strong>must</strong> return that object to the language so it can be free'd
+appropriately. This can get pretty error-prone and annoying after a while.</p>
+<blockquote>
+<p>A good rule of thumb is that if a language creates something on the stack, you
+should return the object to the original language once you're done with it so
+it can be free'd properly. Failing to do this could end up either confusing
+the allocator's internal bookkeeping or even result in segfaults because one
+allocator (e.g. libc's <code>malloc</code>) is trying to free memory belonging to a
+completely different allocator (e.g. Rust's <code>jemalloc</code>).</p>
+</blockquote>
+<a class="header" href="./send_basic.html#c-wrapper" id="c-wrapper"><h2>C++ Wrapper</h2></a>
+<p>The next thing we'll need to do is create a wrapper around a <code>Response</code>. This
+will be almost identical to the <code>Request</code> wrapper, although we'll need to add a
+<code>read_body()</code> method so people can access the response body.</p>
+<p>The <code>Response</code> class definition isn't overly interesting:</p>
+<pre><code class="language-cpp">// gui/wrappers.hpp
+
+...
+
+#include &lt;vector&gt;
+
+...
+
+class Response {
+public:
+  Response(void *raw) : raw(raw){}
+  ~Response();
+  std::vector&lt;char&gt; read_body();
+
+private:
+  void *raw;
+};
+</code></pre>
+<p>In the implementation, we need to update the <code>extern</code> block to include the new
+Rust functions.</p>
+<pre><code class="language-cpp">// gui/wrappers.cpp
+
+extern &quot;C&quot; {
+...
+void response_destroy(void *);
+int response_body_length(void *);
+int response_body(void *, char *, int);
+}
+</code></pre>
+<p>As was mentioned earlier when writing the Rust bindings, in order to read the
+response body callers will need to create their own buffer and pass it to Rust.
+We've chosen to use a <code>std::vector&lt;char&gt;</code> as the buffer, throwing an exception
+with a semi-useful message if something fails (don't worry, we'll be doing
+proper error handling later).</p>
+<pre><code class="language-cpp">// gui/wrappers.cpp
+
+#include &lt;cassert&gt;
+
+...
+
+Response::~Response() { response_destroy(raw); }
+
+std::vector&lt;char&gt; Response::read_body() {
+  int length = response_body_length(raw);
+  if (length &lt; 0) {
+    throw &quot;Response body's length was less than zero&quot;;
+  }
+
+  std::vector&lt;char&gt; buffer(length);
+
+  int bytes_written = response_body(raw, buffer.data(), buffer.size());
+  if (bytes_written != length) {
+    throw &quot;Response body was a different size than what we expected&quot;;
+  }
+
+  return buffer;
+}
+</code></pre>
+<p>The next step is to add a <code>send()</code> method to a <code>Request</code>. This is just a case of
+adding a new public method to <code>Request</code> and then deferring to <code>send_request</code> in
+our <code>client</code> module. You'll probably need to move <code>Response</code> above <code>Request</code> at
+this point so <code>Request</code> can use it.</p>
+<pre><code class="language-cpp">// gui/wrappers.hpp
+
+...
+
+class Request {
+public:
+  Request(const std::string);
+  ~Request();
+  Response send();
+
+private:
+  void *raw;
+};
+</code></pre>
+<p>Next we'll need to actually implement this <code>send()</code> method.</p>
+<pre><code class="language-cpp">// gui/wrappers.cpp
+
+...
+
+extern &quot;C&quot; {
+...
+void *request_send(void *);
+}
+
+...
+
+Response Request::send() {
+  void *raw_response = request_send(raw);
+
+  if (raw_response == nullptr) {
+    throw &quot;Request failed&quot;;
+  }
+
+  return Response(raw_response);
+}
+</code></pre>
+<p>Here we simply called the <code>request_send()</code> function, checked whether the result
+was a null pointer (indicating an error), then created a new <code>Response</code> and
+returned it.</p>
+<a class="header" href="./send_basic.html#testing-the-process" id="testing-the-process"><h2>Testing the Process</h2></a>
+<p>We've <em>finally</em> got all the infrastructure set up to send a single <code>GET</code> request
+to a server and then read back the response. To make sure it actually works,
+lets hook it up to our GUI's button.</p>
+<pre><code class="language-cpp">// gui/main_window.cpp
+
+void MainWindow::onClick() {
+  std::cout &lt;&lt; &quot;Creating the request&quot; &lt;&lt; std::endl;
+  Request req(&quot;https://www.rust-lang.org/&quot;);
+  std::cout &lt;&lt; &quot;Sending Request&quot; &lt;&lt; std::endl;
+  Response res = req.send();
+  std::cout &lt;&lt; &quot;Received Response&quot; &lt;&lt; std::endl;
+
+  std::vector&lt;char&gt; raw_body = res.read_body();
+  std::string body(raw_body.begin(), raw_body.end());
+  std::cout &lt;&lt; body &lt;&lt; std::endl;
+}
+</code></pre>
+<p>If you compile and run this then click the button you should see something
+similar to this printed to the terminal.</p>
+<pre><code>$ cmake .. &amp;&amp; make
+$ ./gui/gui
+Creating the request
+Sending Request
+Received Response
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;meta charset=&quot;utf-8&quot;&gt;
+    &lt;title&gt;The Rust Programming Language&lt;/title&gt;
+    ...
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;p&gt;&lt;a href=&quot;/en-US/&quot;&gt;Click here&lt;/a&gt; to be redirected.&lt;/p&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<p>If you've gotten this far, take a second to give yourself a pat on the back. You
+deserve it.</p>
+
+                </div>
+
+                <!-- Mobile navigation buttons -->
+                
+                    <a rel="prev" href="./basic_request.html" class="mobile-nav-chapters previous" title="Previous chapter">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a rel="next" href="./cbindgen.html" class="mobile-nav-chapters next" title="Next chapter">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+
+            </div>
+
+            
+                <a href="./basic_request.html" class="nav-chapters previous" title="You can navigate through the chapters using the arrow keys">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+            
+
+            
+                <a href="./cbindgen.html" class="nav-chapters next" title="You can navigate through the chapters using the arrow keys">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+            
+
+        </div>
+
+
+        <!-- Local fallback for Font Awesome -->
+        <script>
+            if ($(".fa").css("font-family") !== "FontAwesome") {
+                $('<link rel="stylesheet" type="text/css" href="_FontAwesome/css/font-awesome.css">').prependTo('head');
+            }
+        </script>
+
+        <!-- Livereload script (if served using the cli tool) -->
+        
+
+        
+        <!-- Google Analytics Tag -->
+        <script>
+            var localAddrs = ["localhost", "127.0.0.1", ""];
+
+            // make sure we don't activate google analytics if the developer is 
+            // inspecting the book locally...
+            if (localAddrs.indexOf(document.location.hostname) === -1) {
+                (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+                })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+                ga('create', 'UA-78714693-2', 'auto');
+                ga('send', 'pageview');
+            }
+        </script>
+        
+
+        
+
+        
+
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS script -->
+        
+
+    </body>
+</html>

@@ -1,0 +1,2801 @@
+<!DOCTYPE HTML>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>The (unofficial) Rust FFI Guide</title>
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="Using unsafe for fun and profit!">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <base href="">
+
+        <link rel="stylesheet" href="book.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <link rel="shortcut icon" href="favicon.png">
+
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme -->
+        
+
+        
+
+        <!-- Fetch Clipboard.js from CDN but have a local fallback -->
+        <script src="https://cdn.jsdelivr.net/clipboard.js/1.6.1/clipboard.min.js"></script>
+        <script>
+            if (typeof Clipboard == 'undefined') {
+                document.write(unescape("%3Cscript src='clipboard.min.js'%3E%3C/script%3E"));
+            }
+        </script>
+
+        <!-- Fetch JQuery from CDN but have a local fallback -->
+        <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+        <script>
+            if (typeof jQuery == 'undefined') {
+                document.write(unescape("%3Cscript src='jquery.js'%3E%3C/script%3E"));
+            }
+        </script>
+
+        <!-- Fetch store.js from local - TODO add CDN when 2.x.x is available on cdnjs -->
+        <script src="store.js"></script>
+
+    </head>
+    <body class="light">
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme = store.get('mdbook-theme');
+            if (theme === null || theme === undefined) { theme = 'light'; }
+            $('body').removeClass().addClass(theme);
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var sidebar = store.get('mdbook-sidebar');
+            if (sidebar === "hidden") { $("html").addClass("sidebar-hidden") }
+            else if (sidebar === "visible") { $("html").addClass("sidebar-visible") }
+        </script>
+
+        <div id="sidebar" class="sidebar">
+            <ul class="chapter"><li><a href="./overview.html"><strong>1.</strong> Overview</a></li><li><a href="./setting_up.html"><strong>2.</strong> Setting Up</a></li><li><a href="./client.html"><strong>3.</strong> Core Client Library</a></li><li><a href="./basic_request.html"><strong>4.</strong> Constructing a Basic Request</a></li><li><a href="./send_basic.html"><strong>5.</strong> Sending the Request</a></li><li><a href="./cbindgen.html"><strong>6.</strong> Generating a Header File</a></li><li><a href="./errors/index.html"><strong>7.</strong> Better Error Handling</a></li><li><ul class="section"><li><a href="./errors/return_types.html"><strong>7.1.</strong> Return Types</a></li><li><a href="./errors/logging.html"><strong>7.2.</strong> Logging</a></li><li><a href="./errors/exception_safety.html"><strong>7.3.</strong> Exception Safety</a></li></ul></li><li><a href="./async.html"><strong>8.</strong> Asynchronous Operations</a></li><li><a href="./complex_request.html"><strong>9.</strong> More Complex Requests</a></li><li><a href="./testing.html"><strong>10.</strong> Testing</a></li><li><a href="./dynamic_loading.html"><strong>11.</strong> Dynamic Loading &amp; Plugins</a></li><li class="spacer"></li><li><a href="./fun/index.html"><strong>12.</strong> Break All The Things!!1!</a></li><li><ul class="section"><li><a href="./fun/problems.html"><strong>12.1.</strong> Problems</a></li><li><a href="./fun/solutions.html"><strong>12.2.</strong> Solutions</a></li></ul></li></ul>
+        </div>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page" tabindex="-1">
+                
+                <div id="menu-bar" class="menu-bar">
+                    <div class="left-buttons">
+                        <i id="sidebar-toggle" class="fa fa-bars" title="Toggle sidebar"></i>
+                        <i id="theme-toggle" class="fa fa-paint-brush" title="Change theme"></i>
+                    </div>
+
+                    <h1 class="menu-title">The (unofficial) Rust FFI Guide</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html">
+                            <i id="print-button" class="fa fa-print" title="Print this book"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="content" class="content">
+                    <a class="header" href="print.html#using-unsafe-for-fun-and-profit" id="using-unsafe-for-fun-and-profit"><h1>Using Unsafe for Fun and Profit</h1></a>
+<p>Given Rust's popularity and position as a systems programming language,
+you'll probably reach a point where you want to integrate a Rust module into
+some existing application. This guide was created to fill the current gap in
+knowledge when it comes to doing more in-depth FFI tasks than simply calling
+one or two functions from a C library.</p>
+<p>This guide is written from the perspective of someone implementing a simple REST
+client. The client lets you craft custom HTTP messages and send them to some
+server, allowing you to inspect the response. It is composed of a Qt GUI which
+calls out to a Rust library for all of the business logic.</p>
+<p>We'll be using <code>cmake</code> as the host build system, deferring to <code>cargo</code> to
+manage and compile the Rust components. The guide was originally written on a
+linux machine, but there is no reason why it shouldn't work on Windows or Mac,
+possibly with a couple small platform-specific tweaks (filenames, etc.).</p>
+<blockquote>
+<p><strong>TODO:</strong> Insert final screenshot here</p>
+</blockquote>
+<a class="header" href="print.html#useful-links-and-references" id="useful-links-and-references"><h2>Useful Links and References</h2></a>
+<p>Here are a couple links and resources which you may find useful along the way.</p>
+<ul>
+<li><a href="https://michael-f-bryan.github.io/rust-ffi-guide/">Rendered Guide</a></li>
+<li><a href="https://github.com/Michael-F-Bryan/rust-ffi-guide">The GitHub Repo</a></li>
+<li><a href="https://hub.docker.com/r/michaelfbryan/ffi-guide/">Associated Docker Image</a></li>
+<li><a href="http://www.lurklurk.org/linkers/linkers.html">Beginner's Guide to Linkers</a></li>
+<li><a href="https://spin.atomicobject.com/2013/02/15/ffi-foreign-function-interfaces/">Foreign Function Interfaces for Fun &amp; Industry</a></li>
+<li><a href="http://jakegoulding.com/rust-ffi-omnibus/">The Rust FFI Omnibus</a></li>
+<li><a href="https://doc.rust-lang.org/book/second-edition/ch19-01-unsafe-rust.html">&quot;Unsafe Rust&quot; chapter from <em>The Book</em></a></li>
+<li><a href="https://speakerdeck.com/dbrgn/calling-rust-from-c-and-java">Calling Rust from C and Java</a></li>
+</ul>
+<a class="header" href="print.html#objectives" id="objectives"><h2>Objectives</h2></a>
+<p>The end objectives of this guide are:</p>
+<ul>
+<li>Integrate <code>cargo</code> into a wider build system</li>
+<li>Call Rust functions from C++ (or any other language)</li>
+<li>Passing strings, structs, and arrays between Rust and C++</li>
+<li>Robust error handling and exception safety</li>
+<li>Creating a C interface for a Rust library</li>
+<li>Multithreading and asynchronous programming (because we'll need to wait for
+the server's response without blocking the UI)</li>
+<li>Create flexible abstractions which encapsulate common patterns used when
+writing foreign function interfaces.</li>
+</ul>
+<p>The <a href="https://github.com/Michael-F-Bryan/ffi-helpers">ffi-helpers</a> crate was written in parallel with this guide. It takes
+advantage of the patterns and abstractions we'll come up with and allows you
+to reuse them for your own application.</p>
+<a class="header" href="print.html#setting-up" id="setting-up"><h1>Setting Up</h1></a>
+<p>Before we can start doing any coding we need to get a build environment set up
+and run a hello world program to check everything works.</p>
+<p>This chapter will cover:</p>
+<ul>
+<li>Setting up a C++ build system</li>
+<li>Integrating <code>cargo</code> into the build system transparently</li>
+<li>A &quot;hello world&quot; to test that C++ can call Rust functions</li>
+</ul>
+<a class="header" href="print.html#setting-up-qt-and-the-build-system" id="setting-up-qt-and-the-build-system"><h2>Setting up Qt and the Build System</h2></a>
+<p>First, create a new <code>cmake</code> project in a directory of your choosing.</p>
+<pre><code class="language-bash">$ mkdir rest_client &amp;&amp; cd rest_client
+$ mkdir gui
+$ touch gui/main.cpp
+$ touch CMakeLists.txt
+</code></pre>
+<p>You'll then want to make sure your <code>CMakeLists.txt</code> file (the file specifying
+the project and build settings) looks something like this.</p>
+<pre><code># CMakeLists.txt
+
+cmake_minimum_required(VERSION 3.7)
+project(rest-client)
+
+enable_testing()
+add_subdirectory(client)
+add_subdirectory(gui)
+</code></pre>
+<p>This says we're building a project called <code>rest-client</code> that requires at least
+<code>cmake</code> version 3.7. We've also enabled testing and added two subdirectories to
+the project (<code>client</code> and <code>gui</code>).</p>
+<p>Our <code>main.cpp</code> is still empty, lets rectify that by adding in a <a href="http://doc.qt.io/qt-5/qpushbutton.html">button</a>.</p>
+<pre><code class="language-cpp">// gui/main.cpp
+
+#include &lt;QtWidgets/QPushButton&gt;
+#include &lt;QtWidgets/QApplication&gt;
+
+int main(int argc, char **argv) {
+  QApplication app(argc, argv);
+
+  QPushButton button(&quot;Hello World&quot;);
+  button.show();
+
+  app.exec();
+}
+</code></pre>
+<p>We need to add a <code>CMakeLists.txt</code> to the <code>gui/</code> directory to let <code>cmake</code> know
+how to build our GUI.</p>
+<pre><code class="language-cmake"># gui/CMakeLists.txt
+
+set(CMAKE_CXX_STANDARD 14)
+
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+find_package(Qt5Widgets)
+
+set(SOURCE main.cpp)
+add_executable(gui ${SOURCE})
+target_link_libraries(gui Qt5::Widgets)
+add_dependencies(gui client)
+</code></pre>
+<p>This is mostly concerned with adding the correct options so Qt's meta-object
+compiler can do its thing and we can locate the correct Qt libraries, however
+right down the bottom you'll notice that we create a new executable with
+<code>add_executable()</code>. This says our <code>gui</code> target has right now one source file, <code>main.cpp</code>.
+It also needs to link to <code>Qt5::Widgets</code> and depends on our <code>client</code> (the Rust library), which
+hasn't yet been configured.</p>
+<a class="header" href="print.html#building-rust-with-cmake" id="building-rust-with-cmake"><h2>Building Rust with CMake</h2></a>
+<p>Next we need to create the Rust project.</p>
+<pre><code>$ cargo new --lib client
+</code></pre>
+<p>To make it accessible from C++ we need to make sure <code>cargo</code> generates a
+dynamically linked library. This is just a case of tweaking our <code>Cargo.toml</code> to
+tell <code>cargo</code> we're creating a <code>cdylib</code> instead of the usual library format.</p>
+<pre><code class="language-toml"># client/Cargo.toml
+
+[package]
+name = &quot;client&quot;
+version = &quot;0.1.0&quot;
+authors = [&quot;Michael Bryan &lt;michaelfbryan@gmail.com&gt;&quot;]
+description = &quot;The business logic for a REST client&quot;
+repository = &quot;https://github.com/Michael-F-Bryan/rust-ffi-guide&quot;
+
+[dependencies]
+
+[lib]
+crate-type = [&quot;cdylib&quot;]
+</code></pre>
+<p>If you then compile the project you'll see <code>cargo</code> build a shared object
+(<code>libclient.so</code>) instead of the normal <code>*.rlib</code> file.</p>
+<pre><code>$ cargo build
+$ ls target/debug/
+build  deps  examples  incremental  libclient.d  libclient.so  native
+</code></pre>
+<blockquote>
+<p><strong>Note:</strong> You don't <em>technically</em> need to make a dynamic library (<code>cdylib</code>)
+for your Rust code to be callable from other languages. You can always use
+static linking with a <code>staticlib</code>, however that can be a bit more annoying to
+set up because you need to remember to link in a bunch of other things that
+the Rust standard library uses (mainly <code>libc</code> and the C runtime).</p>
+<p>With a dynamic library all the work for dependency resolution is handled by
+the <a href="https://en.wikipedia.org/wiki/Loader_(computing)">loader</a> when your program gets loaded into memory on startup. Meaning
+things should <em>Just Work</em>.</p>
+</blockquote>
+<p>Now we know the Rust compiles natively with <code>cargo</code>, we need to hook it up to
+<code>cmake</code>. We do this by writing a <code>CMakeLists.txt</code> in the <code>client/</code> directory.
+As a general rule, you'll have one <code>CMakeLists.txt</code> for every &quot;area&quot; of your
+code. This usually up being one per directory, but not always.</p>
+<pre><code class="language-cmake"># client/CMakeLists.txt
+
+if (CMAKE_BUILD_TYPE STREQUAL &quot;Debug&quot;)
+    set(CARGO_CMD cargo build)
+    set(TARGET_DIR &quot;debug&quot;)
+else ()
+    set(CARGO_CMD cargo build --release)
+    set(TARGET_DIR &quot;release&quot;)
+endif ()
+
+set(CLIENT_SO &quot;${CMAKE_CURRENT_BINARY_DIR}/${TARGET_DIR}/libclient.so&quot;)
+
+add_custom_target(client ALL
+    COMMENT &quot;Compiling client module&quot;
+    COMMAND CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} ${CARGO_CMD} 
+    COMMAND cp ${CLIENT_SO} ${CMAKE_CURRENT_BINARY_DIR}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+set_target_properties(client PROPERTIES LOCATION ${CMAKE_CURRENT_BINARY_DIR})
+
+add_test(NAME client_test 
+    COMMAND cargo test
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+</code></pre>
+<p>This is our first introduction to the difference between a debug and release
+build. So we know whether to compile our program using different optimisation
+levels and debug symbols, <code>cmake</code> will set a <code>CMAKE_BUILD_TYPE</code> variable
+containing either <code>Debug</code> or <code>Release</code>.</p>
+<p>Here we're just using an <code>if</code> statement to set the <code>cargo</code> build command and
+the target directory, then using those to add a custom target which will
+first build the library, then copy the generated binary to the
+<code>CMAKE_BINARY_DIR</code>.</p>
+<p>For good measure, lets add a test (<code>client_test</code>) which lets <code>cmake</code> know how to
+test our Rust module.</p>
+<p>To make sure <code>cargo</code> puts all compiled artefacts in the correct spot within
+<code>build/</code>, we set the <code>CARGO_TARGET_DIR</code> environment variable while invoking the
+<code>CARGO_CMD</code>. The compiled library is then copied from into
+<code>CMAKE_CURRENT_BINARY_DIR</code> and we set the <code>LOCATION</code> property on the overall
+target to be <code>CMAKE_CURRENT_BINARY_DIR</code>.</p>
+<p>The purpose of that little dance is so that no matter what type of build
+(release or debug) we do, the compiled library will be in the same spot. We then
+set the <code>client</code> target's <code>LOCATION</code> property so that anyone else who needs to
+use <code>client</code>'s outputs knows which directory they'll be in.</p>
+<p>Now we know where the compiled <code>client</code> module will be, we can tell our <code>gui</code> to
+link to it.</p>
+<pre><code class="language-diff"># gui/CMakeLists.txt
+
+...
+
+set(SOURCE main.cpp)
+add_executable(gui ${SOURCE})
++ get_target_property(CLIENT_DIR client LOCATION)
+target_link_libraries(gui Qt5::Widgets)
++ target_link_libraries(gui ${CLIENT_DIR}/libclient.so)
+add_dependencies(gui client)
+</code></pre>
+<p>Now we can compile and run this basic program to make sure everything is
+working. You'll probably want to create a separate <code>build/</code> directory so you
+don't pollute the rest of the project with random build artefacts.</p>
+<pre><code>$ mkdir build &amp;&amp; cd build
+$ cmake ..
+$ make
+$ ./gui/gui
+</code></pre>
+<a class="header" href="print.html#calling-rust-from-c" id="calling-rust-from-c"><h2>Calling Rust from C++</h2></a>
+<p>So far we've just made sure everything compiles, however the C++ and Rust code
+are still completely independent. The next task is to check the Rust library is
+linked to properly by calling a function from C++.</p>
+<p>First we add a dummy function to the <code>lib.rs</code>.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+#[no_mangle]
+pub extern &quot;C&quot; fn hello_world() {
+    println!(&quot;Hello World!&quot;);
+}
+#}</code></pre></pre>
+<p>There's a lot going on here, so lets step through it bit by bit.</p>
+<p>The <code>#[no_mangle]</code> attribute indicates to the compiler that it shouldn't mangle
+the function's name during compilation. According to Wikipedia,
+<a href="https://en.wikipedia.org/wiki/Name_mangling"><em>name mangling</em></a>:</p>
+<blockquote>
+<p>In compiler construction, name mangling (also called name decoration) is a
+technique used to solve various problems caused by the need to resolve unique
+names for programming entities in many modern programming languages.</p>
+<p>It provides a way of encoding additional information in the name of a
+function, structure, class or another datatype in order to pass more semantic
+information from the compilers to linkers.</p>
+<p>The need arises where the language allows different entities to be named
+with the same identifier as long as they occupy a different namespace (where
+a namespace is typically defined by a module, class, or explicit namespace
+directive) or have different signatures (such as function overloading).</p>
+</blockquote>
+<p><strong>TL:DR;</strong> <em>it's a way for compilers to generate multiple instances of a function
+which accepts different types or parameters. Without it we wouldn't be able to
+have things like generics or function overloading without name clashes.</em></p>
+<p>If this function is going to be called from C++ we need to specify the
+<a href="https://en.wikipedia.org/wiki/Calling_convention">calling convention</a> (the <code>extern &quot;C&quot;</code> bit). This tells the compiler low level
+things like how arguments are passed between functions. By far the most common
+convention is to &quot;just do what C does&quot;.</p>
+<p>The rest of the function declaration should be fairly intuitive.</p>
+<p>After recompiling (<code>cd build &amp;&amp; cmake .. &amp;&amp; make</code>) you can inspect the generated
+binary using <code>nm</code> to make sure the <code>hello_world()</code> function is there.</p>
+<pre><code>$ nm libclient.so | grep ' T '
+0000000000003330 T hello_world          &lt;-- the function we created
+00000000000096c0 T __rdl_alloc
+00000000000098d0 T __rdl_alloc_excess
+0000000000009840 T __rdl_alloc_zeroed
+0000000000009760 T __rdl_dealloc
+0000000000009a20 T __rdl_grow_in_place
+0000000000009730 T __rdl_oom
+0000000000009780 T __rdl_realloc
+0000000000009950 T __rdl_realloc_excess
+0000000000009a30 T __rdl_shrink_in_place
+0000000000009770 T __rdl_usable_size
+0000000000015ad0 T rust_eh_personality
+</code></pre>
+<p>The <code>nm</code> tool lists all the symbols in a binary as well as their addresses
+(the hex bit in the first column) and what type of symbol they are. All
+functions are in the <strong>T</strong>ext section of the binary, so you can use grep to view
+only the exported functions.</p>
+<p>Now we have a working library, why don't we make the GUI program less like a
+contrived example and more like a real-life application?</p>
+<p>The first thing is to pull our main window out into its own source files.</p>
+<pre><code class="language-bash">$ touch gui/main_window.hpp gui/main_window.cpp
+</code></pre>
+<pre><code class="language-diff"># gui/CMakeLists.txt
+
+...
+
+- set(SOURCE main.cpp)
++ set(SOURCE main_window.cpp main_window.hpp main.cpp)
+add_executable(gui ${SOURCE})
+</code></pre>
+<pre><code class="language-cpp">// gui/main_window.hpp
+
+#include &lt;QtWidgets/QMainWindow&gt;
+#include &lt;QtWidgets/QPushButton&gt;
+
+class MainWindow : public QMainWindow {
+  Q_OBJECT
+
+public:
+  MainWindow(QWidget *parent = nullptr);
+private slots:
+  void onClick();
+
+private:
+  QPushButton *button;
+};
+</code></pre>
+<p>Here we've declared a <code>MainWindow</code> class which contains our trusty <code>QPushButton</code>
+and has a single constructor and click handler.</p>
+<p>We also need to fill out the <code>MainWindow</code> methods and hook up the button's
+<code>released</code> signal to our <code>onClick()</code> click handler.</p>
+<pre><code class="language-cpp">// gui/main_window.cpp
+
+#include &quot;main_window.hpp&quot;
+
+extern &quot;C&quot; {
+void hello_world();
+}
+
+void MainWindow::onClick() { 
+    // Call the `hello_world` function to print a message to stdout
+    hello_world(); 
+}
+
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
+  button = new QPushButton(&quot;Click Me&quot;, this);
+  
+  // Connect the button's `released` signal to `this-&gt;onClick()`
+  connect(button, SIGNAL(released()), this, SLOT(onClick()));
+}
+</code></pre>
+<p>Don't forget to update <code>main.cpp</code> to use the new <code>MainWindow</code>.</p>
+<pre><code class="language-cpp">// gui/main.cpp
+
+#include &quot;main_window.hpp&quot;
+#include &lt;QtWidgets/QApplication&gt;
+
+int main(int argc, char **argv) {
+  QApplication app(argc, argv);
+
+  MainWindow mainWindow;
+  mainWindow.show();
+
+  app.exec();
+}
+</code></pre>
+<p>Now when you compile and run <code>./gui</code>, &quot;Hello World&quot; wil be printed to the
+console every time you click on the button.</p>
+<p>If you got to this point then congratulations, you've just finished the most
+difficult part - getting everything to build!</p>
+<a class="header" href="print.html#the-core-client-library" id="the-core-client-library"><h1>The Core Client Library</h1></a>
+<p>Before we can do anything else we'll need to create the core client library that
+the GUI calls into. To reduce the amount of state being maintained, each request
+will create a new <a href="https://docs.rs/reqwest/0.8.0/reqwest/struct.Client.html"><code>reqwest::Client</code></a> and accept a <code>Request</code> object, returning
+some generic <code>Response</code>.</p>
+<p>This isn't overly specific to doing FFI, in fact we probably won't write any FFI
+bindings or C++ in this chapter. That said, it's still a very important stage
+because poor architecture decisions here can often make life hard for you down
+the road. In general, making the interface as small and high level as possible
+will vastly reduce the implementation complexity.</p>
+<p>The first thing to do is set up error handling using <code>error-chain</code>. I have
+<code>cargo-edit</code> installed (<code>cargo install cargo-edit</code>), so adding it to my
+<code>Cargo.toml</code> is as simple as running</p>
+<pre><code>$ cargo add error-chain
+</code></pre>
+<p>You'll then need to add the corresponding <code>extern crate</code> statement to <code>lib.rs</code>.
+While you're at it, add also the <code>reqwest</code>, <code>cookie</code>, <code>chrono</code>, <code>fern</code>, <code>log</code>
+and <code>libc</code> crates both to <code>Cargo.toml</code> and <code>lib.rs</code>, as we are going to use
+them as well afterwards.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/lib.rs
+
+extern crate chrono;
+extern crate cookie;
+#[macro_use]
+extern crate error_chain;
+extern crate fern;
+extern crate libc;
+#[macro_use]
+extern crate log;
+extern crate reqwest;
+#}</code></pre></pre>
+<p>Now create an <code>errors.rs</code> module.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/errors.rs
+
+error_chain!{
+    foreign_links {
+        Reqwest(::reqwest::Error);
+    }
+}
+#}</code></pre></pre>
+<p>First lets create a <code>Request</code> object;</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/request.rs
+
+use cookie::CookieJar;
+use reqwest::{self, Method, Url};
+use reqwest::header::{Cookie, Headers};
+
+
+/// A HTTP request.
+#[derive(Debug, Clone)]
+pub struct Request {
+    pub destination: Url,
+    pub method: Method,
+    pub headers: Headers,
+    pub cookies: CookieJar,
+    pub body: Option&lt;Vec&lt;u8&gt;&gt;,
+}
+#}</code></pre></pre>
+<p>Add a constructor method as used by <code>request_create()</code>.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+impl Request {
+    pub fn new(destination: Url, method: Method) -&gt; Request {
+        let headers = Headers::default();
+        let cookies = CookieJar::default();
+        let body = None;
+
+        Request {
+            destination,
+            method,
+            headers,
+            cookies,
+            body,
+        }
+    }
+}
+#}</code></pre></pre>
+<p>We'll also need to be able to convert our <code>Request</code> into a <code>reqwest::Reqwest</code>
+before we can send it so lets add a helper method for that.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+impl Request {
+    pub(crate) fn to_reqwest(&amp;self) -&gt; reqwest::Request {
+        let mut r = reqwest::Request::new(self.method.clone(), self.destination.clone());
+
+        r.headers_mut().extend(self.headers.iter());
+
+        let mut cookie_header = Cookie::new();
+
+        for cookie in self.cookies.iter() {
+            cookie_header.set(cookie.name().to_owned(), cookie.value().to_owned());
+        }
+        r.headers_mut().set(cookie_header);
+
+        r
+    }
+}
+#}</code></pre></pre>
+<p>We also want to create our own vastly simplified <code>Response</code> so it can be
+accessed by the C++ GUI, it gets a helper method too.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/response.rs
+
+use std::io::Read;
+use reqwest::{self, StatusCode};
+use reqwest::header::Headers;
+
+use errors::*;
+
+
+#[derive(Debug, Clone)]
+pub struct Response {
+    pub headers: Headers,
+    pub body: Vec&lt;u8&gt;,
+    pub status: StatusCode,
+}
+
+impl Response {
+    pub(crate) fn from_reqwest(original: reqwest::Response) -&gt; Result&lt;Response&gt; {
+        let mut original = original.error_for_status()?;
+        let headers = original.headers().clone();
+        let status = original.status();
+
+        let mut body = Vec::new();
+        original
+            .read_to_end(&amp;mut body)
+            .chain_err(|| &quot;Unable to read the response body&quot;)?;
+
+        Ok(Response {
+            status,
+            body,
+            headers,
+        })
+    }
+}
+#}</code></pre></pre>
+<blockquote>
+<p><strong>Note:</strong> everything in a <code>Request</code> and <code>Response</code> has been marked as
+public because it's designed to be a dumb container of everything necessary
+to build a request.</p>
+</blockquote>
+<p>To help out with debugging the FFI bindings later on we'll add in logging via
+the <code>log</code> and <code>fern</code> crates. In a GUI program it's often not feasible to add in
+<code>println!()</code> statements and logging is a great substitute. Having a log file is
+also quite useful if you want to look back over a session to see what requests
+were sent and what the server responded with.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/utils.rs
+
+use std::sync::{Once, ONCE_INIT};
+use fern;
+use log::LogLevelFilter;
+use chrono::Local;
+
+use errors::*;
+
+/// Initialize the global logger and log to `rest_client.log`.
+///
+/// Note that this is an idempotent function, so you can call it as many
+/// times as you want and logging will only be initialized the first time.
+#[no_mangle]
+pub extern &quot;C&quot; fn initialize_logging() {
+    static INITIALIZE: Once = ONCE_INIT;
+    INITIALIZE.call_once(|| {
+        fern::Dispatch::new()
+            .format(|out, message, record| {
+                let loc = record.location();
+
+                out.finish(format_args!(
+                    &quot;{} {:7} ({}#{}): {}{}&quot;,
+                    Local::now().format(&quot;[%Y-%m-%d][%H:%M:%S]&quot;),
+                    record.level(),
+                    loc.module_path(),
+                    loc.line(),
+                    message,
+                    if cfg!(windows) { &quot;\r&quot; } else { &quot;&quot; }
+                ))
+            })
+            .level(LogLevelFilter::Debug)
+            .chain(fern::log_file(&quot;rest_client.log&quot;).unwrap())
+            .apply()
+            .unwrap();
+    });
+}
+#}</code></pre></pre>
+<p>Initializing logging will usually panic if you call it multiple times, therefore
+we're using <code>std::sync::Once</code> so that <code>initialize_logging()</code> will only ever set
+up <code>fern</code> once.</p>
+<p>The logging initializing itself looks pretty gnarly, although that's mainly
+because of the large <code>format_args!()</code> statement and having to make sure we add
+in line endings appropriately.</p>
+<p>We'll also add a <code>backtrace()</code> helper to the <code>utils</code> module. This just takes an
+<code>Error</code> and iterates through it, logging a nice stack trace.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/utils.rs
+
+/// Log an error and each successive thing which caused it.
+pub fn backtrace(e: &amp;Error) {
+    error!(&quot;Error: {}&quot;, e);
+
+    for cause in e.iter().skip(1) {
+        warn!(&quot;\tCaused By: {}&quot;, cause);
+    }
+}
+#}</code></pre></pre>
+<p>We'll also create a generic <code>send_request()</code> function which takes a <code>Request</code>
+object and sends it, retrieving the resulting <code>Response</code>. Thanks to our two
+helper functions the implementation is essentially trivial (modulo some logging
+stuff).</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/lib.rs
+
+use reqwest::Client;
+pub use request::Request;
+pub use response::Response;
+use errors::*;
+
+
+/// Send a `Request`.
+pub fn send_request(req: &amp;Request) -&gt; Result&lt;Response&gt; {
+    info!(&quot;Sending a GET request to {}&quot;, req.destination);
+    if log_enabled!(::log::LogLevel::Debug) {
+        debug!(&quot;Sending {} Headers&quot;, req.headers.len());
+        for header in req.headers.iter() {
+            debug!(&quot;\t{}: {}&quot;, header.name(), header.value_string());
+        }
+        for cookie in req.cookies.iter() {
+            debug!(&quot;\t{} = {}&quot;, cookie.name(), cookie.value());
+        }
+
+        trace!(&quot;{:#?}&quot;, req);
+    }
+
+    let client = Client::builder()
+        .build()
+        .chain_err(|| &quot;The native TLS backend couldn't be initialized&quot;)?;
+
+    client
+        .execute(req.to_reqwest())
+        .chain_err(|| &quot;The request failed&quot;)
+        .and_then(|r| Response::from_reqwest(r))
+}
+#}</code></pre></pre>
+<p>You'll notice that <code>chain_err()</code> has been used whenever anything may fail. This
+allows us to give the user some sort of stack trace of errors and what caused
+them, providing a single high level error message (i.e. &quot;The native TLS backend
+couldn't be initialized&quot;), while still retaining the low level context if they
+want to drill down and find out <em>exactly</em> what went wrong.</p>
+<p>This method of error handling ties in quite nicely with the <code>backtrace()</code> helper
+defined earlier. As you'll see later on, they can prove invaluable for
+debugging issues when passing things between languages.</p>
+<p>Register the four new modules in <code>lib.rs</code>.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/lib.rs
+
+pub mod errors;
+pub mod utils;
+mod request;
+mod response;
+#}</code></pre></pre>
+<p>Now we've got something to work with, we can start writing some FFI bindings.</p>
+<a class="header" href="print.html#constructing-a-basic-request" id="constructing-a-basic-request"><h1>Constructing a Basic Request</h1></a>
+<p>In this step we want to construct a very simple <code>Request</code> which we can later use
+to tell the <code>client</code> module to fetch http://google.com/. This requires roughly
+three steps:</p>
+<ul>
+<li>Create a C interface which exposes our Rust <code>Request</code> in a way that can be used
+and manipulated from our C++ application,</li>
+<li>Write a thin C++ wrapper class which gives us an abstraction over the raw
+C-style interface, and</li>
+<li>Update the form so it can accept user inputs and create our <code>Request</code>.</li>
+</ul>
+<p>We'll also touch on the following topics:</p>
+<ul>
+<li>Exposing a FFI interface in Rust</li>
+<li>Calling Rust functions from C++</li>
+<li>Passing strings back and forth across the FFI barrier</li>
+<li>Passing an opaque Rust struct to C++ and ensuring it gets free'd at the
+correct time</li>
+</ul>
+<a class="header" href="print.html#creating-the-c-interface" id="creating-the-c-interface"><h2>Creating the C Interface</h2></a>
+<p>First we need to add a couple small <code>extern &quot;C&quot;</code> functions to the Rust <code>client</code>
+module. The easiest way to do this is by creating a separate <code>ffi.rs</code> module
+to isolate all <code>unsafe</code> code to one place.</p>
+<p>The bare minimum we need to do at this point is create a constructor and
+destructor for <code>Request</code>. The constructor can take in the target URL (as a
+<code>char *</code> string) and then fill in all the other fields with their defaults.</p>
+<p>Because our <code>Request</code> contains Rust-specific things like generics we need to
+hide it behind a raw pointer. This is actually pretty easy to do; you move the
+<code>Request</code> to the heap with <code>Box::new()</code>, then call <code>Box::into_raw()</code> to get a
+raw pointer to the <code>Request</code>. The dangerous part here is that the compiler will
+no longer make sure the <code>Request</code> is destroyed once it goes out of scope, so
+we need to <code>drop</code> it manually.</p>
+<p>By far the most annoying bit in the constructor will be converting a raw C
+string into a valid <code>Url</code>. This requires a couple transformations along the way,
+all of which may fail, and we need to make sure this is dealt with correctly so
+the program doesn't blow up at runtime.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/ffi.rs
+
+//! The foreign function interface which exposes this library to non-Rust 
+//! languages.
+
+use std::ffi::CStr;
+use std::ptr;
+use libc::c_char;
+use reqwest::{Url, Method};
+
+use Request;
+
+
+/// Construct a new `Request` which will target the provided URL and fill out 
+/// all other fields with their defaults.
+/// 
+/// # Note
+/// 
+/// If the string passed in isn't a valid URL this will return a null pointer.
+/// 
+/// # Safety
+/// 
+/// Make sure you destroy the request with [`request_destroy()`] once you are
+/// done with it.
+/// 
+/// [`request_destroy()`]: fn.request_destroy.html
+#[no_mangle]
+pub unsafe extern &quot;C&quot; fn request_create(url: *const c_char) -&gt; *mut Request {
+    if url.is_null() {
+        return ptr::null_mut();
+    }
+
+    let raw = CStr::from_ptr(url);
+
+    let url_as_str = match raw.to_str() {
+        Ok(s) =&gt; s,
+        Err(_) =&gt; return ptr::null_mut(),
+    };
+
+    let parsed_url = match Url::parse(url_as_str) {
+        Ok(u) =&gt; u,
+        Err(_) =&gt; return ptr::null_mut(),
+    };
+
+    let req = Request::new(parsed_url, Method::Get);
+    Box::into_raw(Box::new(req))
+}
+#}</code></pre></pre>
+<p>That looks like a large chunk of code, but the vast majority is either
+documentation for indicating constraints which need to be maintained, or
+error handling. You can see that we use the <code>CStr</code> type from the <code>std::ffi</code>
+module which acts as a safe wrapper around a C string. We then convert the
+<code>CStr</code> to a normal <code>str</code> which may fail if the string isn't UTF-8, returning
+a null pointer (using the <code>ptr::null_mut()</code> helper) to indicate failure.</p>
+<p>Converting from a <code>str</code> to a <code>Url</code> is almost identical.</p>
+<p>Finally we can create the <code>Request</code> using <code>Request::new()</code>, then box it and
+return a raw pointer to the <code>Request</code> to the caller.</p>
+<p>We also inserted a check for null pointers at the top as a bit of a sanity
+check.</p>
+<p>The destructor is significantly easier to write. All we need to do is accept
+a raw pointer to some <code>Request</code>, convert it back to a <code>Box</code> with
+<code>Box::from_raw()</code>, then the <code>Box&lt;Request&gt;</code> can either be explicitly dropped or
+allowed to fall out of scope to destroy it like normal.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/ffi.rs
+
+/// Destroy a `Request` once you are done with it.
+#[no_mangle]
+pub unsafe extern &quot;C&quot; fn request_destroy(req: *mut Request) {
+    if !req.is_null() {
+        drop(Box::from_raw(req));
+    }
+}
+#}</code></pre></pre>
+<p>You will notice that both functions were prefixed with <code>request_</code>. This is a
+common convention used to indicate that the function &quot;belongs&quot; to some type,
+conceptual the equivalent of a normal method.</p>
+<p>Note the new module as a public one in <code>lib.rs</code>.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/lib.rs
+
+pub mod ffi;
+#}</code></pre></pre>
+<a class="header" href="print.html#the-c-wrapper" id="the-c-wrapper"><h2>The C++ Wrapper</h2></a>
+<p>Although we <em>could</em> use the raw C-style FFI bindings throughout this
+application, that usually ends up with non-idiomatic and more error-prone code.
+Instead, it'd be really nice if we could use C++'s destructors to ensure memory
+gets free'd appropriately, as well as the ability to use methods to group
+functions logically.</p>
+<p>We'll put the definition for these wrappers in their own <code>wrappers.hpp</code> header
+file so the main application only uses the public interface. For now we'll
+only create a constructor and destructor.</p>
+<pre><code class="language-cpp">// gui/wrappers.hpp
+
+#include &lt;string&gt;
+
+class Request {
+public:
+  Request(const std::string);
+  ~Request();
+
+private:
+  void *raw;
+};
+
+</code></pre>
+<p>The implementation is equally as trivial. It just declares that there are a
+couple external functions <em>somewhere</em> that we want to use, and the linker can
+resolve them for us at link time.</p>
+<pre><code class="language-cpp">// gui/wrappers.cpp
+
+#include &quot;wrappers.hpp&quot;
+
+extern &quot;C&quot; {
+void *request_create(const char *);
+void request_destroy(void *);
+}
+
+Request::Request(const std::string url) {
+  raw = request_create(url.c_str());
+  if (raw == nullptr) {
+    throw &quot;Invalid URL&quot;;
+  }
+}
+
+Request::~Request() { request_destroy(raw); }
+</code></pre>
+<blockquote>
+<p><strong>Note:</strong> You may have noticed that even though <code>request_create()</code> accepts a
+raw C-style string (<code>char *</code>), the <code>Request</code> wrapper's constructor takes in a
+normal <code>std::string</code>.</p>
+<p>This is what we were talking about earlier about wrappers being more idiomatic
+and easier to use. It may sound like a trivial thing now, but in real projects
+where the application is much more complex and has many moving parts, an
+idiomatic class is much less likely to introduce bugs because the users won't
+need to read through a load of source code to see how to use it. Everything
+will <em>Just Work</em>.</p>
+</blockquote>
+<p>We will also need to update the <code>CMakeLists.txt</code> file for our <code>gui/</code> directory
+so that these new files are compiled in.</p>
+<pre><code class="language-cmake"># gui/CMakeLists.txt
+
+set(CMAKE_CXX_STANDARD 14)
+
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+find_package(Qt5Widgets)
+
+set(SOURCE main_window.cpp main_window.hpp wrappers.cpp wrappers.hpp main.cpp)
+add_executable(gui ${SOURCE})
+get_target_property(CLIENT_DIR client LOCATION)
+target_link_libraries(gui Qt5::Widgets)
+target_link_libraries(gui ${CLIENT_DIR}/libclient.so)
+add_dependencies(gui client)
+</code></pre>
+<p>As a sanity check to make sure everything is working and that memory is being
+free'd properly. By far the easiest way to do this is to update the GUI's
+click handler to create a new C++ <code>Request</code> and add a bunch of print
+statements to <code>ffi.rs</code> to see what actually gets called.</p>
+<p>The updated <code>main_window.cpp</code>:</p>
+<pre><code class="language-cpp">// gui/main_window.cpp
+
+#include &quot;main_window.hpp&quot;
+#include &quot;wrappers.hpp&quot;
+#include &lt;iostream&gt;
+
+void MainWindow::onClick() {
+  std::cout &lt;&lt; &quot;Creating the request&quot; &lt;&lt; std::endl;
+  Request req(&quot;https://google.com/&quot;);
+  std::cout &lt;&lt; &quot;Request created in C++&quot; &lt;&lt; std::endl;
+}
+
+...
+</code></pre>
+<p>And <code>ffi.rs</code>:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+#[no_mangle]
+pub unsafe extern &quot;C&quot; fn request_create(url: *const c_char) -&gt; *mut Request {
+    ...
+
+    println!(&quot;Request created in Rust: {}&quot;, url_as_str);
+    Box::into_raw(Box::new(req))
+}
+
+...
+
+#[no_mangle]
+pub unsafe extern &quot;C&quot; fn request_destroy(req: *mut Request) {
+    if !req.is_null() {
+        println!(&quot;Request was destroyed&quot;);
+        drop(Box::from_raw(req));
+    }
+}
+#}</code></pre></pre>
+<p>If you compile and run the GUI program then click our button you should see
+something like the following printed to stdout.</p>
+<pre><code>$ cmake .. &amp;&amp; make
+$ ./gui/gui
+Creating the request
+Request created in Rust: https://google.com/
+Request created in C++
+Request was destroyed
+Creating the request
+Request created in Rust: https://google.com/
+Request created in C++
+Request was destroyed
+</code></pre>
+<p>This tells us that the request is being constructed and that the URL was
+passed to Rust correctly, and that it is also being destroyed when the C++
+<code>Request</code> falls out of scope.</p>
+<p>This little test also shows how easy it is to interoperate between C++ and Rust.
+Sure, it may be a little annoying to create wrappers and FFI bindings but
+looking at it differently, this allows us to create a very definitive line,
+separating the GUI code from the HTTP client module.</p>
+<a class="header" href="print.html#sending-the-request" id="sending-the-request"><h1>Sending the Request</h1></a>
+<p>Now we can create a <code>Request</code> it'd be nice if we could actually send it and get
+back a response that can be displayed to the user. This will require bindings to
+the <code>send_request()</code> function in our Rust <code>client</code> module. While we're at it we
+also need a wrapper which lets us access the response body (as a bunch of bytes)
+and destroy it when we're done.</p>
+<p>This chapter will cover:</p>
+<ul>
+<li>Passing arrays between languages (our response is a byte buffer)</li>
+<li>MOAR wrappers</li>
+<li>Fleshing out the Qt GUI</li>
+</ul>
+<a class="header" href="print.html#rust-ffi-bindings" id="rust-ffi-bindings"><h2>Rust FFI Bindings</h2></a>
+<p>The FFI bindings for <code>send_request()</code> are dead simple. We do a null pointer
+sanity check, pass the <code>Request</code> to our <code>send_request()</code> function, then box up
+the response so it can be returned to the caller.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/ffi.rs
+
+use {Response, Request, send_request};
+
+...
+
+/// Take a reference to a `Request` and execute it, getting back the server's 
+/// response.
+/// 
+/// If something goes wrong, this will return a null pointer. Don't forget to 
+/// destroy the `Response` once you are done with it!
+#[no_mangle]
+pub unsafe extern &quot;C&quot; fn request_send(req: *const Request) -&gt; *mut Response {
+    if req.is_null() {
+        return ptr::null_mut();
+    }
+
+    let response = match send_request(&amp;*req){
+        Ok(r) =&gt; r,
+        Err(_) =&gt; return ptr::null_mut(),
+    };
+
+    Box::into_raw(Box::new(response))
+}
+#}</code></pre></pre>
+<p>You'll notice the funny <code>&amp;*req</code> when calling <code>send_request()</code>. This converts a
+raw pointer into a normal borrow by dereferencing and immediately reborrowing.
+The only reason this function is unsafe is because this dereferencing has the
+possibility of blowing up if the pointer passed in points to invalid memory.</p>
+<p>The destructor for a <code>Response</code> is equally as trivial - in fact it's pretty much
+the exact same as our <code>Request</code> destructor.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/ffi.rs
+
+/// Destroy a `Response` once you are done with it.
+#[no_mangle]
+pub unsafe extern &quot;C&quot; fn response_destroy(res: *mut Response) {
+    if !res.is_null() {
+        drop(Box::from_raw(res));
+    }
+}
+#}</code></pre></pre>
+<p>Getting the body response is a little trickier. We <em>could</em> give C++ a pointer
+to the body and tell it how long the body is, however that introduces the
+possibility that C++ will keep a reference to it after the <code>Response</code> is
+destroyed. Further attempts to read the body will be a use-after-free and cause
+the entire application to crash.</p>
+<p>Instead, it'd be better to give C++ its own <em>copy</em> of the response body so it
+can be destroyed whenever it wants to. This involves a two-stage process where
+we first ask how long the body is so we can allocate a large enough buffer, then
+we'll give Rust a pointer to that buffer (and its length) so the body can be
+copied across.</p>
+<p>The length function is easiest, so lets create that one first.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/ffi.rs
+
+use libc::{c_char, size_t};
+
+...
+
+/// Get the length of a `Response`'s body.
+#[no_mangle]
+pub unsafe extern &quot;C&quot; fn response_body_length(res: *const Response) -&gt; size_t {
+    if res.is_null() {
+        return 0;
+    }
+
+    (&amp;*res).body.len() as size_t
+}
+#}</code></pre></pre>
+<p>To copy the response body to some buffer supplied by C++ we'll want to first
+turn it from a pointer and a length into a more Rust-ic <code>&amp;mut [u8]</code>. Luckily the
+<a href="https://doc.rust-lang.org/std/slice/fn.from_raw_parts_mut.html"><code>slice::from_raw_parts_mut()</code></a> exists for just this purpose. We can then do the
+usual length checks before using <a href="https://doc.rust-lang.org/std/ptr/fn.copy_nonoverlapping.html"><code>ptr::copy_nonoverlapping()</code></a> to copy the
+buffer contents across.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/ffi.rs
+
+use libc::{c_char, c_int, size_t};
+use std::slice;
+
+...
+
+/// Copy the response body into a user-provided buffer, returning the number of
+/// bytes copied.
+///
+/// If an error is encountered, this returns `-1`.
+#[no_mangle]
+pub unsafe extern &quot;C&quot; fn response_body(
+    res: *const Response,
+    buffer: *mut c_char,
+    length: size_t,
+) -&gt; c_int {
+    if res.is_null() || buffer.is_null() {
+        return -1;
+    }
+
+    let res = &amp;*res;
+    let buffer: &amp;mut [u8] = slice::from_raw_parts_mut(buffer as *mut u8, 
+                                                      length as usize);
+
+    if buffer.len() &lt; res.body.len() {
+        return -1;
+    }
+
+    ptr::copy_nonoverlapping(res.body.as_ptr(), 
+                             buffer.as_mut_ptr(), 
+                             res.body.len());
+
+    res.body.len() as c_int
+}
+#}</code></pre></pre>
+<p>In general, whenever you are wanting to pass data in the form of arrays from one
+language to another, it's easiest to ask the caller to provide some buffer the
+data can be written into. If you were to instead return a <code>Vec&lt;u8&gt;</code> or similar
+dynamically allocated type native to a particular language, that means the
+caller <strong>must</strong> return that object to the language so it can be free'd
+appropriately. This can get pretty error-prone and annoying after a while.</p>
+<blockquote>
+<p>A good rule of thumb is that if a language creates something on the stack, you
+should return the object to the original language once you're done with it so
+it can be free'd properly. Failing to do this could end up either confusing
+the allocator's internal bookkeeping or even result in segfaults because one
+allocator (e.g. libc's <code>malloc</code>) is trying to free memory belonging to a
+completely different allocator (e.g. Rust's <code>jemalloc</code>).</p>
+</blockquote>
+<a class="header" href="print.html#c-wrapper" id="c-wrapper"><h2>C++ Wrapper</h2></a>
+<p>The next thing we'll need to do is create a wrapper around a <code>Response</code>. This
+will be almost identical to the <code>Request</code> wrapper, although we'll need to add a
+<code>read_body()</code> method so people can access the response body.</p>
+<p>The <code>Response</code> class definition isn't overly interesting:</p>
+<pre><code class="language-cpp">// gui/wrappers.hpp
+
+...
+
+#include &lt;vector&gt;
+
+...
+
+class Response {
+public:
+  Response(void *raw) : raw(raw){}
+  ~Response();
+  std::vector&lt;char&gt; read_body();
+
+private:
+  void *raw;
+};
+</code></pre>
+<p>In the implementation, we need to update the <code>extern</code> block to include the new
+Rust functions.</p>
+<pre><code class="language-cpp">// gui/wrappers.cpp
+
+extern &quot;C&quot; {
+...
+void response_destroy(void *);
+int response_body_length(void *);
+int response_body(void *, char *, int);
+}
+</code></pre>
+<p>As was mentioned earlier when writing the Rust bindings, in order to read the
+response body callers will need to create their own buffer and pass it to Rust.
+We've chosen to use a <code>std::vector&lt;char&gt;</code> as the buffer, throwing an exception
+with a semi-useful message if something fails (don't worry, we'll be doing
+proper error handling later).</p>
+<pre><code class="language-cpp">// gui/wrappers.cpp
+
+#include &lt;cassert&gt;
+
+...
+
+Response::~Response() { response_destroy(raw); }
+
+std::vector&lt;char&gt; Response::read_body() {
+  int length = response_body_length(raw);
+  if (length &lt; 0) {
+    throw &quot;Response body's length was less than zero&quot;;
+  }
+
+  std::vector&lt;char&gt; buffer(length);
+
+  int bytes_written = response_body(raw, buffer.data(), buffer.size());
+  if (bytes_written != length) {
+    throw &quot;Response body was a different size than what we expected&quot;;
+  }
+
+  return buffer;
+}
+</code></pre>
+<p>The next step is to add a <code>send()</code> method to a <code>Request</code>. This is just a case of
+adding a new public method to <code>Request</code> and then deferring to <code>send_request</code> in
+our <code>client</code> module. You'll probably need to move <code>Response</code> above <code>Request</code> at
+this point so <code>Request</code> can use it.</p>
+<pre><code class="language-cpp">// gui/wrappers.hpp
+
+...
+
+class Request {
+public:
+  Request(const std::string);
+  ~Request();
+  Response send();
+
+private:
+  void *raw;
+};
+</code></pre>
+<p>Next we'll need to actually implement this <code>send()</code> method.</p>
+<pre><code class="language-cpp">// gui/wrappers.cpp
+
+...
+
+extern &quot;C&quot; {
+...
+void *request_send(void *);
+}
+
+...
+
+Response Request::send() {
+  void *raw_response = request_send(raw);
+
+  if (raw_response == nullptr) {
+    throw &quot;Request failed&quot;;
+  }
+
+  return Response(raw_response);
+}
+</code></pre>
+<p>Here we simply called the <code>request_send()</code> function, checked whether the result
+was a null pointer (indicating an error), then created a new <code>Response</code> and
+returned it.</p>
+<a class="header" href="print.html#testing-the-process" id="testing-the-process"><h2>Testing the Process</h2></a>
+<p>We've <em>finally</em> got all the infrastructure set up to send a single <code>GET</code> request
+to a server and then read back the response. To make sure it actually works,
+lets hook it up to our GUI's button.</p>
+<pre><code class="language-cpp">// gui/main_window.cpp
+
+void MainWindow::onClick() {
+  std::cout &lt;&lt; &quot;Creating the request&quot; &lt;&lt; std::endl;
+  Request req(&quot;https://www.rust-lang.org/&quot;);
+  std::cout &lt;&lt; &quot;Sending Request&quot; &lt;&lt; std::endl;
+  Response res = req.send();
+  std::cout &lt;&lt; &quot;Received Response&quot; &lt;&lt; std::endl;
+
+  std::vector&lt;char&gt; raw_body = res.read_body();
+  std::string body(raw_body.begin(), raw_body.end());
+  std::cout &lt;&lt; body &lt;&lt; std::endl;
+}
+</code></pre>
+<p>If you compile and run this then click the button you should see something
+similar to this printed to the terminal.</p>
+<pre><code>$ cmake .. &amp;&amp; make
+$ ./gui/gui
+Creating the request
+Sending Request
+Received Response
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;meta charset=&quot;utf-8&quot;&gt;
+    &lt;title&gt;The Rust Programming Language&lt;/title&gt;
+    ...
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;p&gt;&lt;a href=&quot;/en-US/&quot;&gt;Click here&lt;/a&gt; to be redirected.&lt;/p&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<p>If you've gotten this far, take a second to give yourself a pat on the back. You
+deserve it.</p>
+<a class="header" href="print.html#generating-a-header-file" id="generating-a-header-file"><h1>Generating a Header File</h1></a>
+<p>Instead of having to constantly keep <code>ffi.rs</code> and the various <code>extern</code> blocks
+scattered through out our C++ code in sync, it'd be really nice if we could
+generate a header file that corresponds to <code>ffi.rs</code> and just <code>#include</code> that.
+Fortunately there exists a tool which does exactly this called <a href="https://github.com/eqrion/cbindgen">cbindgen</a>!</p>
+<a class="header" href="print.html#adding-cbindgen" id="adding-cbindgen"><h2>Adding Cbindgen</h2></a>
+<p>You can use <code>cbindgen</code> to generate header files in a couple ways, the first is
+to use <code>cargo install</code> and run the binding generator program.</p>
+<pre><code>$ cargo install cbindgen
+$ cd /path/to/my/project &amp;&amp; cbindgen . -o target/my_project.h
+</code></pre>
+<p>However running this after every change can get quite repetitive, therefore the
+<em>README</em> includes a minimal build script which will automatically generate the
+header every time you compile.</p>
+<p>First add <code>cbindgen</code> as a build dependency (<a href="https://crates.io/crates/cargo-edit">cargo-edit</a> makes this quite easy).</p>
+<pre><code>$ cargo add --build cbindgen
+</code></pre>
+<p>You also need to make sure you have a <code>build</code> script entry in your <code>Cargo.toml</code>.</p>
+<pre><code class="language-diff">...
+description = &quot;The business logic for a REST client&quot;
+name = &quot;client&quot;
+repository = &quot;https://github.com/Michael-F-Bryan/rust-ffi-guide&quot;
+version = &quot;0.1.0&quot;
++ build = &quot;build.rs&quot;
++
++ [build-dependencies]
++ cbindgen = &quot;0.1.29&quot;
+
+[dependencies]
+chrono = &quot;0.4.0&quot;
+...
+</code></pre>
+<p>Finally you can flesh out the build script itself. This is fairly
+straightforward, although because we want to put the generated header file in
+the <code>target/</code> directory we need to take special care to detect when <code>cmake</code>
+overrides the default.</p>
+<pre><pre class="playpen"><code class="language-rust">// client/build.rs
+
+extern crate cbindgen;
+
+use std::env;
+use std::path::PathBuf;
+use cbindgen::Config;
+
+
+fn main() {
+    let crate_dir = env::var(&quot;CARGO_MANIFEST_DIR&quot;).unwrap();
+
+    let package_name = env::var(&quot;CARGO_PKG_NAME&quot;).unwrap();
+    let output_file = target_dir()
+        .join(format!(&quot;{}.hpp&quot;, package_name))
+        .display()
+        .to_string();
+
+    let config = Config {
+        namespace: Some(String::from(&quot;ffi&quot;)),
+        ..Default::default()
+    };
+
+    cbindgen::generate_with_config(&amp;crate_dir, config)
+      .unwrap()
+      .write_to_file(&amp;output_file);
+}
+
+/// Find the location of the `target/` directory. Note that this may be 
+/// overridden by `cmake`, so we also need to check the `CARGO_TARGET_DIR` 
+/// variable.
+fn target_dir() -&gt; PathBuf {
+    if let Ok(target) = env::var(&quot;CARGO_TARGET_DIR&quot;) {
+        PathBuf::from(target)
+    } else {
+        PathBuf::from(env::var(&quot;CARGO_MANIFEST_DIR&quot;).unwrap()).join(&quot;target&quot;)
+    }
+}
+</code></pre></pre>
+<p>Note that the <code>build.rs</code> build script also creates a custom <code>Config</code> that
+specifies everything in the generated header file should be under the <code>ffi</code>
+namespace. This means we won't get name clashes between the opaque <code>Request</code> and
+<code>Response</code> types generated by <code>cbindgen</code> and our own wrapper classes.</p>
+<p>If you go back to the <code>build/</code> directory and recompile, you should now see the
+<code>client.hpp</code> header file.</p>
+<pre><code>$ cd build/
+$ cmake -DCMAKE_BUILD_TYPE=Debug ..
+$ make
+$ ls client
+client.hpp  cmake_install.cmake  CMakeFiles  CTestTestfile.cmake  debug  libclient.so  Makefile
+
+$ cat client/client.hpp
+#include &lt;cstdint&gt;
+#include &lt;cstdlib&gt;
+
+extern &quot;C&quot; {
+
+namespace ffi {
+
+// A HTTP request.
+struct Request;
+
+struct Response;
+
+// Initialize the global logger and log to `rest_client.log`.
+//
+// Note that this is an idempotent function, so you can call it as many
+// times as you want and logging will only be initialized the first time.
+void initialize_logging();
+
+// Construct a new `Request` which will target the provided URL and fill out
+// all other fields with their defaults.
+//
+// # Note
+...
+</code></pre>
+<p>This header file is also <code>#include</code>-able from all your C++ code, meaning you no
+longer need to write all those manual <code>extern &quot;C&quot;</code> declarations. It also lets
+you rely on the compiler to do proper type checking instead of getting ugly
+linker errors if your forward declarations become out of sync (or crashes and
+data corruption if function arguments change).</p>
+<p>To actually <code>#include</code> the generated header file we need to make a couple
+adjustments to the <code>CMakeLists.txt</code> file to let <code>cmake</code> know to add the
+<code>build/client/</code> output directory to the include path.</p>
+<pre><code class="language-diff"># gui/CMakeLists.txt
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+find_package(Qt5Widgets)
+
++ set(CLIENT_BUILD_DIR ${CMAKE_BINARY_DIR}/client)
++ include_directories(${CLIENT_BUILD_DIR})
++
+set(SOURCE main_window.cpp main_window.hpp wrappers.cpp wrappers.hpp main.cpp)
+
+add_executable(gui ${SOURCE})
+</code></pre>
+<p>Now you just need to update the <code>wrappers.cpp</code> and <code>wrappers.hpp</code> files to
+<code>#include</code> this new <code>client.hpp</code>, delete the <code>extern &quot;C&quot;</code> block, and update the
+Rust function call sites to be prefixed with the <code>ffi::</code> namespace. As a bonus
+we can also replace a bunch of <code>void *</code> pointers with proper strongly-typed
+pointers.</p>
+<p>This step may take a couple iterations to make sure all the types match up and
+everything compiles again. Make sure to test it all works by running the <code>gui</code>
+program and hitting our GUI's dummy button. If everything is okay then you
+should see HTML for the Rust website printed to the console.</p>
+<a class="header" href="print.html#better-error-handling" id="better-error-handling"><h1>Better Error Handling</h1></a>
+<p>So far whenever something goes wrong we've just returned a null pointer to
+indicate failure... This isn't overly ideal. Instead, it'd be nice if we could
+get some context behind an error and possibly present a nice friendly message
+to the user.</p>
+<p>To improve our application's error handling story we're going to use several
+techniques, all of which nicely complement each other.</p>
+<p>We'll add in logging with the <a href="https://github.com/rust-lang-nursery/log">log</a> crate, and the ability to initialize the
+Rust logger from C/C++.</p>
+<p>Next we'll add a mechanism which lets C callers detect when an error has
+occurred by inspecting return values and then access the most recent error
+message.</p>
+<p>We also need to make sure our FFI bindings are <a href="https://en.wikipedia.org/wiki/Exception_safety">Exception Safe</a>. This means that
+any Rust panics are wholly contained to Rust and we can't accidentally unwind
+across the FFI boundary (which is UB).</p>
+<a class="header" href="print.html#return-types" id="return-types"><h1>Return Types</h1></a>
+<p>A very powerful error handling mechanism in C-style programs (technically this
+is one because our FFI bindings export a C interface) is modelled on <code>errno</code>.</p>
+<p>This employs a thread-local variable which holds the most recent error as
+well as some convenience functions for getting/clearing this variable. The
+theory is if a function fails then it should return an &quot;obviously invalid&quot;
+value (typically <code>-1</code> or <code>0</code> when returning integers or <code>null</code> for pointers).
+The user can then check for this and consult the most recent error for more
+information. Of course that means all fallible operations <em>must</em> update the
+most recent error if they fail and that you <em>must</em> check the returned value of
+any fallible operation.</p>
+<p>While it isn't as elegant as Rust's monad-style <code>Result&lt;T, E&gt;</code> with <code>?</code> and the
+various combinators, it actually turns out to be a pretty solid error handling
+technique in practice.</p>
+<blockquote>
+<p><strong>Note:</strong> It is <strong>highly recommended</strong> to have a skim through libgit2's
+<a href="https://github.com/libgit2/libgit2/blob/master/docs/error-handling.md">error handling docs</a>. The error handling mechanism we'll be using
+takes a lot of inspiration from <code>libgit2</code>.</p>
+</blockquote>
+<a class="header" href="print.html#working-with-errors" id="working-with-errors"><h2>Working With Errors</h2></a>
+<p>We'll start off by defining a thread-local static variable with the
+<a href="https://doc.rust-lang.org/std/macro.thread_local.html"><code>thread_local!()</code></a> macro and put it in the <code>ffi</code> module.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/ffi.rs
+
+thread_local!{
+    static LAST_ERROR: RefCell&lt;Option&lt;Box&lt;Error&gt;&gt;&gt; = RefCell::new(None);
+}
+#}</code></pre></pre>
+<p>Notice that we haven't declared the error value public, this is so people are
+forced to access the error via getter and setter functions.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/ffi.rs
+
+/// Update the most recent error, clearing whatever may have been there before.
+pub fn update_last_error&lt;E: Error + 'static&gt;(err: E) {
+    error!(&quot;Setting LAST_ERROR: {}&quot;, err);
+
+    {
+        // Print a pseudo-backtrace for this error, following back each error's
+        // cause until we reach the root error.
+        let mut cause = err.cause();
+        while let Some(parent_err) = cause {
+            warn!(&quot;Caused by: {}&quot;, parent_err);
+            cause = parent_err.cause();
+        }
+    }
+
+    LAST_ERROR.with(|prev| {
+        *prev.borrow_mut() = Some(Box::new(err));
+    });
+}
+
+/// Retrieve the most recent error, clearing it in the process.
+pub fn take_last_error() -&gt; Option&lt;Box&lt;Error&gt;&gt; {
+    LAST_ERROR.with(|prev| prev.borrow_mut().take())
+}
+#}</code></pre></pre>
+<p>Neither of these are terribly interesting once you look at the
+<a href="https://doc.rust-lang.org/std/macro.thread_local.html"><code>thread_local!()</code></a> macro's documentation. Notice that the actual type we're
+using needs to be <code>RefCell&lt;Option&lt;_&gt;&gt;</code> so we can have both interior mutability,
+<em>and</em> represent the fact that there may not have been any recent errors. It's
+annoying, but luckily due to the API's design the complexity won't leak into
+client code.</p>
+<p>While the getters and setters we currently have are quite powerful, it's still
+not possible to use them outside of Rust. To remedy this we're going to add a
+function that is callable from C and will give the caller the most recent error
+message.</p>
+<p>The idea is the caller will give us a buffer to write the string into. This
+part can be a little tricky because we have a couple edge cases and ergonomics
+issues to deal with.</p>
+<p>For example, if the caller passing a buffer which isn't big enough to hold the
+error message we should return an error, obviously. However how does the caller
+know what a reasonable buffer size is to begin with? Making them guess isn't
+exactly a practical solution, so it'd be nice if we included a mechanism for
+calculating the error message's length without consuming the error message
+itself.</p>
+<p>To deal with this we add an extra <code>last_error_length()</code> function.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/ffi.rs
+
+/// Calculate the number of bytes in the last error's error message **not**
+/// including any trailing `null` characters.
+#[no_mangle]
+pub extern &quot;C&quot; fn last_error_length() -&gt; c_int {
+    LAST_ERROR.with(|prev| match *prev.borrow() {
+        Some(ref err) =&gt; err.to_string().len() as c_int + 1,
+        None =&gt; 0,
+    })
+}
+#}</code></pre></pre>
+<p>The second issue is more problematic. For all unix-based systems, the string
+type used pretty much ubiquitously is UTF-8, meaning we should be able to copy
+a Rust <code>String</code>'s contents directly into the provided buffer without any issues.
+<em>However</em>, the &quot;unicode&quot; string type most commonly used on Windows is <strong>not</strong>
+UTF-8. Instead they use UTF-16 (well... technically <a href="https://users.rust-lang.org/t/x-post-how-do-i-integrate-rust-into-other-projects/13507/5?u=michael-f-bryan">it's not even valid
+UTF-16</a>) which is completely incompatible with UTF-8.</p>
+<p>Therefore on Windows if we want to be correct we should convert the <code>String</code>
+representation of an error message into a native Windows string with
+<code>encode_wide()</code> from <a href="https://doc.rust-lang.org/std/os/windows/ffi/trait.OsStrExt.html#tymethod.encode_wide"><code>std::os::windows::ffi::OsStrExt</code></a> and copy that
+into a <code>&amp;mut [u16]</code> buffer (not <code>&amp;mut [u8]</code>!) that the user gives to us... Eww.</p>
+<p>There's no easy way to get around this without a bunch of conditional
+compilation (<code>#[cfg]</code>) and adding a lot of complexity to the implementation,
+therefore we're going to cheat and say it's the caller's responsibility to deal
+with any UTF-8/UTF-16 conversions.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/ffi.rs
+
+/// Write the most recent error message into a caller-provided buffer as a UTF-8
+/// string, returning the number of bytes written.
+///
+/// # Note
+///
+/// This writes a **UTF-8** string into the buffer. Windows users may need to
+/// convert it to a UTF-16 &quot;unicode&quot; afterwards.
+///
+/// If there are no recent errors then this returns `0` (because we wrote 0
+/// bytes). `-1` is returned if there are any errors, for example when passed a
+/// null pointer or a buffer of insufficient size.
+#[no_mangle]
+pub unsafe extern &quot;C&quot; fn last_error_message(buffer: *mut c_char, length: c_int) -&gt; c_int {
+    if buffer.is_null() {
+        warn!(&quot;Null pointer passed into last_error_message() as the buffer&quot;);
+        return -1;
+    }
+
+    let last_error = match take_last_error() {
+        Some(err) =&gt; err,
+        None =&gt; return 0,
+    };
+
+    let error_message = last_error.to_string();
+
+    let buffer = slice::from_raw_parts_mut(buffer as *mut u8, length as usize);
+
+    if error_message.len() &gt;= buffer.len() {
+        warn!(&quot;Buffer provided for writing the last error message is too small.&quot;);
+        warn!(
+            &quot;Expected at least {} bytes but got {}&quot;,
+            error_message.len() + 1,
+            buffer.len()
+        );
+        return -1;
+    }
+
+    ptr::copy_nonoverlapping(
+        error_message.as_ptr(),
+        buffer.as_mut_ptr(),
+        error_message.len(),
+    );
+
+    // Add a trailing null so people using the string as a `char *` don't
+    // accidentally read into garbage.
+    buffer[error_message.len()] = 0;
+
+    error_message.len() as c_int
+}
+#}</code></pre></pre>
+<p>Our <code>last_error_message()</code> function turned out to be rather long, although most
+of it is taken up by checking for errors and edge cases.</p>
+<blockquote>
+<p><strong>Note:</strong> Notice that we're writing into a buffer provided by the caller
+instead of returning a Rust <code>String</code>. This makes memory management a lot
+easier because the caller can clean up the buffer like normal instead of
+needing to remember to call some Rust destructor afterwards.</p>
+<p>Writing into borrowed buffers instead of returning an owned object is a common
+pattern when doing FFI. It helps simplify things and avoid errors due to
+object lifetimes (in general, not just in the Rust sense of the word) and
+forgetting to call destructors.</p>
+</blockquote>
+<a class="header" href="print.html#adding-update_last_error-to-the-ffi-bindings" id="adding-update_last_error-to-the-ffi-bindings"><h2>Adding <code>update_last_error()</code> To The FFI Bindings</h2></a>
+<p>Now we've got a shiny new error handling mechanism, we need to go back over the
+FFI bindings in <code>client/src/ffi.rs</code> and make sure any fallible operations set
+call <code>update_last_error()</code> when they fail.</p>
+<p>Because we are using <code>error-chain</code> for error handling in Rust, we've got the
+ability to add extra context to errors before calling <code>update_last_error()</code>,
+automatically updating the error's <code>cause</code>.</p>
+<p>For example, you may refactor the <code>request_create()</code> function to look something
+like this:</p>
+<pre><code class="language-diff">// client/src/ffi.rs
+
+#[no_mangle]
+ pub unsafe extern &quot;C&quot; fn request_create(url: *const c_char) -&gt; *mut Request {
+     if url.is_null() {
++        let err = Error::from(&quot;No URL provided&quot;);
++        update_last_error(err);
+         return ptr::null_mut();
+     }
+ 
+     let raw = CStr::from_ptr(url);
+ 
+      let url_as_str = match raw.to_str() {
+          Ok(s) =&gt; s,
+-        Err(_) =&gt; return ptr::null_mut(),
++        Err(e) =&gt; {
++            let err = Error::with_chain(e, &quot;Unable to convert URL to a UTF-8 string&quot;);
++            update_last_error(err);
++            return ptr::null_mut();
++        }
+      };
+ 
+      let parsed_url = match Url::parse(url_as_str) {
+          Ok(u) =&gt; u,
+-        Err(_) =&gt; return ptr::null_mut(),
++        Err(e) =&gt; {
++            let err = Error::with_chain(e, &quot;Unable to parse the URL&quot;);
++            update_last_error(err);
++            return ptr::null_mut();
++        }
+      };
+
+    ...
+</code></pre>
+<p>For brevity's sake, we won't show how <em>all</em> the FFI bindings have been updated
+because it's largely tedious refactoring. However, feel free to inspect the
+<a href="TODO-update-me!">source code</a> for this guide if you are curious to see the final version.</p>
+<a class="header" href="print.html#c-error-bindings" id="c-error-bindings"><h2>C++ Error Bindings</h2></a>
+<p>We're going to expose this error handling mechanism to C++ in two ways, there
+will be a low level C++ equivalent to <code>last_error_message()</code> which simply calls
+the Rust function and does the necessary work to convert the error message into
+a <code>std::string</code>.</p>
+<p>There will also be a more high-level <code>WrapperException</code> class which can be thrown
+whenever an operation fails. This should then be caught higher up by the Qt
+application and an appropriate error message will be displayed to the user.</p>
+<p>First we need to add <code>last_error_message()</code> to our <code>wrappers.hpp</code> header file.</p>
+<pre><code class="language-cpp">// gui/wrappers.hpp
+
+std::string last_error_message();
+</code></pre>
+<p>Then we need to implement it.</p>
+<pre><code class="language-cpp">// gui/wrappers.cpp
+
+std::string last_error_message() {
+  int error_length = ffi::last_error_length();
+
+  if (error_length == 0) {
+    return std::string();
+  }
+
+  std::string msg(error_length, '\0');
+  int ret = ffi::last_error_message(&amp;msg[0], msg.length());
+  if (ret &lt;= 0) {
+    // If we ever get here it's a bug
+    throw new WrapperException(&quot;Fetching error message failed&quot;);
+  }
+
+  return msg;
+}
+</code></pre>
+<p>Notice that if there was no error we return an empty <code>std::string</code> instead of
+blowing up.</p>
+<p>We also want to define a <code>WrapperException</code> class in the <code>wrappers.hpp</code> header
+file. To make things easier, we're defining a public static helper function
+which will create a new <code>WrapperException</code> from the most recent error.</p>
+<pre><code class="language-cpp">// gui/wrappers.hpp
+
+class WrapperException : std::exception {
+public:
+  WrapperException(const std::string&amp; msg) : msg(msg){};
+  static WrapperException last_error();
+  const char * what () const throw () {
+      return msg.c_str();
+   }
+
+private:
+  std::string msg;
+};
+</code></pre>
+<p>The <code>last_error()</code> method has a fairly simple definition, it fetches the last
+error message and creates a new <code>WrapperException</code> with it. If the error message
+was empty then we use a default message.</p>
+<pre><code class="language-cpp">// gui/wrappers.cpp
+
+WrapperException WrapperException::last_error() {
+  std::string msg = last_error_message();
+
+  if (msg.length == 0) {
+    return WrapperException(&quot;(no error available)&quot;);
+  } else {
+    return WrapperException(msg);
+  }
+}
+</code></pre>
+<a class="header" href="print.html#integrating-in-the-error-handling-mechanism" id="integrating-in-the-error-handling-mechanism"><h2>Integrating In The Error Handling Mechanism</h2></a>
+<p>Now we've got a proper error handling mechanism, we need to go back and make
+sure everything uses it. This is just a case of finding all <code>throw</code>
+statements in <code>wrappers.cpp</code> (using <code>grep</code> or your editor's &quot;find&quot; function)
+and converting them to use <code>throw WrapperException::last_error()</code>.</p>
+<p>The easiest way to check our error handling mechanism is to edit the click
+handler we've been using for testing and make it try to send a request to some
+invalid URL.</p>
+<pre><code class="language-cpp">// gui/main_window.cpp
+
+void MainWindow::onClick() {
+  Request req(&quot;this is an invalid URL&quot;);
+}
+</code></pre>
+<p>Now run the program and click the button.</p>
+<pre><code>$ ./gui/gui
+...
+terminate called after throwing an instance of 'WrapperException'
+[1]    1016 abort (core dumped)  ./gui/gui
+</code></pre>
+<p>It... aborts?</p>
+<p>This is because Qt, by default, won't try to catch any thrown exceptions,
+meaning they'll just bubble up to the top of the program and crash.</p>
+<p>It'd be a much better user experience if the GUI would catch all thrown
+exceptions and pop up a nice dialog box saying what went wrong.</p>
+<p>According to <a href="http://doc.qt.io/qt-5/exceptionsafety.html#signals-and-slots">Qt's documentation on exceptions</a>, it is undefined behaviour
+when a handler throws an exception. In this case it looks like the exception
+bubbled up the stack, unhandled, until it hit the program's entry point and
+triggered an abort. This isn't exactly ideal, so how about we wrap the click
+hander's contents in a big try/catch block?</p>
+<pre><code class="language-cpp">// gui/main_window.cpp
+
+void MainWindow::onClick() {
+  try
+  {
+    Request req(&quot;this is an invalid URL&quot;);
+  }
+  catch (const WrapperException&amp; e)
+  {
+    QMessageBox::warning(this, &quot;Error&quot;, e.what());
+  }
+}
+</code></pre>
+<p>That's much better. Now our application can deal with errors in a sane way, and
+is much more robust.</p>
+<blockquote>
+<p><strong>TODO:</strong> Add the error handling patterns developed in this chapter to the
+<a href="https://github.com/Michael-F-Bryan/ffi-helpers">ffi-helpers</a> crate.</p>
+</blockquote>
+<a class="header" href="print.html#logging" id="logging"><h1>Logging</h1></a>
+<blockquote>
+<p><strong>TODO:</strong> Talk about using logging to help determine the state of a program</p>
+</blockquote>
+<a class="header" href="print.html#exception-safety" id="exception-safety"><h1>Exception Safety</h1></a>
+<a class="header" href="print.html#asynchronous-operations" id="asynchronous-operations"><h1>Asynchronous Operations</h1></a>
+<p>At the moment sending our request will block until it returns, meaning the
+entire GUI will lock up. This is bad both from a user experience point of view,
+and because the window is no longer responding to events so the operating system
+will think it's gone into zombie mode (popping up the standard &quot;This program is
+not responding&quot; dialog).</p>
+<p>A much better way of doing things would be to spin the request onto a background
+thread, periodically polling it and getting the result if the job is completed.</p>
+<blockquote>
+<p><strong>TODO:</strong> create a <code>Task</code> abstraction using <code>futures</code> and
+<a href="https://docs.rs/futures-cpupool/0.1.7/futures_cpupool/struct.CpuPool.html#method.spawn_fn">futures_cpupool</a> to spawn an arbitrary closure.</p>
+</blockquote>
+<blockquote>
+<p><strong>TODO:</strong> Add the <code>Task</code> abstraction to <a href="https://github.com/Michael-F-Bryan/ffi-helpers">ffi-helpers</a>, as well as maybe a
+couple macros for generating the <code>extern &quot;C&quot;</code> functions for things like
+polling, creation, and destruction to deal with the fact that generics aren't
+FFI-safe.</p>
+</blockquote>
+<a class="header" href="print.html#more-complex-requests" id="more-complex-requests"><h1>More Complex Requests</h1></a>
+<p>Now that we've got the basics working and things like error handling and
+asynchrony are dealt with, lets flesh out this application.</p>
+<p>At the moment the entire application is composed of a button where the handler
+will fire off HTTP requests in the background. The GUI doesn't even display the
+response body, instead printing it to the parent console. This is fine while
+developing the backend, but not overly useful for end users.</p>
+<p>This chapter will deal with:</p>
+<ul>
+<li>Mutating heap-allocated Rust objects (the request headers)</li>
+<li>The separation between UI state and business logic state</li>
+<li>Best practices when building a larger GUI program</li>
+</ul>
+<blockquote>
+<p><strong>TODO:</strong> Complete this chapter, making a basic UI which looks something like
+<a href="https://resttesttest.com/">this</a> and successfully pings
+<a href="https://httpbin.org/">httpbin</a>.</p>
+</blockquote>
+<a class="header" href="print.html#testing" id="testing"><h1>Testing</h1></a>
+<p>You'd typically want to be testing the application from the very beginning, but
+because of the complexity of this tutorial we've left it until a later chapter
+when you are (hopefully) more familiar with the C++/Rust interop workflow.</p>
+<p>This is that chapter.</p>
+<p>As well as the usual unit tests which you will be accustomed to writing in your
+Rust code, we want to be able to test the entire backend from end-to-end. This
+would require using the C++ wrappers to send off requests under various
+conditions and making sure we get the expected behaviour.</p>
+<p>We will cover:</p>
+<ul>
+<li>Integrating <code>cargo test</code> into <code>cmake</code>'s built-in testing facilities</li>
+<li>Creating C++ integration tests to exercise the entire backend under various
+conditions, including
+<ul>
+<li>The &quot;happy path&quot; (e.g. getting a valid web page like https://google.com/)</li>
+<li>Sending requests to non-existent locations (e.g. &quot;http://imprettysurethiswebsitedoesntexist.com/&quot;)</li>
+<li>Invalid URLs (i.e. bang on your keyboard)</li>
+<li>Making sure cookies and headers are actually set</li>
+<li><a href="https://httpbin.org/stream/20">streaming</a> and <a href="https://httpbin.org/delay/10">timeouts</a></li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p><strong>TODO:</strong> Flesh out this chapter.</p>
+</blockquote>
+<a class="header" href="print.html#dynamic-loading--plugins" id="dynamic-loading--plugins"><h1>Dynamic Loading &amp; Plugins</h1></a>
+<p>What application wouldn't be complete without the ability to add user-defined
+plugins? In this chapter we take a small detour to visit the concept of
+dynamically loading a library at runtime and registering it with our parent
+application.</p>
+<p>The end goal is to allow users to provide a shared library (DLL, <code>*.so</code>, etc)
+which contains a set of pre-defined functions. These functions will then allow
+us to manipulate a request before it is sent and then manipulate/inspect the
+response before displaying it to the user.</p>
+<p>From the Rust side of things, by far the easiest way to establish this is to
+define a <code>Plugin</code> trait which does the various manipulations, then add in a
+macro users can run which will define all the <code>unsafe</code> function declarations.</p>
+<p>Our <code>Plugin</code> trait may look something like this:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+pub trait Plugin {
+    fn name(&amp;self) -&gt; &amp;'static str;
+    fn on_plugin_load(&amp;self) {}
+    fn pre_send(&amp;self, _request: &amp;mut Request) {}
+    fn post_receive(&amp;self, _response: &amp;mut Response) {}
+}
+#}</code></pre></pre>
+<p>The macro would then declare an <code>extern &quot;C&quot;</code> constructor which exports a trait
+object (<code>Box&lt;Plugin&gt;</code>) with some pre-defined symbol (e.g. <code>_plugin_create()</code>).</p>
+<blockquote>
+<p><strong>Note:</strong> This is actually the exact pattern used by the Linux kernel for
+loading device drivers. Each driver must expose a function which returns a
+vtable (struct of function pointers) that define the various commands
+necessary for talking with a device (read, write, etc).</p>
+</blockquote>
+<p>Before diving into the complexity of real code, it's probably going to be easier
+if we figure out how dynamic loading works using a contrived example.</p>
+<a class="header" href="print.html#contrived-example" id="contrived-example"><h2>Contrived Example</h2></a>
+<p>For this the function being exported doesn't need to be very interesting, seeing
+it's just an example.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+#[no_mangle]
+pub extern &quot;C&quot; fn add(a: isize, b: isize) -&gt; isize {
+    a + b
+}
+#}</code></pre></pre>
+<p>This then can then be compiled into a <code>cdylib</code>.</p>
+<blockquote>
+<p><strong>Note:</strong> Up uptil now it hasn't mattered whether you compile as a dynamic
+library or a static one. However for dynamically loading a library on the fly
+you <strong>must</strong> compile as a <code>cdylib</code>.</p>
+</blockquote>
+<pre><code class="language-bash">$ rustc --crate-type cdylib adder.rs
+</code></pre>
+<p>The symbols exported by this dynamic library can now be inspected using the
+<code>nm</code> tool from GNU <code>binutils</code>.</p>
+<pre><code class="language-bash">$ nm libadder.so | grep 'add'
+00000000000005f0 T add
+</code></pre>
+<p>As you can see, the <code>add</code> function is exposed and fully accessible to other
+programs.</p>
+<a class="header" href="print.html#loading-the-contrived-example" id="loading-the-contrived-example"><h2>Loading the Contrived Example</h2></a>
+<p>Loading a function from this library and then calling it is then surprisingly
+easy. The key is to use something like the <a href="https://crates.io/crates/libloading">libloading</a> crate. This abstracts
+over the various mechanisms provided by the operating system for dynamically
+loading a library.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+extern crate libloading;
+
+use std::env;
+use libloading::{Library, Symbol};
+#}</code></pre></pre>
+<p>It's also a good idea to add a type alias for the <code>add()</code> function's signature.
+This isn't required, but when things start getting more complex and having more
+interesting arguments the extra readability really pays off.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+type AddFunc = unsafe fn(isize, isize) -&gt; isize;
+#}</code></pre></pre>
+<p>The <code>main()</code> function takes the DLL as its first command line argument:</p>
+<pre><pre class="playpen"><code class="language-rust">fn main() {
+    let library_path = env::args().nth(1).expect(&quot;USAGE: loading &lt;LIB&gt;&quot;);
+    println!(&quot;Loading add() from {}&quot;, library_path);
+</code></pre></pre>
+<p>Loads the library and gets a symbol (casting the function pointer so it has the
+desired signature)</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+    let lib = Library::new(library_path).unwrap();
+
+    unsafe {
+        let func: Symbol&lt;AddFunc&gt; = lib.get(b&quot;add&quot;).unwrap();
+#}</code></pre></pre>
+<p>Then you can finally call the imported function.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+        let answer = func(1, 2);
+        println!(&quot;1 + 2 = {}&quot;, answer);
+    }
+}
+#}</code></pre></pre>
+<p>Now compiling and running with cargo gives exactly what we'd expect:</p>
+<pre><code class="language-bash">$ cargo run -- ../libadder.so
+    Finished dev [unoptimized + debuginfo] target(s) in 0.0 secs
+     Running `target/debug/loading ../libadder.so`
+Loading add() from ../libadder.so
+1 + 2 = 3
+</code></pre>
+<p>The entire <code>main.rs</code> looks like this:</p>
+<pre><pre class="playpen"><code class="language-rust">extern crate libloading;
+
+use std::env;
+use libloading::{Library, Symbol};
+
+type AddFunc = fn(isize, isize) -&gt; isize;
+
+fn main() {
+    let library_path = env::args().nth(1).expect(&quot;USAGE: loading &lt;LIB&gt;&quot;);
+    println!(&quot;Loading add() from {}&quot;, library_path);
+
+    let lib = Library::new(library_path).unwrap();
+
+    unsafe {
+        let func: Symbol&lt;AddFunc&gt; = lib.get(b&quot;add&quot;).unwrap();
+
+        let answer = func(1, 2);
+        println!(&quot;1 + 2 = {}&quot;, answer);
+    }
+}
+</code></pre></pre>
+<a class="header" href="print.html#setting-up-plugins" id="setting-up-plugins"><h2>Setting Up Plugins</h2></a>
+<p>Now that we have a better understanding of how dynamically loading a library on
+the fly works, we can start adding plugins to our application.</p>
+<p>First we'll define a <code>Plugin</code> trait which all plugins must implement. This has
+been copied pretty much verbatim from the beginning of the chapter.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/plugins.rs
+
+use std::ffi::OsStr;
+use std::any::Any;
+use libloading::{Library, Symbol};
+
+use errors::*;
+use {Request, Response};
+
+
+/// A plugin which allows you to add extra functionality to the REST client.
+pub trait Plugin: Any + Send + Sync {
+    /// Get a name describing the `Plugin`.
+    fn name(&amp;self) -&gt; &amp;'static str;
+    /// A callback fired immediately after the plugin is loaded. Usually used 
+    /// for initialization.
+    fn on_plugin_load(&amp;self) {}
+    /// A callback fired immediately before the plugin is unloaded. Use this if
+    /// you need to do any cleanup.
+    fn on_plugin_unload(&amp;self) {}
+    /// Inspect (and possibly mutate) the request before it is sent.
+    fn pre_send(&amp;self, _request: &amp;mut Request) {}
+    /// Inspect and/or mutate the received response before it is displayed to
+    /// the user.
+    fn post_receive(&amp;self, _response: &amp;mut Response) {}
+}
+#}</code></pre></pre>
+<p>This is all pretty standard. Notice that the <code>Plugin</code> <em>must</em> be sendable between
+threads and that all callbacks take <code>&amp;self</code> instead of <code>&amp;mut self</code>. This means
+that any mutation must be done using interior mutability. the <code>Send + Sync</code>
+bound also means you need to use the appropriate synchronisation mechanisms
+(e.g. a <code>Mutex</code>).</p>
+<p>We also define a convenience macro that users can call to export their <code>Plugin</code>
+in a safe manner. This just declares a new <code>extern &quot;C&quot;</code> function called
+<code>_plugin_create()</code> which will call the constructor and return a new boxed
+<code>Plugin</code>.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/plugins.rs
+
+/// Declare a plugin type and its constructor.
+///
+/// # Notes
+///
+/// This works by automatically generating an `extern &quot;C&quot;` function with a
+/// pre-defined signature and symbol name. Therefore you will only be able to
+/// declare one plugin per library.
+#[macro_export]
+macro_rules! declare_plugin {
+    ($plugin_type:ty, $constructor:path) =&gt; {
+        #[no_mangle]
+        pub extern &quot;C&quot; fn _plugin_create() -&gt; *mut $crate::Plugin {
+            // make sure the constructor is the correct type.
+            let constructor: fn() -&gt; $plugin_type = $constructor;
+
+            let object = constructor();
+            let boxed: Box&lt;$crate::Plugin&gt; = Box::new(object);
+            Box::into_raw(boxed)
+        }
+    };
+}
+#}</code></pre></pre>
+<p>Another thing we're going to need is a way to manage plugins and make sure they
+are called at the appropriate time. This is usually done with a <code>PluginManager</code>.</p>
+<p>Something we need to keep in mind is that any <code>Library</code> we load will need to
+outlive our plugins. This is because they contain the code for executing the
+various <code>Plugin</code> methods, so if the <code>Library</code> is dropped too early our plugins'
+vtable could end up pointing at garbage... Which would be bad.</p>
+<p>First lets add the struct definition and a constructor,</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/plugins.rs
+
+pub struct PluginManager {
+    plugins: Vec&lt;Box&lt;Plugin&gt;&gt;,
+    loaded_libraries: Vec&lt;Library&gt;,
+}
+
+impl PluginManager {
+    pub fn new() -&gt; PluginManager {
+        PluginManager {
+            plugins: Vec::new(),
+            loaded_libraries: Vec::new(),
+        }
+    }
+#}</code></pre></pre>
+<p>Next comes the actual plugin loading part. Make sure to add <code>libloading</code> as a
+dependency to your <code>Cargo.toml</code>, then we can use it to dynamically load the
+plugin and call the <code>_plugin_create()</code> function. We also need to make sure
+the <code>on_plugin_load()</code> callback is fired so the plugin has a chance to do any
+necessary initialization.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/plugins.rs
+
+    pub unsafe fn load_plugin&lt;P: AsRef&lt;OsStr&gt;&gt;(&amp;mut self, filename: P) -&gt; Result&lt;()&gt; {
+        type PluginCreate = unsafe fn() -&gt; *mut Plugin;
+
+        let lib = Library::new(filename.as_ref()).chain_err(|| &quot;Unable to load the plugin&quot;)?;
+
+        // We need to keep the library around otherwise our plugin's vtable will
+        // point to garbage. We do this little dance to make sure the library
+        // doesn't end up getting moved.
+        self.loaded_libraries.push(lib);
+
+        let lib = self.loaded_libraries.last().unwrap();
+
+        let constructor: Symbol&lt;PluginCreate&gt; = lib.get(b&quot;_plugin_create&quot;)
+            .chain_err(|| &quot;The `_plugin_create` symbol wasn't found.&quot;)?;
+        let boxed_raw = constructor();
+
+        let plugin = Box::from_raw(boxed_raw);
+        debug!(&quot;Loaded plugin: {}&quot;, plugin.name());
+        plugin.on_plugin_load();
+        self.plugins.push(plugin);
+
+
+        Ok(())
+    }
+#}</code></pre></pre>
+<p>Now our <code>PluginManager</code> can load plugins, we need to make sure it has methods
+for firing the various plugin callbacks.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/plugins.rs
+
+    /// Iterate over the plugins, running their `pre_send()` hook.
+    pub fn pre_send(&amp;mut self, request: &amp;mut Request) {
+        debug!(&quot;Firing pre_send hooks&quot;);
+
+        for plugin in &amp;mut self.plugins {
+            trace!(&quot;Firing pre_send for {:?}&quot;, plugin.name());
+            plugin.pre_send(request);
+        }
+    }
+
+    /// Iterate over the plugins, running their `post_receive()` hook.
+    pub fn post_receive(&amp;mut self, response: &amp;mut Response) {
+        debug!(&quot;Firing post_receive hooks&quot;);
+
+        for plugin in &amp;mut self.plugins {
+            trace!(&quot;Firing post_receive for {:?}&quot;, plugin.name());
+            plugin.post_receive(response);
+        }
+    }
+
+    /// Unload all plugins and loaded plugin libraries, making sure to fire 
+    /// their `on_plugin_unload()` methods so they can do any necessary cleanup.
+    pub fn unload(&amp;mut self) {
+        debug!(&quot;Unloading plugins&quot;);
+
+        for plugin in self.plugins.drain(..) {
+            trace!(&quot;Firing on_plugin_unload for {:?}&quot;, plugin.name());
+            plugin.on_plugin_unload();
+        }
+
+        for lib in self.loaded_libraries.drain(..) {
+            drop(lib);
+        }
+    }
+}
+#}</code></pre></pre>
+<p>Those last three methods should be fairly self-explanatory.</p>
+<p>Something else we may want to do is add a <code>Drop</code> impl so that our plugins are
+always unloaded when the <code>PluginManager</code> gets dropped. This gives them a chance
+to do any necessary cleanup.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/plugins.rs
+
+impl Drop for PluginManager {
+    fn drop(&amp;mut self) {
+        if !self.plugins.is_empty() || !self.loaded_libraries.is_empty() {
+            self.unload();
+        }
+    }
+}
+#}</code></pre></pre>
+<p>A thing to keep in mind is something called <a href="https://www.reddit.com/r/rust/comments/4a9vu6/what_are_the_semantics_of_panicondrop/">panic-on-drop</a>. Basically, if the
+program is panicking it'll unwind the stack, calling destructors when necessary.
+However, because our <code>PluginManager</code> tries to unload plugins if it hasn't
+already, a <code>Plugin</code> who's <code>unload()</code> method <strong>also</strong> panics will result in a
+second panic. This usually results in aborting the entire program because your
+program is most probably FUBAR.</p>
+<p>To prevent this, we'll want to make sure the C++ code explicitly unloads the
+plugin manager before destroying it.</p>
+<a class="header" href="print.html#writing-c-bindings" id="writing-c-bindings"><h2>Writing C++ Bindings</h2></a>
+<p>As usual, once we've added a piece of functionality to the core Rust crate we'll
+need to expose it to C++ in our <code>ffi</code> module, then add the C++ bindings to
+<code>wrappers.cpp</code>.</p>
+<p>Writing FFI bindings should be quite familiar by now. All you are doing is
+converting raw pointers into references, then calling a method.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/ffi.rs
+
+use PluginManager;
+
+...
+
+/// Create a new `PluginManager`.
+#[no_mangle]
+pub extern &quot;C&quot; fn plugin_manager_new() -&gt; *mut PluginManager {
+    Box::into_raw(Box::new(PluginManager::new()))
+}
+
+/// Destroy a `PluginManager` once you are done with it.
+#[no_mangle]
+pub unsafe extern &quot;C&quot; fn plugin_manager_destroy(pm: *mut PluginManager) {
+    if !pm.is_null() {
+        let pm = Box::from_raw(pm);
+        drop(pm);
+    }
+}
+
+/// Unload all loaded plugins.
+#[no_mangle]
+pub unsafe extern &quot;C&quot; fn plugin_manager_unload(pm: *mut PluginManager) {
+    let pm = &amp;mut *pm;
+    pm.unload();
+}
+
+/// Fire the `pre_send` plugin hooks.
+#[no_mangle]
+pub unsafe extern &quot;C&quot; fn plugin_manager_pre_send(pm: *mut PluginManager, request: *mut Request) {
+    let pm = &amp;mut *pm;
+    let request = &amp;mut *request;
+    pm.pre_send(request);
+}
+
+/// Fire the `post_receive` plugin hooks.
+#[no_mangle]
+pub unsafe extern &quot;C&quot; fn plugin_manager_post_receive(
+    pm: *mut PluginManager,
+    response: *mut Response,
+) {
+    let pm = &amp;mut *pm;
+    let response = &amp;mut *response;
+    pm.post_receive(response);
+}
+
+#}</code></pre></pre>
+<p>Plugin loading is a bit more interesting because we need to convert a
+<code>*const c_char</code> into a <code>&amp;str</code>, but other than that it's all pretty
+straightforward.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// client/src/ffi.rs
+
+#[no_mangle]
+pub unsafe extern &quot;C&quot; fn plugin_manager_load_plugin(
+    pm: *mut PluginManager,
+    filename: *const c_char,
+) -&gt; c_int {
+    let pm = &amp;mut *pm;
+    let filename = CStr::from_ptr(filename);
+    let filename_as_str = match filename.to_str() {
+        Ok(s) =&gt; s,
+        Err(_) =&gt; {
+            // TODO: proper error handling
+            return -1;
+        }
+    };
+
+    // TODO: proper error handling and catch_unwind
+    match pm.load_plugin(filename_as_str) {
+        Ok(_) =&gt; 0,
+        Err(_) =&gt; -1,
+    }
+}
+#}</code></pre></pre>
+<p>Next we need to add a <code>PluginManager</code> wrapper class to our <code>wrappers.hpp</code>. We
+should also say that <code>PluginManager</code> is a <code>friend</code> of <code>Request</code> and <code>Response</code>
+so it can access their raw pointers.</p>
+<pre><code class="language-cpp">// gui/wrappers.hpp
+
+class Request {
+  friend class PluginManager;
+  ...
+};
+
+class Response {
+  friend class PluginManager;
+  ...
+};
+
+class PluginManager {
+public:
+  PluginManager();
+  ~PluginManager();
+  void unload();
+  void pre_send(Request&amp; req);
+  void post_receive(Response&amp; res);
+
+private:
+  ffi::PluginManager *raw;
+};
+</code></pre>
+<p>Similar to when we were writing the Rust FFI bindings, on the C++ side you just
+need to make sure the arguments are in the right shape before deferring to the
+corresponding functions.</p>
+<pre><code class="language-cpp">// gui/wrappers.cpp
+
+PluginManager::PluginManager() { raw = ffi::plugin_manager_new(); }
+
+PluginManager::~PluginManager() { ffi::plugin_manager_destroy(raw); }
+
+void PluginManager::unload() { ffi::plugin_manager_unload(raw); }
+
+void PluginManager::pre_send(Request&amp; req) {
+  ffi::plugin_manager_pre_send(raw, req.raw);
+}
+
+void PluginManager::post_receive(Response&amp; res) {
+  ffi::plugin_manager_post_receive(raw, res.raw);
+}
+</code></pre>
+<a class="header" href="print.html#hooking-up-the-plugin-manager" id="hooking-up-the-plugin-manager"><h2>Hooking Up The Plugin Manager</h2></a>
+<p>Now that our <code>PluginManager</code> is <em>finally</em> accessible from the GUI we can thread
+it through the request sending process.</p>
+<p>First we'll need to add the <code>PluginManager</code> to our main window.</p>
+<pre><code class="language-diff">// gui/main_window.hpp
+
+#include &quot;wrappers.hpp&quot;
+
+...
+
+class MainWindow : public QMainWindow {
+  ...
+
+private:
+  ...
+  PluginManager pm;
+};
+</code></pre>
+<p>Next we need to make sure that whenever we send a request we also pass it to the
+plugin manager so it can do the appropriate pre/post processing.</p>
+<pre><code class="language-cpp">...
+
+pm.pre_send(req);
+Response res = req.send();
+pm.post_receive(res);
+
+...
+</code></pre>
+<p>We also want to make sure that plugins are unloaded when the window is closed,
+the easiest way to do this is to override <code>MainWindow</code>'s <code>closeEvent()</code> method.</p>
+<p>To do this we update the <code>main_window.hpp</code> header file:</p>
+<pre><code class="language-cpp">// gui/main_window.hpp
+
+class MainWindow : public QMainWindow {
+  ...
+
+protected:
+  void closeEvent(QCloseEvent *event) override;
+
+  ...
+};
+</code></pre>
+<p>Then add the implementation to <code>main-window.cpp</code>.</p>
+<pre><code class="language-cpp">// gui/main_window.cpp
+
+void MainWindow::closeEvent(QCloseEvent *event) {
+  pm.unload();
+  QMainWindow::closeEvent(event);
+}
+</code></pre>
+<p>Now the plugin manager is plumbed into the existing request pipeline, we need a
+way of actually loading plugins at runtime. We'll use a simple <a href="http://doc.qt.io/qt-5/qfiledialog.html">file dialog</a> and
+button for this.</p>
+<blockquote>
+<p><strong>TODO:</strong> Once the main UI is done, step through adding a &quot;load plugin&quot; button
+and hooking it up to the plugin manager.</p>
+</blockquote>
+<a class="header" href="print.html#lets-make-a-plugin" id="lets-make-a-plugin"><h2>Lets Make A Plugin</h2></a>
+<p>Now we have all the plugin infrastructure set up lets actually make (and load) a
+plugin! This plugin will inject a special header into each request, then if it's
+also present in the response we'll remove it so it's not viewable by the end
+user.</p>
+<p>First lets create a new library.</p>
+<pre><code>$ cargo new injector-plugin
+</code></pre>
+<p>We also want to update the <code>Cargo.toml</code> to depend on the <code>client</code> library and
+generate a <code>cdylib</code> so it's loadable by our plugin manager. While we're at it,
+add the <code>log</code> crate so we can log what's happening.</p>
+<pre><code class="language-diff">// injector-plugin/Cargo.toml
+
+[package]
+name = &quot;injector-plugin&quot;
+version = &quot;0.1.0&quot;
+authors = [&quot;Michael Bryan &lt;michaelfbryan@gmail.com&gt;&quot;]
++ description = &quot;A plugin which will stealthily inject a special header into your requests.&quot;
+
+[dependencies]
++ log = &quot;0.3.8&quot;
++ client = { path = &quot;../client&quot;}
++
++ [lib]
++ crate-type = [&quot;cdylib&quot;, &quot;rlib&quot;]
+</code></pre>
+<p>We also want to add a <code>cmake</code> build rule so the <code>injector-plugin</code> crate is built
+along with the rest of the project. The <code>CMakeLists.txt</code> file for this crate is
+identical to the one we wrote for <code>client</code> so just copy that across and change
+the relevant names.</p>
+<pre><code>$ cp ./client/CMakeLists.txt ./injector-plugin/CMakeLists.txt
+</code></pre>
+<p>Don't forget to make sure <code>cmake</code> includes the <code>injector-plugin</code> directory!</p>
+<pre><code class="language-diff"># ./CMakeLists.txt
+
+add_subdirectory(client)
++ add_subdirectory(injector-plugin)
+add_subdirectory(gui)
+</code></pre>
+<p>As we link the plugin to the <code>client</code> library the Rust way, we need adjust its
+<code>Cargo.toml</code> to generate it also as <code>rlib</code>.</p>
+<pre><code class="language-toml"># client/Cargo.toml
+
+...
+
+[lib]
+crate-type = [&quot;cdylib&quot;, &quot;rlib&quot;]
+</code></pre>
+<p>And then we do a quick build as a sanity check to make sure everything built.</p>
+<pre><code>$ mkdir build &amp;&amp; cd build
+$ cmake -DCMAKE_BUILD_TYPE=Debug ..
+$ make
+
+...
+</code></pre>
+<p>The plugin body itself isn't overly interesting.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// injector-plugin/src/lib.rs
+
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate client;
+
+use std::str;
+use client::{Request, Response, Plugin};
+
+
+#[derive(Debug, Default)]
+pub struct Injector;
+
+impl Plugin for Injector {
+    fn name(&amp;self) -&gt; &amp;'static str  {
+        &quot;Header Injector&quot;
+    }
+
+    fn on_plugin_load(&amp;self) {
+        info!(&quot;Injector loaded&quot;);
+    }
+
+    fn on_plugin_unload(&amp;self) {
+        info!(&quot;Injector unloaded&quot;);
+    }
+
+    fn pre_send(&amp;self, req: &amp;mut Request) {
+        req.headers.set_raw(&quot;some-dodgy-header&quot;, &quot;true&quot;);
+        debug!(&quot;Injected header into Request, {:?}&quot;, req);
+    }
+
+    fn post_receive(&amp;self, res: &amp;mut Response) {
+        debug!(&quot;Received Response&quot;);
+        debug!(&quot;Headers: {:?}&quot;, res.headers);
+        if res.body.len() &lt; 100 &amp;&amp; log_enabled!(log::LogLevel::Debug) {
+            if let Ok(body) = str::from_utf8(&amp;res.body) {
+                debug!(&quot;Body: {:?}&quot;, body);
+            }
+        }
+        res.headers.remove_raw(&quot;some-dodgy-header&quot;);
+    }
+}
+#}</code></pre></pre>
+<p>Finally, to make this plugin library actually work we need to call the
+<code>declare_plugin!()</code> macro.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// injector-plugin/src/lib.rs
+
+declare_plugin!(Injector, Injector::default);
+#}</code></pre></pre>
+<p>If you then compile this and inspect it with our trusty <code>nm</code> tool you'll see
+that the library contains our <code>_plugin_create</code> symbol.</p>
+<pre><code>$ cd build
+$ make
+$ nm injector-plugin/libinjector_plugin.so | grep ' T '
+
+...
+0000000000030820 T _plugin_create
+...
+</code></pre>
+<a class="header" href="print.html#running-the-plugin" id="running-the-plugin"><h2>Running The Plugin</h2></a>
+<p>Now that we've got a plugin and everything is hooked up to the GUI, we can try
+it out and benefit from all the hard work put in so far.</p>
+<p>Make sure to do one last compile,</p>
+<pre><code>$ cd build
+$ make
+</code></pre>
+<p>Then run the GUI and load the plugin from
+<code>build/injector-plugin/libinjector_plugin.so</code>. To see what headers are sent you
+can send a <code>GET</code> request to http://httpbin.org/get. With any luck you should
+see something like this:</p>
+<pre><code>$ RUST_LOG=client=debug,injector_plugin=debug ./gui/gui
+
+DEBUG:client::ffi: Loading plugin, &quot;/home/michael/Documents/ffi-guide/build/injector-plugin/libinjector_plugin.so&quot;
+DEBUG:client::plugins: Loaded plugin: Header Injector
+INFO:injector_plugin: Injector loaded
+Creating the request
+Sending Request
+DEBUG:client::plugins: Firing pre_send hooks
+DEBUG:injector_plugin: Injected header into Request, Request { destination: &quot;http://httpbin.org/get&quot;, method: Get, headers: {&quot;some-dodgy-header&quot;: &quot;true&quot;}, cookies: CookieJar { original_cookies: {}, delta_cookies: {} }, body: None }
+INFO:client: Sending a GET request to http://httpbin.org/get
+DEBUG:client: Sending 1 Headers
+DEBUG:client: 	some-dodgy-header: true
+DEBUG:client::ffi: Received Response
+DEBUG:client::plugins: Firing post_receive hooks
+DEBUG:injector_plugin: Received Response
+DEBUG:injector_plugin: Headers: {&quot;Connection&quot;: &quot;keep-alive&quot;, &quot;Server&quot;: &quot;meinheld/0.6.1&quot;, &quot;Date&quot;: &quot;Tue, 07 Nov 2017 14:29:39 GMT&quot;, &quot;Content-Type&quot;: &quot;application/json&quot;, &quot;Access-Control-Allow-Origin&quot;: &quot;*&quot;, &quot;Access-Control-Allow-Credentials&quot;: &quot;true&quot;, &quot;X-Powered-By&quot;: &quot;Flask&quot;, &quot;X-Processed-Time&quot;: &quot;0.000864028930664&quot;, &quot;Content-Length&quot;: &quot;303&quot;, &quot;Via&quot;: &quot;1.1 vegur&quot;}
+Received Response
+Body:
+{
+  &quot;args&quot;: {}, 
+  &quot;headers&quot;: {
+    &quot;Accept&quot;: &quot;*/*&quot;, 
+    &quot;Accept-Encoding&quot;: &quot;gzip&quot;, 
+    &quot;Connection&quot;: &quot;close&quot;, 
+    &quot;Cookie&quot;: &quot;&quot;, 
+    &quot;Host&quot;: &quot;httpbin.org&quot;, 
+    &quot;Some-Dodgy-Header&quot;: &quot;true&quot;, 
+    &quot;User-Agent&quot;: &quot;reqwest/0.8.0&quot;
+  }, 
+  &quot;origin&quot;: &quot;122.151.115.164&quot;, 
+  &quot;url&quot;: &quot;http://httpbin.org/get&quot;
+}
+
+DEBUG:client::plugins: Unloading plugins
+INFO:injector_plugin: Injector unloaded
+</code></pre>
+<p>Now if you look <em>very</em> carefully you'll see that the plugin was indeed fired at
+the correct time, and <code>httpbin</code> replied saying we had <code>Some-Dodgy-Header</code> in our
+headers. If you've stayed with us up to this point then give yourself a pat on
+the back, you just accomplished one of the most difficult FFI tasks possible!</p>
+<p>If dynamic loading is still confusing you, you may want to check out some of
+these links:</p>
+<ul>
+<li><a href="https://eli.thegreenplace.net/2012/08/24/plugins-in-c">Plugins in C</a></li>
+<li><a href="https://sourcey.com/building-a-simple-cpp-cross-platform-plugin-system/">Building a Simple C++ Cross-platform Plugin System</a></li>
+<li><a href="https://msdn.microsoft.com/en-us/library/windows/desktop/ms683212(v=vs.85).aspx">GetProcAddress (for loading DLLs on Windows)</a></li>
+<li><a href="https://linux.die.net/man/3/dlsym">dlsym (the Linux equivalent)</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Dynamic_loading">Wikipedia also has a pretty accurate article on the topic</a></li>
+</ul>
+<a class="header" href="print.html#break-all-the-things1" id="break-all-the-things1"><h1>Break All The Things!!1!</h1></a>
+<p>What would a guide on <code>unsafe</code> Rust be without an exploration into how (not) to
+abuse it? This section takes a bit of a detour from the rest of the document in
+that we'll explicitly be <em>trying</em> to break things in as many ways as possible.</p>
+<p>The exercise will be as follows, each problem will contain the source code
+for a small program which deliberately does something horribly wrong, incorrect,
+or dangerous (memory safety, data races, undefined behaviour, that sort of
+thing). It's then your job to figure out what the issue is and why it could end
+up hurting your application. </p>
+<a class="header" href="print.html#problems" id="problems"><h1>Problems</h1></a>
+<a class="header" href="print.html#problem-1" id="problem-1"><h2>Problem 1</h2></a>
+<p>Here's an easy one to get you started. It contains a Rust library:</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// adder.rs
+
+pub extern &quot;C&quot; fn add(a: u32, b: u32) -&gt; u32 {
+    a + b
+}
+#}</code></pre></pre>
+<p>And a C/C++ program which uses it.</p>
+<pre><code class="language-cpp">// main.cpp
+
+#include &lt;iostream&gt;
+#include &lt;cstdint&gt;
+
+extern &quot;C&quot; {
+    uint32_t add(uit32_t, uit32_t);
+}
+
+int main() {
+    uint32_t a = 5, b = 10;
+
+    uint32_t sum = add(a, b);
+    std::cout &lt;&lt; &quot;The sum of &quot; &lt;&lt; a 
+              &lt;&lt; &quot; and &quot; &lt;&lt; b 
+              &lt;&lt; &quot; is &quot; &lt;&lt; sum 
+              &lt;&lt; std::endl;
+}
+</code></pre>
+<p>Building and running:</p>
+<pre><code>$ rustc --crate-type cdylib adder.rs
+$ clang++ -std=c++14 -c main.cpp
+$ clang++ -std=c++14 -o main -L. -ladder main.o
+$ ./main
+</code></pre>
+<a class="header" href="print.html#problem-2" id="problem-2"><h2>Problem 2</h2></a>
+<p>This problem is similar to the previous one in that it has a Rust library called
+by a C++ program.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// foo.rs
+
+#[no_mangle]
+pub extern &quot;C&quot; fn foo() {
+    panic!(&quot;Oops...&quot;);
+}
+#}</code></pre></pre>
+<p>The main program:</p>
+<pre><code class="language-cpp">// main.cpp
+
+extern &quot;C&quot; {
+    void foo();
+}
+
+int main() {
+    foo();
+}
+</code></pre>
+<p>Compiling and running is also pretty similar:</p>
+<pre><code>$ rustc --crate-type cdylib foo.rs
+$ clang++ -std=c++14 -c main.cpp
+$ clang++ -std=c++14 -o main -L. -lfoo main.o
+$ ./main
+</code></pre>
+<a class="header" href="print.html#problem-3" id="problem-3"><h2>Problem 3</h2></a>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// home.rs
+
+use std::ffi::CString;
+use std::env;
+use std::ptr;
+use std::os::c_char;
+
+
+#[no_mangle]
+pub extern &quot;C&quot; fn home_directory() -&gt; *const c_char {
+    let home = match env::home_dir() {
+        Some(p) =&gt; p,
+        None =&gt; return ptr::null(),
+    };
+
+    let c_string = match CString::new(home){
+        Ok(s) =&gt; s,
+        Err(_) =&gt; return ptr::null(),
+    };
+
+    c_string.as_ptr()
+}
+#}</code></pre></pre>
+<pre><code class="language-cpp">// main.cpp
+
+#include &lt;iostream&gt;
+
+extern &quot;C&quot; {
+    char *home_directory();
+}
+
+int main() {
+    char* home = home_directory();
+
+    if (home == nullptr) {
+        std::cout &lt;&lt; &quot;Unable to find the home directory&quot; &lt;&lt; std::endl;
+    } else {
+        std::cout &lt;&lt; &quot;Home directory is &quot; &lt;&lt; home &lt;&lt; std::endl; 
+    }
+}
+</code></pre>
+<p>Compiling and running:</p>
+<pre><code>$ rustc --crate-type cdylib home.rs
+$ clang++ -std=c++14 -c main.cpp
+$ clang++ -std=c++14 -o main -L. -lhome main.o
+$ ./main
+</code></pre>
+<a class="header" href="print.html#problem-4" id="problem-4"><h2>Problem 4</h2></a>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+// logging.rs
+
+use std::os::raw::c_char;
+use std::ffi::CStr;
+
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+#[repr(C)]
+pub enum LogLevel {
+    Off = 0x00,
+    Error = 0x01,
+    Warn = 0x02,
+    Info = 0x04,
+    Debug = 0x08,
+    Trace = 0x0a,
+}
+
+#[no_mangle]
+pub unsafe extern &quot;C&quot; fn log_message(level: LogLevel, message: *const c_char) {
+    if level == LogLevel::Off {
+        return;
+    }
+
+    let message = CStr::from_ptr(message);
+    eprintln!(&quot;{:?}: {}&quot;, level, message.to_string_lossy());
+}
+#}</code></pre></pre>
+<pre><code class="language-cpp">// main.cpp
+
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+extern &quot;C&quot; {
+void log_message(int, const char *);
+}
+
+int main() {
+  std::string message = &quot;Hello World&quot;;
+  log_message(0x04 | 0x01, message.c_str());
+}
+</code></pre>
+<a class="header" href="print.html#solutions" id="solutions"><h1>Solutions</h1></a>
+<a class="header" href="print.html#problem-1-1" id="problem-1-1"><h2>Problem 1</h2></a>
+<blockquote>
+<p><strong>TODO:</strong> Explore name mangling and the <code>#[no_mangle]</code> attribute</p>
+<p>The Cherno has a <a href="https://www.youtube.com/watch?v=H4s55GgAg0I">video</a> which
+explains the linker quite well.</p>
+</blockquote>
+<a class="header" href="print.html#problem-2-1" id="problem-2-1"><h2>Problem 2</h2></a>
+<blockquote>
+<p><strong>TODO:</strong> mention exception safety and why unwinding across the FFI behaviour
+is a bad idea</p>
+</blockquote>
+<a class="header" href="print.html#problem-3-1" id="problem-3-1"><h2>Problem 3</h2></a>
+<blockquote>
+<p><strong>TODO:</strong> Talk about why <a href="https://users.rust-lang.org/t/cstring-as-ptr-is-incredibly-unsafe/11431">Cstring.as_ptr()</a> is unsafe because you are passing
+back a dangling pointer.</p>
+</blockquote>
+<a class="header" href="print.html#problem-4-1" id="problem-4-1"><h2>Problem 4</h2></a>
+<blockquote>
+<p><strong>TODO:</strong> Talk about how it's UB to create a Rust enum from an integer with
+an invalid variant</p>
+</blockquote>
+
+                </div>
+
+                <!-- Mobile navigation buttons -->
+                
+
+                
+
+            </div>
+
+            
+
+            
+
+        </div>
+
+
+        <!-- Local fallback for Font Awesome -->
+        <script>
+            if ($(".fa").css("font-family") !== "FontAwesome") {
+                $('<link rel="stylesheet" type="text/css" href="_FontAwesome/css/font-awesome.css">').prependTo('head');
+            }
+        </script>
+
+        <!-- Livereload script (if served using the cli tool) -->
+        
+
+        
+        <!-- Google Analytics Tag -->
+        <script>
+            var localAddrs = ["localhost", "127.0.0.1", ""];
+
+            // make sure we don't activate google analytics if the developer is 
+            // inspecting the book locally...
+            if (localAddrs.indexOf(document.location.hostname) === -1) {
+                (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+                })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+                ga('create', 'UA-78714693-2', 'auto');
+                ga('send', 'pageview');
+            }
+        </script>
+        
+
+        
+
+        
+        <script>
+            $(document).ready(function() {
+                window.print();
+            })
+        </script>
+        
+
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS script -->
+        
+
+    </body>
+</html>

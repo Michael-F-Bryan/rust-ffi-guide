@@ -1,0 +1,465 @@
+<!DOCTYPE HTML>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Setting Up - The (unofficial) Rust FFI Guide</title>
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="Using unsafe for fun and profit!">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <base href="">
+
+        <link rel="stylesheet" href="book.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <link rel="shortcut icon" href="favicon.png">
+
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme -->
+        
+
+        
+
+        <!-- Fetch Clipboard.js from CDN but have a local fallback -->
+        <script src="https://cdn.jsdelivr.net/clipboard.js/1.6.1/clipboard.min.js"></script>
+        <script>
+            if (typeof Clipboard == 'undefined') {
+                document.write(unescape("%3Cscript src='clipboard.min.js'%3E%3C/script%3E"));
+            }
+        </script>
+
+        <!-- Fetch JQuery from CDN but have a local fallback -->
+        <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+        <script>
+            if (typeof jQuery == 'undefined') {
+                document.write(unescape("%3Cscript src='jquery.js'%3E%3C/script%3E"));
+            }
+        </script>
+
+        <!-- Fetch store.js from local - TODO add CDN when 2.x.x is available on cdnjs -->
+        <script src="store.js"></script>
+
+    </head>
+    <body class="light">
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme = store.get('mdbook-theme');
+            if (theme === null || theme === undefined) { theme = 'light'; }
+            $('body').removeClass().addClass(theme);
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var sidebar = store.get('mdbook-sidebar');
+            if (sidebar === "hidden") { $("html").addClass("sidebar-hidden") }
+            else if (sidebar === "visible") { $("html").addClass("sidebar-visible") }
+        </script>
+
+        <div id="sidebar" class="sidebar">
+            <ul class="chapter"><li><a href="./overview.html"><strong>1.</strong> Overview</a></li><li><a href="./setting_up.html" class="active"><strong>2.</strong> Setting Up</a></li><li><a href="./client.html"><strong>3.</strong> Core Client Library</a></li><li><a href="./basic_request.html"><strong>4.</strong> Constructing a Basic Request</a></li><li><a href="./send_basic.html"><strong>5.</strong> Sending the Request</a></li><li><a href="./cbindgen.html"><strong>6.</strong> Generating a Header File</a></li><li><a href="./errors/index.html"><strong>7.</strong> Better Error Handling</a></li><li><ul class="section"><li><a href="./errors/return_types.html"><strong>7.1.</strong> Return Types</a></li><li><a href="./errors/logging.html"><strong>7.2.</strong> Logging</a></li><li><a href="./errors/exception_safety.html"><strong>7.3.</strong> Exception Safety</a></li></ul></li><li><a href="./async.html"><strong>8.</strong> Asynchronous Operations</a></li><li><a href="./complex_request.html"><strong>9.</strong> More Complex Requests</a></li><li><a href="./testing.html"><strong>10.</strong> Testing</a></li><li><a href="./dynamic_loading.html"><strong>11.</strong> Dynamic Loading &amp; Plugins</a></li><li class="spacer"></li><li><a href="./fun/index.html"><strong>12.</strong> Break All The Things!!1!</a></li><li><ul class="section"><li><a href="./fun/problems.html"><strong>12.1.</strong> Problems</a></li><li><a href="./fun/solutions.html"><strong>12.2.</strong> Solutions</a></li></ul></li></ul>
+        </div>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page" tabindex="-1">
+                
+                <div id="menu-bar" class="menu-bar">
+                    <div class="left-buttons">
+                        <i id="sidebar-toggle" class="fa fa-bars" title="Toggle sidebar"></i>
+                        <i id="theme-toggle" class="fa fa-paint-brush" title="Change theme"></i>
+                    </div>
+
+                    <h1 class="menu-title">The (unofficial) Rust FFI Guide</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html">
+                            <i id="print-button" class="fa fa-print" title="Print this book"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="content" class="content">
+                    <a class="header" href="./setting_up.html#setting-up" id="setting-up"><h1>Setting Up</h1></a>
+<p>Before we can start doing any coding we need to get a build environment set up
+and run a hello world program to check everything works.</p>
+<p>This chapter will cover:</p>
+<ul>
+<li>Setting up a C++ build system</li>
+<li>Integrating <code>cargo</code> into the build system transparently</li>
+<li>A &quot;hello world&quot; to test that C++ can call Rust functions</li>
+</ul>
+<a class="header" href="./setting_up.html#setting-up-qt-and-the-build-system" id="setting-up-qt-and-the-build-system"><h2>Setting up Qt and the Build System</h2></a>
+<p>First, create a new <code>cmake</code> project in a directory of your choosing.</p>
+<pre><code class="language-bash">$ mkdir rest_client &amp;&amp; cd rest_client
+$ mkdir gui
+$ touch gui/main.cpp
+$ touch CMakeLists.txt
+</code></pre>
+<p>You'll then want to make sure your <code>CMakeLists.txt</code> file (the file specifying
+the project and build settings) looks something like this.</p>
+<pre><code># CMakeLists.txt
+
+cmake_minimum_required(VERSION 3.7)
+project(rest-client)
+
+enable_testing()
+add_subdirectory(client)
+add_subdirectory(gui)
+</code></pre>
+<p>This says we're building a project called <code>rest-client</code> that requires at least
+<code>cmake</code> version 3.7. We've also enabled testing and added two subdirectories to
+the project (<code>client</code> and <code>gui</code>).</p>
+<p>Our <code>main.cpp</code> is still empty, lets rectify that by adding in a <a href="http://doc.qt.io/qt-5/qpushbutton.html">button</a>.</p>
+<pre><code class="language-cpp">// gui/main.cpp
+
+#include &lt;QtWidgets/QPushButton&gt;
+#include &lt;QtWidgets/QApplication&gt;
+
+int main(int argc, char **argv) {
+  QApplication app(argc, argv);
+
+  QPushButton button(&quot;Hello World&quot;);
+  button.show();
+
+  app.exec();
+}
+</code></pre>
+<p>We need to add a <code>CMakeLists.txt</code> to the <code>gui/</code> directory to let <code>cmake</code> know
+how to build our GUI.</p>
+<pre><code class="language-cmake"># gui/CMakeLists.txt
+
+set(CMAKE_CXX_STANDARD 14)
+
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+find_package(Qt5Widgets)
+
+set(SOURCE main.cpp)
+add_executable(gui ${SOURCE})
+target_link_libraries(gui Qt5::Widgets)
+add_dependencies(gui client)
+</code></pre>
+<p>This is mostly concerned with adding the correct options so Qt's meta-object
+compiler can do its thing and we can locate the correct Qt libraries, however
+right down the bottom you'll notice that we create a new executable with
+<code>add_executable()</code>. This says our <code>gui</code> target has right now one source file, <code>main.cpp</code>.
+It also needs to link to <code>Qt5::Widgets</code> and depends on our <code>client</code> (the Rust library), which
+hasn't yet been configured.</p>
+<a class="header" href="./setting_up.html#building-rust-with-cmake" id="building-rust-with-cmake"><h2>Building Rust with CMake</h2></a>
+<p>Next we need to create the Rust project.</p>
+<pre><code>$ cargo new --lib client
+</code></pre>
+<p>To make it accessible from C++ we need to make sure <code>cargo</code> generates a
+dynamically linked library. This is just a case of tweaking our <code>Cargo.toml</code> to
+tell <code>cargo</code> we're creating a <code>cdylib</code> instead of the usual library format.</p>
+<pre><code class="language-toml"># client/Cargo.toml
+
+[package]
+name = &quot;client&quot;
+version = &quot;0.1.0&quot;
+authors = [&quot;Michael Bryan &lt;michaelfbryan@gmail.com&gt;&quot;]
+description = &quot;The business logic for a REST client&quot;
+repository = &quot;https://github.com/Michael-F-Bryan/rust-ffi-guide&quot;
+
+[dependencies]
+
+[lib]
+crate-type = [&quot;cdylib&quot;]
+</code></pre>
+<p>If you then compile the project you'll see <code>cargo</code> build a shared object
+(<code>libclient.so</code>) instead of the normal <code>*.rlib</code> file.</p>
+<pre><code>$ cargo build
+$ ls target/debug/
+build  deps  examples  incremental  libclient.d  libclient.so  native
+</code></pre>
+<blockquote>
+<p><strong>Note:</strong> You don't <em>technically</em> need to make a dynamic library (<code>cdylib</code>)
+for your Rust code to be callable from other languages. You can always use
+static linking with a <code>staticlib</code>, however that can be a bit more annoying to
+set up because you need to remember to link in a bunch of other things that
+the Rust standard library uses (mainly <code>libc</code> and the C runtime).</p>
+<p>With a dynamic library all the work for dependency resolution is handled by
+the <a href="https://en.wikipedia.org/wiki/Loader_(computing)">loader</a> when your program gets loaded into memory on startup. Meaning
+things should <em>Just Work</em>.</p>
+</blockquote>
+<p>Now we know the Rust compiles natively with <code>cargo</code>, we need to hook it up to
+<code>cmake</code>. We do this by writing a <code>CMakeLists.txt</code> in the <code>client/</code> directory.
+As a general rule, you'll have one <code>CMakeLists.txt</code> for every &quot;area&quot; of your
+code. This usually up being one per directory, but not always.</p>
+<pre><code class="language-cmake"># client/CMakeLists.txt
+
+if (CMAKE_BUILD_TYPE STREQUAL &quot;Debug&quot;)
+    set(CARGO_CMD cargo build)
+    set(TARGET_DIR &quot;debug&quot;)
+else ()
+    set(CARGO_CMD cargo build --release)
+    set(TARGET_DIR &quot;release&quot;)
+endif ()
+
+set(CLIENT_SO &quot;${CMAKE_CURRENT_BINARY_DIR}/${TARGET_DIR}/libclient.so&quot;)
+
+add_custom_target(client ALL
+    COMMENT &quot;Compiling client module&quot;
+    COMMAND CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} ${CARGO_CMD} 
+    COMMAND cp ${CLIENT_SO} ${CMAKE_CURRENT_BINARY_DIR}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+set_target_properties(client PROPERTIES LOCATION ${CMAKE_CURRENT_BINARY_DIR})
+
+add_test(NAME client_test 
+    COMMAND cargo test
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+</code></pre>
+<p>This is our first introduction to the difference between a debug and release
+build. So we know whether to compile our program using different optimisation
+levels and debug symbols, <code>cmake</code> will set a <code>CMAKE_BUILD_TYPE</code> variable
+containing either <code>Debug</code> or <code>Release</code>.</p>
+<p>Here we're just using an <code>if</code> statement to set the <code>cargo</code> build command and
+the target directory, then using those to add a custom target which will
+first build the library, then copy the generated binary to the
+<code>CMAKE_BINARY_DIR</code>.</p>
+<p>For good measure, lets add a test (<code>client_test</code>) which lets <code>cmake</code> know how to
+test our Rust module.</p>
+<p>To make sure <code>cargo</code> puts all compiled artefacts in the correct spot within
+<code>build/</code>, we set the <code>CARGO_TARGET_DIR</code> environment variable while invoking the
+<code>CARGO_CMD</code>. The compiled library is then copied from into
+<code>CMAKE_CURRENT_BINARY_DIR</code> and we set the <code>LOCATION</code> property on the overall
+target to be <code>CMAKE_CURRENT_BINARY_DIR</code>.</p>
+<p>The purpose of that little dance is so that no matter what type of build
+(release or debug) we do, the compiled library will be in the same spot. We then
+set the <code>client</code> target's <code>LOCATION</code> property so that anyone else who needs to
+use <code>client</code>'s outputs knows which directory they'll be in.</p>
+<p>Now we know where the compiled <code>client</code> module will be, we can tell our <code>gui</code> to
+link to it.</p>
+<pre><code class="language-diff"># gui/CMakeLists.txt
+
+...
+
+set(SOURCE main.cpp)
+add_executable(gui ${SOURCE})
++ get_target_property(CLIENT_DIR client LOCATION)
+target_link_libraries(gui Qt5::Widgets)
++ target_link_libraries(gui ${CLIENT_DIR}/libclient.so)
+add_dependencies(gui client)
+</code></pre>
+<p>Now we can compile and run this basic program to make sure everything is
+working. You'll probably want to create a separate <code>build/</code> directory so you
+don't pollute the rest of the project with random build artefacts.</p>
+<pre><code>$ mkdir build &amp;&amp; cd build
+$ cmake ..
+$ make
+$ ./gui/gui
+</code></pre>
+<a class="header" href="./setting_up.html#calling-rust-from-c" id="calling-rust-from-c"><h2>Calling Rust from C++</h2></a>
+<p>So far we've just made sure everything compiles, however the C++ and Rust code
+are still completely independent. The next task is to check the Rust library is
+linked to properly by calling a function from C++.</p>
+<p>First we add a dummy function to the <code>lib.rs</code>.</p>
+<pre><pre class="playpen"><code class="language-rust">
+# #![allow(unused_variables)]
+#fn main() {
+#[no_mangle]
+pub extern &quot;C&quot; fn hello_world() {
+    println!(&quot;Hello World!&quot;);
+}
+#}</code></pre></pre>
+<p>There's a lot going on here, so lets step through it bit by bit.</p>
+<p>The <code>#[no_mangle]</code> attribute indicates to the compiler that it shouldn't mangle
+the function's name during compilation. According to Wikipedia,
+<a href="https://en.wikipedia.org/wiki/Name_mangling"><em>name mangling</em></a>:</p>
+<blockquote>
+<p>In compiler construction, name mangling (also called name decoration) is a
+technique used to solve various problems caused by the need to resolve unique
+names for programming entities in many modern programming languages.</p>
+<p>It provides a way of encoding additional information in the name of a
+function, structure, class or another datatype in order to pass more semantic
+information from the compilers to linkers.</p>
+<p>The need arises where the language allows different entities to be named
+with the same identifier as long as they occupy a different namespace (where
+a namespace is typically defined by a module, class, or explicit namespace
+directive) or have different signatures (such as function overloading).</p>
+</blockquote>
+<p><strong>TL:DR;</strong> <em>it's a way for compilers to generate multiple instances of a function
+which accepts different types or parameters. Without it we wouldn't be able to
+have things like generics or function overloading without name clashes.</em></p>
+<p>If this function is going to be called from C++ we need to specify the
+<a href="https://en.wikipedia.org/wiki/Calling_convention">calling convention</a> (the <code>extern &quot;C&quot;</code> bit). This tells the compiler low level
+things like how arguments are passed between functions. By far the most common
+convention is to &quot;just do what C does&quot;.</p>
+<p>The rest of the function declaration should be fairly intuitive.</p>
+<p>After recompiling (<code>cd build &amp;&amp; cmake .. &amp;&amp; make</code>) you can inspect the generated
+binary using <code>nm</code> to make sure the <code>hello_world()</code> function is there.</p>
+<pre><code>$ nm libclient.so | grep ' T '
+0000000000003330 T hello_world          &lt;-- the function we created
+00000000000096c0 T __rdl_alloc
+00000000000098d0 T __rdl_alloc_excess
+0000000000009840 T __rdl_alloc_zeroed
+0000000000009760 T __rdl_dealloc
+0000000000009a20 T __rdl_grow_in_place
+0000000000009730 T __rdl_oom
+0000000000009780 T __rdl_realloc
+0000000000009950 T __rdl_realloc_excess
+0000000000009a30 T __rdl_shrink_in_place
+0000000000009770 T __rdl_usable_size
+0000000000015ad0 T rust_eh_personality
+</code></pre>
+<p>The <code>nm</code> tool lists all the symbols in a binary as well as their addresses
+(the hex bit in the first column) and what type of symbol they are. All
+functions are in the <strong>T</strong>ext section of the binary, so you can use grep to view
+only the exported functions.</p>
+<p>Now we have a working library, why don't we make the GUI program less like a
+contrived example and more like a real-life application?</p>
+<p>The first thing is to pull our main window out into its own source files.</p>
+<pre><code class="language-bash">$ touch gui/main_window.hpp gui/main_window.cpp
+</code></pre>
+<pre><code class="language-diff"># gui/CMakeLists.txt
+
+...
+
+- set(SOURCE main.cpp)
++ set(SOURCE main_window.cpp main_window.hpp main.cpp)
+add_executable(gui ${SOURCE})
+</code></pre>
+<pre><code class="language-cpp">// gui/main_window.hpp
+
+#include &lt;QtWidgets/QMainWindow&gt;
+#include &lt;QtWidgets/QPushButton&gt;
+
+class MainWindow : public QMainWindow {
+  Q_OBJECT
+
+public:
+  MainWindow(QWidget *parent = nullptr);
+private slots:
+  void onClick();
+
+private:
+  QPushButton *button;
+};
+</code></pre>
+<p>Here we've declared a <code>MainWindow</code> class which contains our trusty <code>QPushButton</code>
+and has a single constructor and click handler.</p>
+<p>We also need to fill out the <code>MainWindow</code> methods and hook up the button's
+<code>released</code> signal to our <code>onClick()</code> click handler.</p>
+<pre><code class="language-cpp">// gui/main_window.cpp
+
+#include &quot;main_window.hpp&quot;
+
+extern &quot;C&quot; {
+void hello_world();
+}
+
+void MainWindow::onClick() { 
+    // Call the `hello_world` function to print a message to stdout
+    hello_world(); 
+}
+
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
+  button = new QPushButton(&quot;Click Me&quot;, this);
+  
+  // Connect the button's `released` signal to `this-&gt;onClick()`
+  connect(button, SIGNAL(released()), this, SLOT(onClick()));
+}
+</code></pre>
+<p>Don't forget to update <code>main.cpp</code> to use the new <code>MainWindow</code>.</p>
+<pre><code class="language-cpp">// gui/main.cpp
+
+#include &quot;main_window.hpp&quot;
+#include &lt;QtWidgets/QApplication&gt;
+
+int main(int argc, char **argv) {
+  QApplication app(argc, argv);
+
+  MainWindow mainWindow;
+  mainWindow.show();
+
+  app.exec();
+}
+</code></pre>
+<p>Now when you compile and run <code>./gui</code>, &quot;Hello World&quot; wil be printed to the
+console every time you click on the button.</p>
+<p>If you got to this point then congratulations, you've just finished the most
+difficult part - getting everything to build!</p>
+
+                </div>
+
+                <!-- Mobile navigation buttons -->
+                
+                    <a rel="prev" href="./overview.html" class="mobile-nav-chapters previous" title="Previous chapter">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a rel="next" href="./client.html" class="mobile-nav-chapters next" title="Next chapter">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+
+            </div>
+
+            
+                <a href="./overview.html" class="nav-chapters previous" title="You can navigate through the chapters using the arrow keys">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+            
+
+            
+                <a href="./client.html" class="nav-chapters next" title="You can navigate through the chapters using the arrow keys">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+            
+
+        </div>
+
+
+        <!-- Local fallback for Font Awesome -->
+        <script>
+            if ($(".fa").css("font-family") !== "FontAwesome") {
+                $('<link rel="stylesheet" type="text/css" href="_FontAwesome/css/font-awesome.css">').prependTo('head');
+            }
+        </script>
+
+        <!-- Livereload script (if served using the cli tool) -->
+        
+
+        
+        <!-- Google Analytics Tag -->
+        <script>
+            var localAddrs = ["localhost", "127.0.0.1", ""];
+
+            // make sure we don't activate google analytics if the developer is 
+            // inspecting the book locally...
+            if (localAddrs.indexOf(document.location.hostname) === -1) {
+                (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+                })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+                ga('create', 'UA-78714693-2', 'auto');
+                ga('send', 'pageview');
+            }
+        </script>
+        
+
+        
+
+        
+
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS script -->
+        
+
+    </body>
+</html>
